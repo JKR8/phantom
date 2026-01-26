@@ -1,6 +1,16 @@
 import React from 'react';
-import { makeStyles, shorthands, Text } from '@fluentui/react-components';
-import { MoreHorizontalRegular } from '@fluentui/react-icons';
+import { 
+  makeStyles, 
+  shorthands, 
+  Text,
+  Menu,
+  MenuTrigger,
+  MenuList,
+  MenuItem,
+  MenuPopover,
+  Button
+} from '@fluentui/react-components';
+import { MoreHorizontalRegular, DeleteRegular } from '@fluentui/react-icons';
 
 const useStyles = makeStyles({
   container: {
@@ -34,15 +44,25 @@ const useStyles = makeStyles({
 interface VisualContainerProps {
   title: string;
   children: React.ReactNode;
+  onRemove?: () => void;
 }
 
-export const VisualContainer: React.FC<VisualContainerProps> = ({ title, children }) => {
+export const VisualContainer: React.FC<VisualContainerProps> = ({ title, children, onRemove }) => {
   const styles = useStyles();
   return (
     <div className={styles.container}>
       <div className={`${styles.header} visual-header`}>
         <Text className={styles.title}>{title}</Text>
-        <MoreHorizontalRegular fontSize={16} style={{ cursor: 'pointer' }} />
+        <Menu>
+          <MenuTrigger disableButtonEnhancement>
+            <Button appearance="transparent" icon={<MoreHorizontalRegular />} size="small" />
+          </MenuTrigger>
+          <MenuPopover>
+            <MenuList>
+              <MenuItem icon={<DeleteRegular />} onClick={onRemove}>Delete</MenuItem>
+            </MenuList>
+          </MenuPopover>
+        </Menu>
       </div>
       <div className={styles.content}>
         {children}

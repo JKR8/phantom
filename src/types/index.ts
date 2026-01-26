@@ -22,9 +22,66 @@ export interface Sale {
   profit: number;
 }
 
-export type Scenario = 'Retail' | 'SaaS';
+export interface Customer {
+  id: string;
+  name: string;
+  tier: 'Starter' | 'Professional' | 'Enterprise';
+  region: string;
+}
 
-export type VisualType = 'bar' | 'line' | 'pie' | 'card' | 'table' | 'slicer';
+export interface Subscription {
+  id: string;
+  customerId: string;
+  date: string;
+  mrr: number;
+  churn: number; // 0 or 1 for boolean-like, or a value
+  ltv: number;
+}
+
+export interface Employee {
+  id: string;
+  name: string;
+  department: string;
+  role: string;
+  salary: number;
+  rating: number; // 1-5
+  attrition: number; // 0 or 1
+  tenure: number; // years
+}
+
+export interface Shipment {
+  id: string;
+  origin: string;
+  destination: string;
+  carrier: string;
+  cost: number;
+  weight: number;
+  status: 'Delivered' | 'In Transit' | 'Delayed';
+  date: string;
+  onTime: number; // 0 or 1
+}
+
+export type Scenario = 'Retail' | 'SaaS' | 'HR' | 'Logistics';
+
+export type VisualType = 
+  | 'bar' 
+  | 'column' 
+  | 'stackedBar' 
+  | 'stackedColumn' 
+  | 'line' 
+  | 'area' 
+  | 'scatter' 
+  | 'pie' 
+  | 'donut' 
+  | 'treemap' 
+  | 'funnel' 
+  | 'gauge' 
+  | 'card' 
+  | 'multiRowCard' 
+  | 'table' 
+  | 'matrix' 
+  | 'waterfall'
+  | 'slicer';
 
 export interface DashboardItem {
   id: string;
@@ -44,6 +101,10 @@ export interface DashboardState {
   stores: Store[];
   products: Product[];
   sales: Sale[];
+  customers: Customer[];
+  subscriptions: Subscription[];
+  employees: Employee[];
+  shipments: Shipment[];
   filters: Record<string, any>;
   items: DashboardItem[];
   setScenario: (scenario: Scenario) => void;
@@ -52,4 +113,5 @@ export interface DashboardState {
   addItem: (item: DashboardItem) => void;
   removeItem: (id: string) => void;
   updateLayout: (layout: any[]) => void;
+  loadTemplate: (templateName: string) => void;
 }

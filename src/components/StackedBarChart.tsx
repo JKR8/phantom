@@ -12,12 +12,12 @@ import {
 import { useStore, useFilteredSales } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
 
-interface BarChartProps {
+interface StackedBarChartProps {
   dimension: 'Region' | 'Category';
   metric: 'revenue' | 'profit';
 }
 
-export const BarChart: React.FC<BarChartProps> = ({ dimension, metric }) => {
+export const StackedBarChart: React.FC<StackedBarChartProps> = ({ dimension, metric }) => {
   const filteredSales = useFilteredSales();
   const stores = useStore((state) => state.stores);
   const products = useStore((state) => state.products);
@@ -30,18 +30,13 @@ export const BarChart: React.FC<BarChartProps> = ({ dimension, metric }) => {
 
     filteredSales.forEach((sale) => {
       let key = '';
-      if (dimension === 'Region' && sale.storeId) {
+      if (dimension === 'Region') {
         key = stores.find(s => s.id === sale.storeId)?.region || 'Unknown';
-      } else if (dimension === 'Category' && sale.productId) {
+      } else if (dimension === 'Category') {
         key = products.find(p => p.id === sale.productId)?.category || 'Unknown';
-      } else {
-        // Generic Fallback for HR/Logistics/SaaS
-        const dimKey = dimension.toLowerCase();
-        // @ts-ignore
-        key = sale[dimKey] || sale[dimension] || 'Unknown';
       }
 
-      aggregation[key] = (aggregation[key] || 0) + (sale[metric] || 0);
+      aggregation[key] = (aggregation[key] || 0) + sale[metric];
     });
 
     return Object.entries(aggregation).map(([name, value]) => ({
@@ -80,7 +75,8 @@ export const BarChart: React.FC<BarChartProps> = ({ dimension, metric }) => {
           formatter={(value: any) => `$${Number(value).toLocaleString()}`}
           contentStyle={{ fontSize: '12px' }}
         />
-        <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+        {/* stackId is what makes it stacked, though with 1 series it looks like normal bar */}
+        <Bar dataKey="value" stackId="a" radius={[0, 4, 4, 0]}>
           {data.map((entry, index) => (
             <Cell
               key={`cell-${index}`}

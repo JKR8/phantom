@@ -12,12 +12,12 @@ import {
 import { useStore, useFilteredSales } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
 
-interface BarChartProps {
+interface StackedColumnChartProps {
   dimension: 'Region' | 'Category';
   metric: 'revenue' | 'profit';
 }
 
-export const BarChart: React.FC<BarChartProps> = ({ dimension, metric }) => {
+export const StackedColumnChart: React.FC<StackedColumnChartProps> = ({ dimension, metric }) => {
   const filteredSales = useFilteredSales();
   const stores = useStore((state) => state.stores);
   const products = useStore((state) => state.products);
@@ -30,18 +30,13 @@ export const BarChart: React.FC<BarChartProps> = ({ dimension, metric }) => {
 
     filteredSales.forEach((sale) => {
       let key = '';
-      if (dimension === 'Region' && sale.storeId) {
+      if (dimension === 'Region') {
         key = stores.find(s => s.id === sale.storeId)?.region || 'Unknown';
-      } else if (dimension === 'Category' && sale.productId) {
+      } else if (dimension === 'Category') {
         key = products.find(p => p.id === sale.productId)?.category || 'Unknown';
-      } else {
-        // Generic Fallback for HR/Logistics/SaaS
-        const dimKey = dimension.toLowerCase();
-        // @ts-ignore
-        key = sale[dimKey] || sale[dimension] || 'Unknown';
       }
 
-      aggregation[key] = (aggregation[key] || 0) + (sale[metric] || 0);
+      aggregation[key] = (aggregation[key] || 0) + sale[metric];
     });
 
     return Object.entries(aggregation).map(([name, value]) => ({
@@ -63,24 +58,25 @@ export const BarChart: React.FC<BarChartProps> = ({ dimension, metric }) => {
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <ReBarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }} onClick={(e: any) => {
+      <ReBarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }} onClick={(e: any) => {
         if (e && e.activePayload) {
           handleClick(e.activePayload[0].payload);
         }
       }}>
-        <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
-        <XAxis type="number" hide />
-        <YAxis
-          dataKey="name"
-          type="category"
+        <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={true} />
+        <XAxis 
+          dataKey="name" 
           tick={{ fontSize: 10 }}
-          width={80}
+        />
+        <YAxis
+          tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+          tick={{ fontSize: 10 }}
         />
         <Tooltip
           formatter={(value: any) => `$${Number(value).toLocaleString()}`}
           contentStyle={{ fontSize: '12px' }}
         />
-        <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+        <Bar dataKey="value" stackId="a" radius={[4, 4, 0, 0]}>
           {data.map((entry, index) => (
             <Cell
               key={`cell-${index}`}

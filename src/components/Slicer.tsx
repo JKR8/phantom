@@ -3,7 +3,7 @@ import { Dropdown, Option, useId, makeStyles, shorthands } from '@fluentui/react
 import { useStore } from '../store/useStore';
 
 interface SlicerProps {
-  dimension: 'Store' | 'Product' | 'Region' | 'Category';
+  dimension: string;
   title?: string;
 }
 
@@ -31,6 +31,11 @@ export const Slicer: React.FC<SlicerProps> = ({ dimension, title }) => {
   // ensuring all options are available even when other filters are active.
   const stores = useStore((state) => state.stores);
   const products = useStore((state) => state.products);
+  const customers = useStore((state) => state.customers);
+  const employees = useStore((state) => state.employees);
+  const shipments = useStore((state) => state.shipments);
+  const scenario = useStore((state) => state.scenario);
+  
   const setFilter = useStore((state) => state.setFilter);
   const activeFilters = useStore((state) => state.filters);
 
@@ -38,23 +43,47 @@ export const Slicer: React.FC<SlicerProps> = ({ dimension, title }) => {
   const options = useMemo(() => {
     let rawOptions: string[] = [];
 
-    switch (dimension) {
-      case 'Store':
-        rawOptions = stores.map(s => s.name);
-        break;
-      case 'Region':
-        rawOptions = Array.from(new Set(stores.map(s => s.region)));
-        break;
-      case 'Product':
-        rawOptions = products.map(p => p.name);
-        break;
-      case 'Category':
-        rawOptions = Array.from(new Set(products.map(p => p.category)));
-        break;
+    // Retail
+    if (scenario === 'Retail') {
+        if (dimension === 'Store') rawOptions = stores.map(s => s.name);
+        else if (dimension === 'Region') rawOptions = Array.from(new Set(stores.map(s => s.region)));
+        else if (dimension === 'Product') rawOptions = products.map(p => p.name);
+        else if (dimension === 'Category') rawOptions = Array.from(new Set(products.map(p => p.category)));
+    } 
+    // SaaS
+    else if (scenario === 'SaaS') {
+        if (dimension === 'Region') rawOptions = Array.from(new Set(customers.map(c => c.region)));
+        else if (dimension === 'Tier' || dimension === 'tier') rawOptions = Array.from(new Set(customers.map(c => c.tier)));
+    }
+    // HR
+    else if (scenario === 'HR') {
+        if (dimension === 'Department') rawOptions = Array.from(new Set(employees.map(e => e.department)));
+        else if (dimension === 'Role') rawOptions = Array.from(new Set(employees.map(e => e.role)));
+    }
+    // Logistics
+    else if (scenario === 'Logistics') {
+        if (dimension === 'Carrier' || dimension === 'carrier') rawOptions = Array.from(new Set(shipments.map(s => s.carrier)));
+        else if (dimension === 'Status' || dimension === 'status') rawOptions = Array.from(new Set(shipments.map(s => s.status)));
+        else if (dimension === 'Origin') rawOptions = Array.from(new Set(shipments.map(s => s.origin)));
+        else if (dimension === 'Destination') rawOptions = Array.from(new Set(shipments.map(s => s.destination)));
+    }
+
+    if (rawOptions.length === 0) {
+        // Fallback for generic property matching if not explicitly mapped above
+         let source: any[] = [];
+         if (scenario === 'Retail') source = stores.concat(products as any); // imperfect fallback
+         else if (scenario === 'SaaS') source = customers;
+         else if (scenario === 'HR') source = employees;
+         else if (scenario === 'Logistics') source = shipments;
+
+         const key = dimension.toLowerCase();
+         // @ts-ignore
+         const values = source.map(i => i[key] || i[dimension]).filter(v => v !== undefined);
+         rawOptions = Array.from(new Set(values));
     }
 
     return rawOptions.sort();
-  }, [dimension, stores, products]);
+  }, [dimension, stores, products, customers, employees, shipments, scenario]);
 
   const handleSelect = (_: any, data: { optionValue: string | undefined }) => {
      // If the placeholder/clearing is handled or if we want a clear button,

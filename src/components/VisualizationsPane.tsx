@@ -7,6 +7,15 @@ import {
   TableRegular,
   NumberSymbolSquareRegular,
   TextBulletListSquareRegular,
+  DataAreaRegular,
+  DataScatterRegular,
+  DataFunnelRegular,
+  DataTreemapRegular,
+  DataBarHorizontalRegular,
+  DataHistogramRegular,
+  DataUsageRegular,
+  GridRegular,
+  TextDescriptionRegular
 } from '@fluentui/react-icons';
 
 const useStyles = makeStyles({
@@ -65,12 +74,24 @@ const useStyles = makeStyles({
 });
 
 const visuals = [
-  { id: 'bar', icon: DataBarVerticalRegular, label: 'Bar', tooltip: 'Clustered Bar Chart' },
+  { id: 'stackedBar', icon: DataBarHorizontalRegular, label: 'Stack Bar', tooltip: 'Stacked Bar Chart' },
+  { id: 'stackedColumn', icon: DataBarVerticalRegular, label: 'Stack Col', tooltip: 'Stacked Column Chart' },
+  { id: 'bar', icon: DataBarHorizontalRegular, label: 'Clust Bar', tooltip: 'Clustered Bar Chart' },
+  { id: 'column', icon: DataHistogramRegular, label: 'Clust Col', tooltip: 'Clustered Column Chart' },
   { id: 'line', icon: DataLineRegular, label: 'Line', tooltip: 'Line Chart' },
-  { id: 'pie', icon: DataPieRegular, label: 'Donut', tooltip: 'Donut Chart' },
+  { id: 'area', icon: DataAreaRegular, label: 'Area', tooltip: 'Area Chart' },
+  { id: 'scatter', icon: DataScatterRegular, label: 'Scatter', tooltip: 'Scatter Chart' },
+  { id: 'pie', icon: DataPieRegular, label: 'Pie', tooltip: 'Pie Chart' },
+  { id: 'donut', icon: DataPieRegular, label: 'Donut', tooltip: 'Donut Chart' },
+  { id: 'funnel', icon: DataFunnelRegular, label: 'Funnel', tooltip: 'Funnel Chart' },
+  { id: 'treemap', icon: DataTreemapRegular, label: 'Treemap', tooltip: 'Treemap' },
   { id: 'card', icon: NumberSymbolSquareRegular, label: 'Card', tooltip: 'KPI Card' },
-  { id: 'table', icon: TableRegular, label: 'Table', tooltip: 'Matrix / Table' },
-  { id: 'slicer', icon: TextBulletListSquareRegular, label: 'Slicer', tooltip: 'Slicer Filter' },
+  { id: 'multiRowCard', icon: TextDescriptionRegular, label: 'MultiRow', tooltip: 'Multi-row Card' },
+  { id: 'gauge', icon: DataUsageRegular, label: 'Gauge', tooltip: 'Gauge' },
+  { id: 'table', icon: TableRegular, label: 'Table', tooltip: 'Table' },
+  { id: 'matrix', icon: GridRegular, label: 'Matrix', tooltip: 'Matrix' },
+  { id: 'waterfall', icon: DataHistogramRegular, label: 'Waterfall', tooltip: 'Waterfall Chart' },
+  { id: 'slicer', icon: TextBulletListSquareRegular, label: 'Slicer', tooltip: 'Slicer' },
 ];
 
 export const VisualizationsPane: React.FC = () => {

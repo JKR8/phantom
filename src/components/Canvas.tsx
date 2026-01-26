@@ -11,6 +11,18 @@ import { KPICard } from './KPICard';
 import { DataTable } from './DataTable';
 import { Slicer } from './Slicer';
 import { LineChart } from './LineChart';
+import { StackedBarChart } from './StackedBarChart';
+import { StackedColumnChart } from './StackedColumnChart';
+import { ClusteredColumnChart } from './ClusteredColumnChart';
+import { AreaChart } from './AreaChart';
+import { ScatterChart } from './ScatterChart';
+import { PieChart } from './PieChart';
+import { FunnelChart } from './FunnelChart';
+import { Treemap } from './Treemap';
+import { GaugeChart } from './GaugeChart';
+import { MultiRowCard } from './MultiRowCard';
+import { Matrix } from './Matrix';
+import { WaterfallChart } from './WaterfallChart';
 
 const GRID_COLS = 12;
 const ROW_HEIGHT = 40;
@@ -40,6 +52,7 @@ export const Canvas: React.FC = () => {
   const items = useStore((state) => state.items);
   const updateLayout = useStore((state) => state.updateLayout);
   const addItem = useStore((state) => state.addItem);
+  const removeItem = useStore((state) => state.removeItem);
 
   const handleDrop = (_layout: any, layoutItem: any, _event: any) => {
     const visualType = _event.dataTransfer.getData('visualType');
@@ -52,23 +65,71 @@ export const Canvas: React.FC = () => {
     switch (visualType) {
       case 'bar':
         props = { dimension: 'Region', metric: 'revenue' };
-        title = 'New Bar Chart';
+        title = 'Clustered Bar Chart';
+        break;
+      case 'column':
+        props = { dimension: 'Region', metric: 'revenue' };
+        title = 'Clustered Column Chart';
+        break;
+      case 'stackedBar':
+        props = { dimension: 'Region', metric: 'revenue' };
+        title = 'Stacked Bar Chart';
+        break;
+      case 'stackedColumn':
+        props = { dimension: 'Region', metric: 'revenue' };
+        title = 'Stacked Column Chart';
         break;
       case 'line':
         props = { metric: 'revenue' };
-        title = 'New Line Chart';
+        title = 'Line Chart';
+        break;
+      case 'area':
+        props = { metric: 'revenue' };
+        title = 'Area Chart';
+        break;
+      case 'scatter':
+        props = { xMetric: 'revenue', yMetric: 'profit' };
+        title = 'Scatter Chart';
         break;
       case 'pie':
         props = { dimension: 'Category', metric: 'revenue' };
-        title = 'New Donut Chart';
+        title = 'Pie Chart';
+        break;
+      case 'donut':
+        props = { dimension: 'Category', metric: 'revenue' };
+        title = 'Donut Chart';
+        break;
+      case 'funnel':
+        props = { dimension: 'Region', metric: 'revenue' };
+        title = 'Funnel Chart';
+        break;
+      case 'treemap':
+        props = { dimension: 'Category', metric: 'revenue' };
+        title = 'Treemap';
         break;
       case 'card':
         props = { metric: 'revenue', operation: 'sum', label: 'Revenue' };
-        title = 'New KPI';
+        title = 'KPI';
+        break;
+      case 'multiRowCard':
+        props = {};
+        title = 'Multi-row Card';
+        break;
+      case 'gauge':
+        props = { metric: 'revenue', target: 2000000 };
+        title = 'Gauge';
         break;
       case 'table':
         props = { maxRows: 100 };
         title = 'Data Table';
+        break;
+      case 'matrix':
+        props = {};
+        title = 'Matrix';
+        break;
+      case 'waterfall':
+        props = { dimension: 'Region', metric: 'revenue' };
+        title = 'Waterfall Chart';
         break;
       case 'slicer':
         props = { dimension: 'Store' };
@@ -101,16 +162,40 @@ export const Canvas: React.FC = () => {
     switch (item.type) {
       case 'bar':
         return <BarChart {...item.props} />;
-      case 'pie':
-        return <DonutChart {...item.props} />;
-      case 'card':
-        return <KPICard {...item.props} />;
-      case 'table':
-        return <DataTable {...item.props} />;
-      case 'slicer':
-        return <Slicer {...item.props} />;
+      case 'column':
+        return <ClusteredColumnChart {...item.props} />;
+      case 'stackedBar':
+        return <StackedBarChart {...item.props} />;
+      case 'stackedColumn':
+        return <StackedColumnChart {...item.props} />;
       case 'line':
         return <LineChart {...item.props} />;
+      case 'area':
+        return <AreaChart {...item.props} />;
+      case 'scatter':
+        return <ScatterChart {...item.props} />;
+      case 'pie':
+        return <PieChart {...item.props} />;
+      case 'donut':
+        return <DonutChart {...item.props} />;
+      case 'funnel':
+        return <FunnelChart {...item.props} />;
+      case 'treemap':
+        return <Treemap {...item.props} />;
+      case 'gauge':
+        return <GaugeChart {...item.props} />;
+      case 'card':
+        return <KPICard {...item.props} />;
+      case 'multiRowCard':
+        return <MultiRowCard {...item.props} />;
+      case 'table':
+        return <DataTable {...item.props} />;
+      case 'matrix':
+        return <Matrix {...item.props} />;
+      case 'waterfall':
+        return <WaterfallChart {...item.props} />;
+      case 'slicer':
+        return <Slicer {...item.props} />;
       default:
         return <div>Unknown Visual</div>;
     }
@@ -144,7 +229,7 @@ export const Canvas: React.FC = () => {
         >
           {items.map((item) => (
             <div key={item.id}>
-              <VisualContainer title={item.title}>
+              <VisualContainer title={item.title} onRemove={() => removeItem(item.id)}>
                 {renderVisual(item)}
               </VisualContainer>
             </div>

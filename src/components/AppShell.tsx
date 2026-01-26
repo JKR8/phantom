@@ -4,7 +4,12 @@ import {
   shorthands,
   tokens,
   Button,
-  Title2
+  Title2,
+  Menu,
+  MenuTrigger,
+  MenuList,
+  MenuItem,
+  MenuPopover
 } from '@fluentui/react-components';
 import {
   HomeRegular,
@@ -12,10 +17,13 @@ import {
   DatabaseRegular,
   AppsRegular,
   ShareRegular,
-  ArrowDownloadRegular
+  ArrowDownloadRegular,
+  DocumentRegular
 } from '@fluentui/react-icons';
 import { FieldsPane } from './FieldsPane';
 import { VisualizationsPane } from './VisualizationsPane';
+import { useStore } from '../store/useStore';
+import { Templates } from '../store/templates';
 
 const useStyles = makeStyles({
   container: {
@@ -94,12 +102,25 @@ const useStyles = makeStyles({
 
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const styles = useStyles();
+  const loadTemplate = useStore((state) => state.loadTemplate);
 
   return (
     <div className={styles.container}>
       <header className={styles.topBar}>
         <div className={styles.topBarLeft}>
           <Title2 style={{ color: 'white', fontSize: '16px' }}>Phantom - Retail Dashboard</Title2>
+          <Menu>
+            <MenuTrigger disableButtonEnhancement>
+              <Button appearance="subtle" className={styles.topButton} size="small" icon={<DocumentRegular />}>Templates</Button>
+            </MenuTrigger>
+            <MenuPopover>
+              <MenuList>
+                {Templates.map(t => (
+                    <MenuItem key={t.name} onClick={() => loadTemplate(t.name)}>{t.name}</MenuItem>
+                ))}
+              </MenuList>
+            </MenuPopover>
+          </Menu>
           <Button appearance="subtle" className={styles.topButton} size="small">File</Button>
           <Button appearance="subtle" className={styles.topButton} size="small">Export</Button>
         </div>

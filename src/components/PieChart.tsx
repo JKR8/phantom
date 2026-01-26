@@ -1,23 +1,21 @@
 import React, { useMemo } from 'react';
 import {
-  BarChart as ReBarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
+  PieChart as RePieChart,
+  Pie,
+  Cell,
   ResponsiveContainer,
-  Cell
+  Tooltip,
+  Legend
 } from 'recharts';
 import { useStore, useFilteredSales } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
 
-interface BarChartProps {
+interface PieChartProps {
   dimension: 'Region' | 'Category';
   metric: 'revenue' | 'profit';
 }
 
-export const BarChart: React.FC<BarChartProps> = ({ dimension, metric }) => {
+export const PieChart: React.FC<PieChartProps> = ({ dimension, metric }) => {
   const filteredSales = useFilteredSales();
   const stores = useStore((state) => state.stores);
   const products = useStore((state) => state.products);
@@ -30,24 +28,19 @@ export const BarChart: React.FC<BarChartProps> = ({ dimension, metric }) => {
 
     filteredSales.forEach((sale) => {
       let key = '';
-      if (dimension === 'Region' && sale.storeId) {
+      if (dimension === 'Region') {
         key = stores.find(s => s.id === sale.storeId)?.region || 'Unknown';
-      } else if (dimension === 'Category' && sale.productId) {
+      } else if (dimension === 'Category') {
         key = products.find(p => p.id === sale.productId)?.category || 'Unknown';
-      } else {
-        // Generic Fallback for HR/Logistics/SaaS
-        const dimKey = dimension.toLowerCase();
-        // @ts-ignore
-        key = sale[dimKey] || sale[dimension] || 'Unknown';
       }
 
-      aggregation[key] = (aggregation[key] || 0) + (sale[metric] || 0);
+      aggregation[key] = (aggregation[key] || 0) + sale[metric];
     });
 
     return Object.entries(aggregation).map(([name, value]) => ({
       name,
       value: Math.round(value),
-    })).sort((a, b) => b.value - a.value);
+    }));
   }, [filteredSales, dimension, metric, stores, products]);
 
   const handleClick = (data: any) => {
@@ -63,33 +56,27 @@ export const BarChart: React.FC<BarChartProps> = ({ dimension, metric }) => {
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <ReBarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }} onClick={(e: any) => {
-        if (e && e.activePayload) {
-          handleClick(e.activePayload[0].payload);
-        }
-      }}>
-        <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} />
-        <XAxis type="number" hide />
-        <YAxis
-          dataKey="name"
-          type="category"
-          tick={{ fontSize: 10 }}
-          width={80}
-        />
-        <Tooltip
-          formatter={(value: any) => `$${Number(value).toLocaleString()}`}
-          contentStyle={{ fontSize: '12px' }}
-        />
-        <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+      <RePieChart>
+        <Pie
+          data={data}
+          cx="50%"
+          cy="50%"
+          outerRadius={80}
+          dataKey="value"
+          onClick={handleClick}
+          style={{ cursor: 'pointer' }}
+          label
+        >
           {data.map((entry, index) => (
             <Cell
               key={`cell-${index}`}
               fill={activeFilters[dimension] === entry.name ? highlightColor : getColor(index)}
-              style={{ cursor: 'pointer' }}
             />
           ))}
-        </Bar>
-      </ReBarChart>
+        </Pie>
+        <Tooltip formatter={(value: any) => `$${Number(value).toLocaleString()}`} />
+        <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '10px' }} />
+      </RePieChart>
     </ResponsiveContainer>
   );
 };

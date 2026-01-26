@@ -28,13 +28,17 @@ export const DonutChart: React.FC<DonutChartProps> = ({ dimension, metric }) => 
 
     filteredSales.forEach((sale) => {
       let key = '';
-      if (dimension === 'Region') {
+      if (dimension === 'Region' && sale.storeId) {
         key = stores.find(s => s.id === sale.storeId)?.region || 'Unknown';
-      } else if (dimension === 'Category') {
+      } else if (dimension === 'Category' && sale.productId) {
         key = products.find(p => p.id === sale.productId)?.category || 'Unknown';
+      } else {
+        const dimKey = dimension.toLowerCase();
+        // @ts-ignore
+        key = sale[dimKey] || sale[dimension] || 'Unknown';
       }
 
-      aggregation[key] = (aggregation[key] || 0) + sale[metric];
+      aggregation[key] = (aggregation[key] || 0) + (sale[metric] || 0);
     });
 
     return Object.entries(aggregation).map(([name, value]) => ({
