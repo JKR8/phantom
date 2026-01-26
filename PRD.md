@@ -229,6 +229,45 @@ Line chart supports hierarchy navigation:
 | Fields Pane (drag to chart axes) | 🔲 |
 | Add/remove visuals dynamically | 🔲 |
 
+#### User Stories & Interaction Rules
+
+**Story 2.1: Add Visual to Canvas**
+- **User Action:** Drags a visual icon (e.g., Bar Chart) from the "Visualizations" pane onto the canvas grid.
+- **System Behavior:**
+  - Visual appears at the drop coordinates.
+  - Default size is 4x4 grid units.
+  - If dropped on top of another visual, it finds the nearest empty space or pushes others down (vertical compaction).
+  - Visual is populated with default placeholder data (e.g., "Region" and "Sales") until configured.
+
+**Story 2.2: Move & Resize Visuals**
+- **User Action:** Drags the visual header to move; drags the bottom-right corner to resize.
+- **System Behavior:**
+  - Movement is constrained to the 12-column grid.
+  - Resizing snaps to 40px row height intervals.
+  - Visuals cannot be resized smaller than 2x2 units.
+  - "Shadow" placeholder shows the final position during drag.
+
+**Story 2.3: Remove Visual**
+- **User Action:** Clicks the "More Options" (...) icon in the visual header and selects "Delete".
+- **System Behavior:**
+  - Visual is immediately removed from the canvas.
+  - Store is updated; layout compacts vertically if "vertical compact" mode is enabled (optional for MVP).
+
+**Story 2.4: Configure Visual via Drag-and-Drop**
+- **User Action:** Drags a field (e.g., "Region") from the "Fields" pane and drops it onto a specific dropzone on the visual (e.g., "X-Axis" or "Legend").
+- **System Behavior:**
+  - Dropzone highlights when a compatible field is hovered over it.
+  - On drop, the visual re-queries the data engine with the new dimension/measure.
+  - Chart title updates to reflect the new field (e.g., "Sales by Region").
+
+**Story 2.5: Visual Selection & Focus**
+- **User Action:** Clicks on a visual's container (border or header).
+- **System Behavior:**
+  - Visual acquires a "Selected" state (blue border: `#0078D4`).
+  - The "Fields" pane updates to show the configuration slots for *that specific* visual (e.g., selected Bar Chart shows "X-Axis", "Y-Axis", "Legend" slots).
+  - Deselects any previously selected visual.
+
+
 ### Phase 3: "The Polish"
 **Goal:** Production-ready UI and sharing
 
