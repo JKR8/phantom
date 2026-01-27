@@ -1,0 +1,44 @@
+table Store
+	lineageTag: b1b2c3d4-e5f6-7890-abcd-ef0123456789
+
+	column store_id
+		dataType: int64
+		formatString: 0
+		lineageTag: bbbb0001-0000-0000-0000-000000000000
+		summarizeBy: none
+		sourceColumn: store_id
+
+	column store_name
+		dataType: string
+		lineageTag: bbbb0002-0000-0000-0000-000000000000
+		summarizeBy: none
+		sourceColumn: store_name
+
+	column region
+		dataType: string
+		lineageTag: bbbb0003-0000-0000-0000-000000000000
+		summarizeBy: none
+		sourceColumn: region
+
+	column state
+		dataType: string
+		lineageTag: bbbb0004-0000-0000-0000-000000000000
+		summarizeBy: none
+		sourceColumn: state
+
+	partition Store = m
+		mode: import
+		source =
+			let
+			    Source = #table(
+			        type table [store_id = Int64.Type, store_name = Text.Type, region = Text.Type, state = Text.Type],
+			        {
+			            {1, "Downtown Store", "East", "New York"},
+			            {2, "Westside Mall", "West", "California"},
+			            {3, "Northern Outlet", "North", "Illinois"},
+			            {4, "Southern Plaza", "South", "Texas"}
+			        }
+			    )
+			in
+			    Source
+

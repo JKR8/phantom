@@ -1,0 +1,34 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-AU
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 1
+
+annotation PBI_ProTooling = ["DevMode"]
+
+ref table Sale
+ref table Store
+ref table Product
+
+ref cultureInfo en-US
+
+relationship dddd0001-0000-0000-0000-000000000000
+	fromColumn: Sale.store_id
+	toColumn: Store.store_id
+	crossFilteringBehavior: oneDirection
+	fromCardinality: many
+	toCardinality: one
+	isActive: true
+
+relationship dddd0002-0000-0000-0000-000000000000
+	fromColumn: Sale.product_id
+	toColumn: Product.product_id
+	crossFilteringBehavior: oneDirection
+	fromCardinality: many
+	toCardinality: one
+	isActive: true
+
