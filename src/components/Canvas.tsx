@@ -1,10 +1,12 @@
 import React from 'react';
-import { ResponsiveGridLayout, useContainerWidth } from 'react-grid-layout';
+// @ts-ignore - @types/react-grid-layout is outdated for v2.2.2
+import { GridLayout, useContainerWidth } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import { makeStyles, shorthands } from '@fluentui/react-components';
 import { useStore } from '../store/useStore';
 import { VisualContainer } from './VisualContainer';
+import { currentDraggedVisualType } from './VisualizationsPane';
 import { BarChart } from './BarChart';
 import { DonutChart } from './DonutChart';
 import { KPICard } from './KPICard';
@@ -54,9 +56,21 @@ export const Canvas: React.FC = () => {
   const addItem = useStore((state) => state.addItem);
   const removeItem = useStore((state) => state.removeItem);
 
-  const handleDrop = (_layout: any, layoutItem: any, _event: any) => {
-    const visualType = _event.dataTransfer.getData('visualType');
+
+  const handleDrop = (_layout: any, item: any, e: any) => {
+    // Use the global dragged type since dataTransfer may not be accessible
+    const event = e?.nativeEvent || e;
+    const visualType = currentDraggedVisualType ||
+                       event?.dataTransfer?.getData?.('visualType') ||
+                       event?.dataTransfer?.getData?.('text/plain');
+
     if (!visualType) return;
+
+    // Get position from drop, default to 0,0 if not provided
+    const x = typeof item?.x === 'number' ? item.x : 0;
+    const y = typeof item?.y === 'number' ? item.y : 0;
+    const w = (typeof item?.w === 'number' && item.w >= 2) ? item.w : 4;
+    const h = (typeof item?.h === 'number' && item.h >= 2) ? item.h : 4;
 
     const id = `visual-${Date.now()}`;
     let props: any = {};
@@ -108,7 +122,7 @@ export const Canvas: React.FC = () => {
         title = 'Treemap';
         break;
       case 'card':
-        props = { metric: 'revenue', operation: 'sum', label: 'Revenue' };
+        props = { metric: 'revenue', operation: 'sum', label: 'KPI' };
         title = 'KPI';
         break;
       case 'multiRowCard':
@@ -139,9 +153,9 @@ export const Canvas: React.FC = () => {
 
     addItem({
       id,
-      type: visualType,
+      type: visualType as any,
       title,
-      layout: { x: layoutItem.x, y: layoutItem.y, w: 4, h: 4 },
+      layout: { x, y, w, h },
       props,
     });
   };
@@ -202,29 +216,39 @@ export const Canvas: React.FC = () => {
   };
 
   const onLayoutChange = (layout: any) => {
-    // We only update if mounted to avoid initial thrashing
     if (mounted) {
       updateLayout(layout);
     }
   };
 
   return (
-    <div className={styles.canvas} ref={containerRef as React.RefObject<HTMLDivElement>}>
-      {mounted && (
-        <ResponsiveGridLayout
+    <div 
+      className={styles.canvas} 
+      ref={containerRef as React.RefObject<HTMLDivElement>}
+      onDragOver={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          e.dataTransfer.dropEffect = 'copy';
+      }}
+    >
+      {mounted && width > 0 && (
+        <GridLayout
           className="layout"
-          layouts={{ lg: generateLayout(), md: generateLayout(), sm: generateLayout() }}
-          breakpoints={{ lg: 1200, md: 900, sm: 600 }}
-          cols={{ lg: GRID_COLS, md: GRID_COLS, sm: 6 }}
-          rowHeight={ROW_HEIGHT}
+          layout={generateLayout()}
           width={width}
-          margin={[12, 12]}
-          containerPadding={[12, 12]}
+          gridConfig={{
+            cols: GRID_COLS,
+            rowHeight: ROW_HEIGHT,
+            margin: [12, 12],
+            containerPadding: [12, 12]
+          }}
           dragConfig={{ handle: '.visual-header' }}
           resizeConfig={{ enabled: true }}
+          dropConfig={{
+            enabled: true,
+            defaultItem: { w: 4, h: 4 }
+          }}
           onLayoutChange={onLayoutChange}
-          // @ts-ignore
-          isDroppable={true}
           onDrop={handleDrop}
         >
           {items.map((item) => (
@@ -234,7 +258,7 @@ export const Canvas: React.FC = () => {
               </VisualContainer>
             </div>
           ))}
-        </ResponsiveGridLayout>
+        </GridLayout>
       )}
     </div>
   );
