@@ -1,0 +1,245 @@
+# Phantom Goals
+
+## Vision
+Curated Standards for Power BI delivery. Phantom is a standards-driven prototyping tool that enforces repeatable, consultancy-grade dashboard outcomes. Pick a scenario, drop visuals, get an instantly professional result — then export a real PBIP project.
+
+**Core loop:** Drop → Auto-populate → Shape → Refine → Export
+
+---
+
+## Epic 1: Standards Pack (v1)
+**Goal:** A locked set of opinionated defaults that govern every new visual — the core product, not a nice-to-have
+
+A Standards Pack is what turns Phantom from "a grid with charts" into "curated consultancy delivery."
+
+### 1a. Grid & Spacing Rules
+- [x] 24-column snap grid with 40px row height
+- [x] Snap-to-grid on drag and resize
+- [ ] Enforce minimum gutter between visuals (e.g. 8px)
+- [ ] Enforce minimum visual size (e.g. 3x2 grid units)
+- [ ] Consistent padding inside visual containers
+
+### 1b. Typography Scale
+- [ ] Define title size hierarchy (page title > visual title > axis labels > data labels)
+- [ ] Set KPI card prominence rules (large number, small label)
+- [ ] Enforce axis label sizing per visual type
+- [ ] Consistent font family and weight rules
+
+### 1c. Color & Accessibility
+- [x] 9 color palettes (PBI Default, Ocean, Forest, Sunset, Mono, Corporate, Zebra, Social, Portfolio)
+- [x] Real-time palette switching
+- [ ] WCAG AA contrast enforcement on all palette/background combinations
+- [ ] Colorblind-safe validation for palette selections
+- [ ] Consistent semantic colors (positive=green, negative=red, neutral=grey)
+
+### 1d. Visual Defaults
+- [ ] Default sorting per visual type (value desc for bar/column, chronological for line)
+- [ ] Default data labels on/off per visual type
+- [ ] Default number formatting rules (K/M for large values, % for rates, 1dp for averages)
+- [ ] Default legend placement per visual type
+- [ ] Default "Show Other" bucket when Top N < All
+
+### 1e. Layout Archetypes
+- [ ] Define 3 layout archetypes: Executive Summary / Diagnostic / Operational
+- [ ] Executive: KPI row → main trend → supporting breakdown
+- [ ] Diagnostic: filters → comparison charts → detail table
+- [ ] Operational: dense KPIs → multi-chart grid → action list
+- [ ] Map each template to its natural archetype
+
+---
+
+## Epic 2: Drop → Auto-populate → Shape → Refine
+**Goal:** When a consultant drops a visual, it should instantly look workshop-ready
+
+### 2a. Drop Behavior (must be instant)
+- [x] Drag visual type from Visualizations Pane onto canvas
+- [x] Snap to valid grid slot
+- [x] Auto-populate with scenario data
+- [ ] Bind to best available fields using semantic roles (see Epic 3)
+- [ ] Render with Standards Pack defaults (sorting, labels, formatting)
+
+### 2b. Quick Shape Strip
+A minimal inline control strip that appears on drop — not a modal, not the full Properties Panel.
+
+**Bar/Column Quick Shape:**
+- [ ] Bars control: 2 | 5 | 10 | All (Top N by selected measure + optional "Other" bucket)
+- [ ] Breakdown dropdown: recommended dimensions from scenario (Category → Product → Store, etc.)
+- [ ] Measure dropdown: recommended measures from scenario (Revenue / Profit / Quantity, etc.)
+- [ ] Sort toggle: value desc (default) / asc / alpha
+- [ ] "Show Other" toggle: on/off when Bars < All
+
+**Card Quick Shape:**
+- [ ] Measure dropdown
+- [ ] Aggregation: Sum | Avg | Count | Min | Max
+- [ ] Format: auto | K | M | % | #,##0
+
+**Line/Area Quick Shape:**
+- [ ] Time grain: Day | Week | Month | Quarter | Year
+- [ ] Measure dropdown
+- [ ] Comparison: None | PL | PY | Both
+
+**Table Quick Shape:**
+- [ ] Column picker (multi-select from scenario fields)
+- [ ] Row limit: 10 | 25 | 50 | All
+
+### 2c. Refine (Properties Panel — existing, extend)
+- [x] Title editing
+- [x] Dimension/metric binding
+- [ ] Subtitle/description field
+- [ ] Axis label density control
+- [ ] Data labels on/off toggle
+- [ ] Legend placement (top / bottom / right / none)
+- [ ] Conditional formatting presets (e.g. red/green for variance)
+- [ ] Number format override (K/M/%/#,##0)
+
+---
+
+## Epic 3: Semantic Layer (Field Binding Recipes)
+**Goal:** Thin metadata layer so auto-population is consistently good, not random
+
+### 3a. Semantic Roles
+Tag every field in every scenario with a role so Phantom knows what to bind where.
+
+- [ ] Define role taxonomy: Time | Entity | Geography | Category | Measure | Identifier
+- [ ] Tag Retail fields (Date→Time, Store→Entity, Region→Geography, Category→Category, Revenue→Measure, etc.)
+- [ ] Tag SaaS fields (Date→Time, Customer→Entity, Region→Geography, Tier→Category, MRR→Measure, etc.)
+- [ ] Tag HR fields (Employee→Entity, Department→Category, Salary→Measure, Rating→Measure, etc.)
+- [ ] Tag Logistics fields (Date→Time, Origin→Geography, Carrier→Entity, Cost→Measure, etc.)
+- [ ] Tag Portfolio fields (Entity→Entity, Sector→Category, Region→Geography, MarketValue→Measure, etc.)
+- [ ] Tag Social fields (same as Retail base)
+
+### 3b. Binding Recipes (per visual type)
+Each visual type gets a recipe that picks defaults from available roles.
+
+- [ ] Bar/Column recipe: Category axis → best Category role (fallback Geography → Entity), Value → primary measure, Bars → 5, Sort → value desc
+- [ ] Line/Area recipe: X-axis → Time role, Value → primary measure, auto-detect grain
+- [ ] Pie/Donut recipe: Slices → best Category role, Value → primary measure, max 6 slices + Other
+- [ ] Card recipe: Value → primary measure, Aggregation → Sum
+- [ ] Table recipe: Columns → Entity + top 3 measures, Rows → 25
+- [ ] Funnel recipe: Stages → Category role, Value → primary measure
+- [ ] Scatter recipe: X → primary measure, Y → secondary measure, Size → tertiary measure
+- [ ] Treemap recipe: Group → Category role, Size → primary measure
+- [ ] Matrix recipe: Rows → Category, Columns → Time, Values → primary measure
+
+### 3c. Recommended Fields Lists
+- [ ] Per scenario, define ordered "recommended dimensions" list (best → fallback)
+- [ ] Per scenario, define ordered "recommended measures" list (primary → secondary → tertiary)
+- [ ] Surface these lists in Quick Shape dropdowns and Fields Pane
+
+---
+
+## Epic 4: Slot-Based Layouts
+**Goal:** Standards-driven layout that goes beyond grid snap — visuals land in predefined slots
+
+### 4a. Layout Mode Toggle
+- [ ] Add "Standard Layout" / "Free Layout" toggle to canvas toolbar
+- [ ] Free Layout = current behavior (grid snap, free placement)
+- [ ] Standard Layout = predefined slot regions that visuals snap into
+
+### 4b. Slot Definitions
+- [ ] Define slot regions per archetype:
+  - **Executive:** Header KPIs (row 0-2) → Main Trend (row 2-8) → Supporting Breakdown (row 8-13)
+  - **Diagnostic:** Filter Bar (row 0-2) → Comparison Charts (row 2-8) → Detail Table (row 8-14)
+  - **Operational:** Dense KPIs (row 0-3) → Multi-chart Grid (row 3-10) → Action List (row 10-14)
+- [ ] Visual highlight on slot regions during drag
+- [ ] Auto-size visual to fill the slot it's dropped into
+- [ ] Allow slot overflow (visual spans two slots) in Free Layout
+
+### 4c. Benefits
+Slots solve: alignment perfection, consistent spacing, "it always looks pro," predictable exports.
+
+---
+
+## Epic 5: Data Engine
+**Goal:** Generate DAX-powered sample data instantly in star schema format
+
+### Tasks
+- [x] Design star schema template architecture
+- [x] Build fact table generator with configurable dimensions
+- [x] Create dimension table auto-generation (Date, Product, Customer, etc.)
+- [ ] Implement DAX measure library for common calculations
+- [ ] Build realistic data distribution algorithms
+- [x] Create industry-specific data profiles (6 scenarios)
+- [x] Export to Power BI (PBIP) with relationships intact
+
+---
+
+## Epic 6: Scenario Template Library
+**Goal:** 5-8 well-curated industry scenario templates with standard data models
+
+### Tasks
+- [x] Identify 5-8 target industries/scenarios
+- [x] Design standard scenario data model schema
+- [x] Build template 1: Retail (Sales)
+- [x] Build template 2: SaaS (Marketing)
+- [x] Build template 3: HR (Attrition)
+- [x] Build template 4: Logistics (Supply Chain)
+- [x] Build template 5: Finance (P&L / Waterfall)
+- [x] Build templates 6-8: IBCS (Zebra), Social, Portfolio
+- [ ] Test PBIP export workflow for all templates
+- [ ] Document template usage
+- [ ] Map each template to a layout archetype (Epic 4)
+
+---
+
+## Epic 7: FFMA Reporting Language
+**Goal:** Custom reporting language for mockups within FFMA
+
+### Tasks
+- [ ] Define FFMA reporting language syntax
+- [ ] Build language parser
+- [x] Create side folder container structure
+- [ ] Implement exportable data model integration
+- [ ] Write language documentation
+- [ ] Build example mockups
+
+---
+
+## Epic 8: Chart Editing System
+**Goal:** Individual chart customization for titles, sections, and values
+
+### Tasks
+- [x] Build chart title editing UI
+- [ ] Build section editing capability
+- [ ] Build value editing/override system
+- [ ] Ensure edits persist across data refreshes
+- [ ] Handle undo/redo for edits
+
+---
+
+## Next Sprint: "Drop → Shape → Refine" for 6 Core Visuals
+
+**Sprint goal:** A consultant can drop any of the 6 core visuals onto the canvas and get a workshop-ready result with minimal shaping.
+
+### Deliverables
+- [ ] Semantic roles for all 6 scenarios (Epic 3a)
+- [ ] Binding recipes for Bar, Column, Line, Pie, Card, Table (Epic 3b)
+- [ ] Top N / Bars control with "Other" bucket (Epic 2b)
+- [ ] Breakdown selector with recommended dims list (Epic 2b + 3c)
+- [ ] Measure selector with recommended measures list (Epic 2b + 3c)
+- [ ] Quick Shape strip UI for bar/column (Epic 2b)
+- [ ] Slot layouts for Executive + Diagnostic archetypes (Epic 4b)
+- [ ] Fields Pane → drag to axes (existing TODO from PRD)
+
+### Acceptance Test
+In a live workshop, a consultant can:
+1. Pick Retail scenario
+2. Drag in Bar chart → instantly shows "Top 5 Categories by Revenue"
+3. Click Bars: 2 → instantly shows top 2 categories + Other
+4. Switch Breakdown from Category → Store → it still looks sane
+5. Export to PBIP and open in Desktop with the same structure
+
+---
+
+## Success Metrics
+- [ ] Standards Pack enforced on every new visual by default
+- [ ] Drop → workshop-ready result with zero configuration
+- [ ] Quick Shape strip enables "2 bars vs 5 bars" in one click
+- [ ] Semantic roles drive consistent auto-binding across all scenarios
+- [ ] Slot layouts produce alignment-perfect dashboards
+- [ ] Data engine generates valid star schema in <30 seconds
+- [x] 5+ industry templates complete and exportable
+- [ ] FFMA reporting language documented and functional
+- [x] Widgets auto-populate from scenario data models
+- [ ] All chart types individually editable
+- [ ] Acceptance test passes: Retail → Bar → Top 5 → reshape → export → opens in Desktop
