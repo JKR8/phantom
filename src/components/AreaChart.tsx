@@ -13,13 +13,18 @@ import { useThemeStore } from '../store/useThemeStore';
 
 interface AreaChartProps {
   metric: 'revenue' | 'profit';
+  manualData?: Array<{ label: string; value: number }>;
 }
 
-export const AreaChart: React.FC<AreaChartProps> = ({ metric }) => {
+export const AreaChart: React.FC<AreaChartProps> = ({ metric, manualData }) => {
   const filteredSales = useFilteredSales();
   const { getColor } = useThemeStore();
 
   const data = useMemo(() => {
+    if (manualData && manualData.length > 0) {
+      return manualData.map((d) => ({ date: d.label, value: d.value }));
+    }
+
     const aggregation: Record<string, number> = {};
 
     filteredSales.forEach((sale) => {
@@ -36,7 +41,7 @@ export const AreaChart: React.FC<AreaChartProps> = ({ metric }) => {
         value: Math.round(value),
       }))
       .sort((a, b) => a.date.localeCompare(b.date));
-  }, [filteredSales, metric]);
+  }, [manualData, filteredSales, metric]);
 
   const formatDate = (dateStr: any) => {
     if (typeof dateStr !== 'string') return '';

@@ -15,30 +15,33 @@ import { useThemeStore } from '../store/useThemeStore';
 interface ScatterChartProps {
   xMetric: 'revenue' | 'profit' | 'quantity';
   yMetric: 'revenue' | 'profit' | 'quantity';
+  manualData?: Array<{ label: string; value: number }>;
 }
 
-export const ScatterChart: React.FC<ScatterChartProps> = ({ xMetric = 'revenue', yMetric = 'profit' }) => {
+export const ScatterChart: React.FC<ScatterChartProps> = ({ xMetric = 'revenue', yMetric = 'profit', manualData }) => {
   const filteredSales = useFilteredSales();
   const { getColor } = useThemeStore();
 
   const data = useMemo(() => {
+    if (manualData && manualData.length > 0) {
+      return manualData.map((d, i) => ({ x: d.value, y: d.value, name: d.label || `Point ${i}` }));
+    }
+
     // For scatter, we'll aggregate by Store to give meaningful points
     // Otherwise 10k points is too much and just transactions
     const aggregation: Record<string, { x: number; y: number; name: string }> = {};
 
     filteredSales.forEach((sale) => {
-      // Assuming we have store context available in sales, but let's check
-      // We have storeId.
       const key = sale.storeId;
       if (!aggregation[key]) {
-        aggregation[key] = { x: 0, y: 0, name: key }; // We don't have store name easily here without lookup, just use ID or we need to access store store
+        aggregation[key] = { x: 0, y: 0, name: key };
       }
       aggregation[key].x += sale[xMetric];
       aggregation[key].y += sale[yMetric];
     });
 
     return Object.values(aggregation);
-  }, [filteredSales, xMetric, yMetric]);
+  }, [manualData, filteredSales, xMetric, yMetric]);
 
   return (
     <ResponsiveContainer width="100%" height="100%">

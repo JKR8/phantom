@@ -30,6 +30,18 @@ export const PALETTES: ColorPalette[] = [
     name: 'Corporate',
     colors: ['#003366', '#006699', '#0099CC', '#00CCFF', '#336699', '#6699CC', '#99CCFF', '#CCE5FF'],
   },
+  {
+    name: 'Zebra (IBCS)',
+    colors: ['#333333', '#999999', '#D0021B', '#417505', '#000000', '#CCCCCC', '#FFFFFF', '#000000'],
+  },
+  {
+    name: 'Social',
+    colors: ['#7B5EA7', '#26C6DA', '#FFB300', '#9575CD', '#4DD0E1', '#FF8A65', '#81C784', '#F06292'],
+  },
+  {
+    name: 'Portfolio',
+    colors: ['#D4A548', '#C08930', '#E5A645', '#EDBE6A', '#F5D79E', '#B87A2B', '#A66B1F', '#8B5A1B'],
+  },
 ];
 
 interface ThemeState {

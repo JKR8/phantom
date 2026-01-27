@@ -15,9 +15,10 @@ import { useThemeStore } from '../store/useThemeStore';
 interface StackedBarChartProps {
   dimension: 'Region' | 'Category';
   metric: 'revenue' | 'profit';
+  manualData?: Array<{ label: string; value: number }>;
 }
 
-export const StackedBarChart: React.FC<StackedBarChartProps> = ({ dimension, metric }) => {
+export const StackedBarChart: React.FC<StackedBarChartProps> = ({ dimension, metric, manualData }) => {
   const filteredSales = useFilteredSales();
   const stores = useStore((state) => state.stores);
   const products = useStore((state) => state.products);
@@ -26,6 +27,10 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({ dimension, met
   const { getColor, highlightColor } = useThemeStore();
 
   const data = useMemo(() => {
+    if (manualData && manualData.length > 0) {
+      return manualData.map((d) => ({ name: d.label, value: d.value }));
+    }
+
     const aggregation: Record<string, number> = {};
 
     filteredSales.forEach((sale) => {
@@ -43,7 +48,7 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({ dimension, met
       name,
       value: Math.round(value),
     })).sort((a, b) => b.value - a.value);
-  }, [filteredSales, dimension, metric, stores, products]);
+  }, [manualData, filteredSales, dimension, metric, stores, products]);
 
   const handleClick = (data: any) => {
     if (data && data.name) {

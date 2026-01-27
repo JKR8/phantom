@@ -7,83 +7,114 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Cell
+  Legend,
+  ReferenceLine,
+  LabelList
 } from 'recharts';
-import { useStore, useFilteredSales } from '../store/useStore';
-import { useThemeStore } from '../store/useThemeStore';
+import { useFilteredSales } from '../store/useStore';
 
 interface StackedColumnChartProps {
-  dimension: 'Region' | 'Category';
+  dimension: 'Region' | 'Category' | 'Month';
   metric: 'revenue' | 'profit';
+  manualData?: Array<{ label: string; value: number }>;
 }
 
-export const StackedColumnChart: React.FC<StackedColumnChartProps> = ({ dimension, metric }) => {
+export const StackedColumnChart: React.FC<StackedColumnChartProps> = ({ dimension: _dimension, metric, manualData }) => {
   const filteredSales = useFilteredSales();
-  const stores = useStore((state) => state.stores);
-  const products = useStore((state) => state.products);
-  const setFilter = useStore((state) => state.setFilter);
-  const activeFilters = useStore((state) => state.filters);
-  const { getColor, highlightColor } = useThemeStore();
 
   const data = useMemo(() => {
-    const aggregation: Record<string, number> = {};
+    if (manualData && manualData.length > 0) {
+      return manualData.map((d) => ({
+        name: d.label,
+        ac: d.value,
+        pl: 0,
+        variance: d.value,
+        variancePct: '0.0',
+      }));
+    }
 
-    filteredSales.forEach((sale) => {
-      let key = '';
-      if (dimension === 'Region') {
-        key = stores.find(s => s.id === sale.storeId)?.region || 'Unknown';
-      } else if (dimension === 'Category') {
-        key = products.find(p => p.id === sale.productId)?.category || 'Unknown';
-      }
+    // For IBCS style, show monthly comparison of AC vs PL
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthlyData: Record<string, { ac: number; pl: number }> = {};
 
-      aggregation[key] = (aggregation[key] || 0) + sale[metric];
+    // Initialize all months
+    months.forEach(m => {
+      monthlyData[m] = { ac: 0, pl: 0 };
     });
 
-    return Object.entries(aggregation).map(([name, value]) => ({
-      name,
-      value: Math.round(value),
-    })).sort((a, b) => b.value - a.value);
-  }, [filteredSales, dimension, metric, stores, products]);
+    filteredSales.forEach((sale) => {
+      const date = new Date(sale.date);
+      const month = months[date.getMonth()];
 
-  const handleClick = (data: any) => {
-    if (data && data.name) {
-      const currentFilter = activeFilters[dimension];
-      if (currentFilter === data.name) {
-        setFilter(dimension, null);
-      } else {
-        setFilter(dimension, data.name);
-      }
-    }
+      const acVal = sale[metric] || 0;
+      const plVal = sale[`${metric}PL`] || acVal * 0.95;
+
+      monthlyData[month].ac += acVal;
+      monthlyData[month].pl += plVal;
+    });
+
+    return months.map(month => {
+      const ac = monthlyData[month].ac;
+      const pl = monthlyData[month].pl;
+      const variance = ac - pl;
+      const variancePct = pl !== 0 ? ((ac - pl) / pl) * 100 : 0;
+
+      return {
+        name: month,
+        ac: Math.round(ac),
+        pl: Math.round(pl),
+        variance: Math.round(variance),
+        variancePct: variancePct.toFixed(1),
+      };
+    });
+  }, [manualData, filteredSales, metric]);
+
+  const formatValue = (value: number) => {
+    if (Math.abs(value) >= 1000000) return `${(value / 1000000).toFixed(0)}M`;
+    if (Math.abs(value) >= 1000) return `${(value / 1000).toFixed(0)}K`;
+    return value.toString();
   };
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <ReBarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }} onClick={(e: any) => {
-        if (e && e.activePayload) {
-          handleClick(e.activePayload[0].payload);
-        }
-      }}>
-        <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={true} />
-        <XAxis 
-          dataKey="name" 
-          tick={{ fontSize: 10 }}
+      <ReBarChart data={data} margin={{ top: 20, right: 20, left: 10, bottom: 5 }} barGap={0} barCategoryGap="20%">
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#edebe9" />
+        <XAxis
+          dataKey="name"
+          tick={{ fontSize: 9, fill: '#605E5C' }}
+          axisLine={{ stroke: '#edebe9' }}
+          tickLine={false}
         />
         <YAxis
-          tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
-          tick={{ fontSize: 10 }}
+          tickFormatter={(value) => formatValue(value)}
+          tick={{ fontSize: 9, fill: '#605E5C' }}
+          axisLine={false}
+          tickLine={false}
         />
         <Tooltip
-          formatter={(value: any) => `$${Number(value).toLocaleString()}`}
-          contentStyle={{ fontSize: '12px' }}
+          formatter={(value: any, name: any) => [`$${Number(value).toLocaleString()}`, name === 'ac' ? 'Actual' : 'Plan']}
+          contentStyle={{ fontSize: '11px', borderRadius: '4px', border: '1px solid #edebe9' }}
         />
-        <Bar dataKey="value" stackId="a" radius={[4, 4, 0, 0]}>
-          {data.map((entry, index) => (
-            <Cell
-              key={`cell-${index}`}
-              fill={activeFilters[dimension] === entry.name ? highlightColor : getColor(index)}
-              style={{ cursor: 'pointer' }}
-            />
-          ))}
+        <Legend
+          formatter={(value) => value === 'ac' ? 'AC' : 'PL'}
+          wrapperStyle={{ fontSize: '10px' }}
+        />
+        <ReferenceLine y={0} stroke="#323130" />
+        <Bar dataKey="pl" fill="#999999" name="pl" radius={[2, 2, 0, 0]} />
+        <Bar dataKey="ac" fill="#323130" name="ac" radius={[2, 2, 0, 0]}>
+          <LabelList
+            dataKey="variancePct"
+            position="top"
+            formatter={(val: any) => {
+              const num = parseFloat(String(val));
+              return num >= 0 ? `+${val}%` : `${val}%`;
+            }}
+            style={{
+              fontSize: '8px',
+              fontWeight: 'bold',
+              fill: '#323130',
+            }}
+          />
         </Bar>
       </ReBarChart>
     </ResponsiveContainer>

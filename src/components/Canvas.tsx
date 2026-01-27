@@ -6,7 +6,7 @@ import 'react-resizable/css/styles.css';
 import { makeStyles, shorthands } from '@fluentui/react-components';
 import { useStore } from '../store/useStore';
 import { VisualContainer } from './VisualContainer';
-import { currentDraggedVisualType } from './VisualizationsPane';
+import { dragState } from './VisualizationsPane';
 import { BarChart } from './BarChart';
 import { DonutChart } from './DonutChart';
 import { KPICard } from './KPICard';
@@ -25,24 +25,31 @@ import { GaugeChart } from './GaugeChart';
 import { MultiRowCard } from './MultiRowCard';
 import { Matrix } from './Matrix';
 import { WaterfallChart } from './WaterfallChart';
+// Portfolio-specific components
+import {
+  ControversyBarChart,
+  EntitySourceTable,
+  ControversyDetailTable,
+  PortfolioKPICard,
+  PortfolioHeader,
+  DateRangePicker,
+  PortfolioHeaderBar,
+  ControversyBottomPanel,
+  JustificationSearch,
+  PortfolioKPICards,
+} from './portfolio';
 
-const GRID_COLS = 12;
+const GRID_COLS = 24;
 const ROW_HEIGHT = 40;
 
 const useStyles = makeStyles({
   canvas: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#E8E8E8',
     minHeight: '600px',
     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
     ...shorthands.margin('0', 'auto'),
     width: '100%',
     position: 'relative',
-    backgroundImage: `
-      linear-gradient(to right, #f0f0f0 1px, transparent 1px),
-      linear-gradient(to bottom, #f0f0f0 1px, transparent 1px)
-    `,
-    backgroundSize: `calc(100% / ${GRID_COLS}) ${ROW_HEIGHT}px`,
-    backgroundPosition: '0 0',
     ...shorthands.borderRadius('4px'),
     ...shorthands.border('1px', 'solid', '#E1DFDD'),
   },
@@ -52,15 +59,18 @@ export const Canvas: React.FC = () => {
   const styles = useStyles();
   const { width, containerRef, mounted } = useContainerWidth();
   const items = useStore((state) => state.items);
+  const scenario = useStore((state) => state.scenario);
   const updateLayout = useStore((state) => state.updateLayout);
   const addItem = useStore((state) => state.addItem);
   const removeItem = useStore((state) => state.removeItem);
+  const selectedItemId = useStore((state) => state.selectedItemId);
+  const selectItem = useStore((state) => state.selectItem);
 
 
   const handleDrop = (_layout: any, item: any, e: any) => {
     // Use the global dragged type since dataTransfer may not be accessible
     const event = e?.nativeEvent || e;
-    const visualType = currentDraggedVisualType ||
+    const visualType = dragState.visualType ||
                        event?.dataTransfer?.getData?.('visualType') ||
                        event?.dataTransfer?.getData?.('text/plain');
 
@@ -69,10 +79,29 @@ export const Canvas: React.FC = () => {
     // Get position from drop, default to 0,0 if not provided
     const x = typeof item?.x === 'number' ? item.x : 0;
     const y = typeof item?.y === 'number' ? item.y : 0;
-    const w = (typeof item?.w === 'number' && item.w >= 2) ? item.w : 4;
-    const h = (typeof item?.h === 'number' && item.h >= 2) ? item.h : 4;
 
     const id = `visual-${Date.now()}`;
+
+    // If a pre-built config was dragged, use it directly
+    if (dragState.prebuiltConfig) {
+      const cfg = dragState.prebuiltConfig;
+      const w = cfg.w;
+      const h = cfg.h;
+      setTimeout(() => {
+        addItem({
+          id,
+          type: cfg.type as any,
+          title: cfg.title,
+          layout: { x, y, w, h },
+          props: { ...cfg.props },
+        });
+      }, 0);
+      return;
+    }
+
+    const w = (typeof item?.w === 'number' && item.w >= 2) ? item.w : 8;
+    const h = (typeof item?.h === 'number' && item.h >= 2) ? item.h : 4;
+
     let props: any = {};
     let title = 'New Visual';
 
@@ -149,15 +178,52 @@ export const Canvas: React.FC = () => {
         props = { dimension: 'Store' };
         title = 'Slicer';
         break;
+      // Portfolio / FFMA visuals
+      case 'controversyBar':
+        props = {};
+        title = 'Controversy Bar Chart';
+        break;
+      case 'entityTable':
+        props = {};
+        title = 'Entity Source Table';
+        break;
+      case 'controversyTable':
+        props = {};
+        title = 'Controversy Detail Table';
+        break;
+      case 'portfolioCard':
+        props = { metric: 'uniqueEntity', label: 'Unique Entity' };
+        title = 'Portfolio KPI';
+        break;
+      case 'portfolioHeaderBar':
+        props = {};
+        title = 'Portfolio Header';
+        break;
+      case 'controversyBottomPanel':
+        props = {};
+        title = 'Controversy Panel';
+        break;
+      case 'justificationSearch':
+        props = {};
+        title = 'Justification Search';
+        break;
+      case 'dateRangePicker':
+        props = {};
+        title = 'Date Range';
+        break;
     }
 
-    addItem({
-      id,
-      type: visualType as any,
-      title,
-      layout: { x, y, w, h },
-      props,
-    });
+    // Use setTimeout to let the grid finish its internal state update
+    // before adding the new item to prevent the red placeholder issue
+    setTimeout(() => {
+      addItem({
+        id,
+        type: visualType as any,
+        title,
+        layout: { x, y, w, h },
+        props,
+      });
+    }, 0);
   };
 
   const generateLayout = () => {
@@ -167,8 +233,11 @@ export const Canvas: React.FC = () => {
       y: item.layout.y,
       w: item.layout.w,
       h: item.layout.h,
-      minW: 2,
+      minW: 1,
       minH: 2,
+      isDraggable: true,
+      isResizable: true,
+      static: false,
     }));
   };
 
@@ -210,6 +279,26 @@ export const Canvas: React.FC = () => {
         return <WaterfallChart {...item.props} />;
       case 'slicer':
         return <Slicer {...item.props} />;
+      case 'controversyBar':
+        return <ControversyBarChart {...item.props} />;
+      case 'entityTable':
+        return <EntitySourceTable {...item.props} />;
+      case 'controversyTable':
+        return <ControversyDetailTable {...item.props} />;
+      case 'portfolioCard':
+        return <PortfolioKPICard {...item.props} />;
+      case 'portfolioHeader':
+        return <PortfolioHeader />;
+      case 'dateRangePicker':
+        return <DateRangePicker {...item.props} />;
+      case 'portfolioHeaderBar':
+        return <PortfolioHeaderBar />;
+      case 'controversyBottomPanel':
+        return <ControversyBottomPanel />;
+      case 'justificationSearch':
+        return <JustificationSearch />;
+      case 'portfolioKPICards':
+        return <PortfolioKPICards />;
       default:
         return <div>Unknown Visual</div>;
     }
@@ -221,10 +310,18 @@ export const Canvas: React.FC = () => {
     }
   };
 
+  const handleCanvasClick = (e: React.MouseEvent) => {
+    // Only deselect if clicking directly on the canvas background
+    if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('layout')) {
+      selectItem(null);
+    }
+  };
+
   return (
-    <div 
-      className={styles.canvas} 
+    <div
+      className={styles.canvas}
       ref={containerRef as React.RefObject<HTMLDivElement>}
+      onClick={handleCanvasClick}
       onDragOver={(e) => {
           e.preventDefault();
           e.stopPropagation();
@@ -243,21 +340,40 @@ export const Canvas: React.FC = () => {
             containerPadding: [12, 12]
           }}
           dragConfig={{ handle: '.visual-header' }}
-          resizeConfig={{ enabled: true }}
+          resizeConfig={{
+            enabled: true,
+            handles: ['se', 'sw', 'ne', 'nw', 'e', 'w', 'n', 's']
+          }}
           dropConfig={{
             enabled: true,
-            defaultItem: { w: 4, h: 4 }
+            defaultItem: { w: 8, h: 4 }
           }}
           onLayoutChange={onLayoutChange}
           onDrop={handleDrop}
         >
-          {items.map((item) => (
-            <div key={item.id}>
-              <VisualContainer title={item.title} onRemove={() => removeItem(item.id)}>
-                {renderVisual(item)}
-              </VisualContainer>
-            </div>
-          ))}
+          {items.map((item) => {
+            // Hide menu for slicers and search controls in Portfolio scenario
+            const hideMenu = scenario === 'Portfolio' && (item.type === 'slicer' || item.type === 'justificationSearch');
+            return (
+              <div key={item.id}>
+                {item.type === 'portfolioHeader' || item.type === 'portfolioHeaderBar' || item.type === 'controversyBottomPanel' || item.type === 'portfolioKPICards' ? (
+                  // These components render without visual container wrapper
+                  renderVisual(item)
+                ) : (
+                  <VisualContainer
+                    title={item.title}
+                    onRemove={() => removeItem(item.id)}
+                    hideMenu={hideMenu}
+                    isSelected={selectedItemId === item.id}
+                    onSelect={() => selectItem(item.id)}
+                    itemId={item.id}
+                  >
+                    {renderVisual(item)}
+                  </VisualContainer>
+                )}
+              </div>
+            );
+          })}
         </GridLayout>
       )}
     </div>

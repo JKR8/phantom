@@ -19,7 +19,11 @@ export interface Sale {
   date: string;
   quantity: number;
   revenue: number;
+  revenuePL: number; // Plan
+  revenuePY: number; // Previous Year
   profit: number;
+  profitPL: number;
+  profitPY: number;
 }
 
 export interface Customer {
@@ -34,6 +38,8 @@ export interface Subscription {
   customerId: string;
   date: string;
   mrr: number;
+  mrrPL: number;
+  mrrPY: number;
   churn: number; // 0 or 1 for boolean-like, or a value
   ltv: number;
 }
@@ -61,27 +67,66 @@ export interface Shipment {
   onTime: number; // 0 or 1
 }
 
-export type Scenario = 'Retail' | 'SaaS' | 'HR' | 'Logistics';
+// Portfolio Monitoring types
+export interface PortfolioEntity {
+  id: string;
+  name: string;
+  sector: string;
+  region: string;
+  marketValue: number;
+  sourceRegion: string;
+  source: string;
+  accountReportName: string;  // e.g. "Global Equity Fund"
+  accountCode: string;        // the "Acc" column (ID like "ACC001")
+}
 
-export type VisualType = 
-  | 'bar' 
-  | 'column' 
-  | 'stackedBar' 
-  | 'stackedColumn' 
-  | 'line' 
-  | 'area' 
-  | 'scatter' 
-  | 'pie' 
-  | 'donut' 
-  | 'treemap' 
-  | 'funnel' 
-  | 'gauge' 
-  | 'card' 
-  | 'multiRowCard' 
-  | 'table' 
-  | 'matrix' 
+export interface ControversyScore {
+  id: string;
+  entityId: string;
+  entityName: string;
+  category: string;
+  score: number;
+  previousScore: number;
+  scoreChange: number;
+  validFrom: string;
+  marketValue: number;
+  justification: string;
+  source: string;
+  region: string;
+  group: string; // For bar chart grouping (USA, EMEA, APAC, CEMAR, Gulf+, Basic Capital, etc.)
+}
+
+export type Scenario = 'Retail' | 'SaaS' | 'HR' | 'Logistics' | 'Social' | 'Portfolio';
+
+export type VisualType =
+  | 'bar'
+  | 'column'
+  | 'stackedBar'
+  | 'stackedColumn'
+  | 'line'
+  | 'area'
+  | 'scatter'
+  | 'pie'
+  | 'donut'
+  | 'treemap'
+  | 'funnel'
+  | 'gauge'
+  | 'card'
+  | 'multiRowCard'
+  | 'table'
+  | 'matrix'
   | 'waterfall'
-  | 'slicer';
+  | 'slicer'
+  | 'controversyBar'
+  | 'entityTable'
+  | 'controversyTable'
+  | 'portfolioCard'
+  | 'portfolioHeader'
+  | 'dateRangePicker'
+  | 'portfolioHeaderBar'
+  | 'controversyBottomPanel'
+  | 'justificationSearch'
+  | 'portfolioKPICards';
 
 export interface DashboardItem {
   id: string;
@@ -105,8 +150,11 @@ export interface DashboardState {
   subscriptions: Subscription[];
   employees: Employee[];
   shipments: Shipment[];
+  portfolioEntities: PortfolioEntity[];
+  controversyScores: ControversyScore[];
   filters: Record<string, any>;
   items: DashboardItem[];
+  selectedItemId: string | null;
   setScenario: (scenario: Scenario) => void;
   setFilter: (column: string, value: any) => void;
   clearFilters: () => void;
@@ -114,4 +162,7 @@ export interface DashboardState {
   removeItem: (id: string) => void;
   updateLayout: (layout: any[]) => void;
   loadTemplate: (templateName: string) => void;
+  selectItem: (id: string | null) => void;
+  updateItemProps: (id: string, props: any) => void;
+  updateItemTitle: (id: string, title: string) => void;
 }

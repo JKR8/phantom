@@ -18,10 +18,13 @@ import {
   AppsRegular,
   ShareRegular,
   ArrowDownloadRegular,
-  DocumentRegular
+  DocumentRegular,
+  ShieldRegular,
 } from '@fluentui/react-icons';
 import { FieldsPane } from './FieldsPane';
 import { VisualizationsPane } from './VisualizationsPane';
+import { PropertiesPanel } from './PropertiesPanel';
+import { FFMAPanel } from './FFMAPanel';
 import { useStore } from '../store/useStore';
 import { Templates } from '../store/templates';
 
@@ -91,6 +94,15 @@ const useStyles = makeStyles({
     flexShrink: 0,
     overflowY: 'auto',
   },
+  ffmaPane: {
+    width: '180px',
+    borderRight: `1px solid ${tokens.colorNeutralStroke2}`,
+    flexShrink: 0,
+    overflowY: 'auto',
+  },
+  navButtonActive: {
+    backgroundColor: '#D6D6D6',
+  },
   topButton: {
     color: 'white',
     ':hover': {
@@ -103,6 +115,8 @@ const useStyles = makeStyles({
 export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const styles = useStyles();
   const loadTemplate = useStore((state) => state.loadTemplate);
+  const selectedItemId = useStore((state) => state.selectedItemId);
+  const [showFFMA, setShowFFMA] = React.useState(false);
 
   return (
     <div className={styles.container}>
@@ -135,7 +149,19 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           <Button icon={<AddRegular />} appearance="subtle" />
           <Button icon={<DatabaseRegular />} appearance="subtle" />
           <Button icon={<AppsRegular />} appearance="subtle" />
+          <Button
+            icon={<ShieldRegular />}
+            appearance="subtle"
+            className={showFFMA ? styles.navButtonActive : undefined}
+            onClick={() => setShowFFMA(!showFFMA)}
+            title="FFMA Widgets"
+          />
         </nav>
+        {showFFMA && (
+          <div className={styles.ffmaPane}>
+            <FFMAPanel />
+          </div>
+        )}
         <div className={styles.centerArea}>
           <main className={styles.canvasArea}>
             {children}
@@ -145,7 +171,7 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           </div>
         </div>
         <div className={styles.rightPane}>
-          <FieldsPane />
+          {selectedItemId ? <PropertiesPanel /> : <FieldsPane />}
         </div>
       </div>
     </div>

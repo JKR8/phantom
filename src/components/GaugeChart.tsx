@@ -11,15 +11,19 @@ import { useThemeStore } from '../store/useThemeStore';
 interface GaugeChartProps {
   metric: 'revenue' | 'profit';
   target?: number;
+  manualData?: Array<{ label: string; value: number }>;
 }
 
-export const GaugeChart: React.FC<GaugeChartProps> = ({ metric, target = 2000000 }) => {
+export const GaugeChart: React.FC<GaugeChartProps> = ({ metric, target = 2000000, manualData }) => {
   const filteredSales = useFilteredSales();
   const { getColor } = useThemeStore();
 
   const value = useMemo(() => {
+    if (manualData && manualData.length > 0) {
+      return manualData[0].value;
+    }
     return filteredSales.reduce((acc, sale) => acc + (sale[metric] || 0), 0);
-  }, [filteredSales, metric]);
+  }, [manualData, filteredSales, metric]);
 
   // Gauge logic
   // We want to show the value relative to a target (max).

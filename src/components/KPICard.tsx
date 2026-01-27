@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import { makeStyles, shorthands, Text } from '@fluentui/react-components';
-import { useThemeStore } from '../store/useThemeStore';
 import { useFilteredSales } from '../store/useStore';
 
 const useStyles = makeStyles({
@@ -9,52 +8,145 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
+    ...shorthands.padding('8px', '12px'),
+    backgroundColor: 'white',
+  },
+  header: {
+    display: 'flex',
+    flexDirection: 'column',
     alignItems: 'center',
-    ...shorthands.padding('10px'),
+    marginBottom: '8px',
+  },
+  label: {
+    fontSize: '11px',
+    color: '#605E5C',
+    fontWeight: '500',
   },
   value: {
     fontSize: '32px',
     fontWeight: 'bold',
+    color: '#323130',
+    marginTop: '2px',
   },
-  label: {
-    fontSize: '14px',
+  footer: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+  },
+  varianceRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    fontSize: '11px',
+  },
+  dot: {
+    width: '8px',
+    height: '8px',
+    ...shorthands.borderRadius('50%'),
+    flexShrink: 0,
+  },
+  dotPositive: {
+    backgroundColor: '#107C10',
+  },
+  dotNegative: {
+    backgroundColor: '#A4262C',
+  },
+  variancePercent: {
+    fontWeight: '600',
+    minWidth: '45px',
+  },
+  varianceAbsolute: {
     color: '#605E5C',
+    fontSize: '10px',
+  },
+  positive: {
+    color: '#107C10',
+  },
+  negative: {
+    color: '#A4262C',
   }
 });
 
 interface KPICardProps {
   value?: string | number;
   label: string;
-  metric?: 'revenue' | 'profit' | 'quantity';
+  metric?: 'revenue' | 'profit' | 'quantity' | 'mrr' | 'ltv';
   operation?: 'sum' | 'avg';
   colorIndex?: number;
+  manualData?: Array<{ label: string; value: number }>;
 }
 
-export const KPICard: React.FC<KPICardProps> = ({ value: explicitValue, label, metric, operation = 'sum', colorIndex = 0 }) => {
+export const KPICard: React.FC<KPICardProps> = ({ value: explicitValue, label, metric, operation = 'sum', manualData }) => {
   const styles = useStyles();
-  const { getColor } = useThemeStore();
-  const filteredSales = useFilteredSales();
+  const filteredData = useFilteredSales();
 
-  const computedValue = useMemo(() => {
-    if (explicitValue !== undefined) return explicitValue;
-    if (!metric) return 0;
+  const stats = useMemo(() => {
+    if (!metric) return null;
+    if (filteredData.length === 0) return null;
 
-    if (filteredSales.length === 0) return '$0';
+    const acSum = filteredData.reduce((acc, item) => acc + (item[metric] || 0), 0);
+    
+    // Attempt to get PL and PY fields
+    const plKey = `${metric}PL`;
+    const pyKey = `${metric}PY`;
+    
+    const plSum = filteredData.reduce((acc, item) => acc + (item[plKey] || item[metric] * 0.95 || 0), 0);
+    const pySum = filteredData.reduce((acc, item) => acc + (item[pyKey] || item[metric] * 0.9 || 0), 0);
 
-    const sum = filteredSales.reduce((acc, sale) => acc + (sale[metric] || 0), 0);
-    const result = operation === 'avg' ? sum / filteredSales.length : sum;
+    const ac = operation === 'avg' ? acSum / filteredData.length : acSum;
+    const pl = operation === 'avg' ? plSum / filteredData.length : plSum;
+    const py = operation === 'avg' ? pySum / filteredData.length : pySum;
 
-    // Formatting
-    if (result >= 1000) {
-      return `$${(result / 1000).toFixed(1)}K`;
-    }
-    return `$${result.toFixed(0)}`;
-  }, [explicitValue, metric, operation, filteredSales]);
+    const varPY = ac - py;
+    const varPYPct = py !== 0 ? (varPY / py) * 100 : 0;
+    
+    const varPL = ac - pl;
+    const varPLPct = pl !== 0 ? (varPL / pl) * 100 : 0;
+
+    return { ac, py, pl, varPY, varPYPct, varPL, varPLPct };
+  }, [metric, operation, filteredData]);
+
+  const formatValue = (val: number) => {
+    if (Math.abs(val) >= 1000000) return `${(val / 1000000).toFixed(1)}M`;
+    if (Math.abs(val) >= 1000) return `${(val / 1000).toFixed(1)}K`;
+    return val.toFixed(0);
+  };
+
+  const manualValue = manualData && manualData.length > 0 ? manualData[0].value : undefined;
+
+  if (!stats && explicitValue === undefined && manualValue === undefined) return <div>No Data</div>;
+
+  const displayValue = manualValue !== undefined ? formatValue(manualValue) : explicitValue !== undefined ? explicitValue : formatValue(stats!.ac);
 
   return (
     <div className={styles.container}>
-      <Text className={styles.value} style={{ color: getColor(colorIndex) }}>{computedValue}</Text>
-      <Text className={styles.label}>{label}</Text>
+      <div className={styles.header}>
+        <Text className={styles.label}>{label}</Text>
+        <Text className={styles.value}>{displayValue}</Text>
+      </div>
+      
+      {stats && (
+        <div className={styles.footer}>
+          <div className={styles.varianceRow}>
+            <div className={`${styles.dot} ${stats.varPY >= 0 ? styles.dotPositive : styles.dotNegative}`} />
+            <span className={`${styles.variancePercent} ${stats.varPY >= 0 ? styles.positive : styles.negative}`}>
+              {stats.varPY >= 0 ? '+' : ''}{stats.varPYPct.toFixed(1)}%
+            </span>
+            <span className={styles.varianceAbsolute}>
+              |{stats.varPY >= 0 ? '+' : ''}{formatValue(stats.varPY)} ΔPY
+            </span>
+          </div>
+          <div className={styles.varianceRow}>
+            <div className={`${styles.dot} ${stats.varPL >= 0 ? styles.dotPositive : styles.dotNegative}`} />
+            <span className={`${styles.variancePercent} ${stats.varPL >= 0 ? styles.positive : styles.negative}`}>
+              {stats.varPL >= 0 ? '+' : ''}{stats.varPLPct.toFixed(1)}%
+            </span>
+            <span className={styles.varianceAbsolute}>
+              |{stats.varPL >= 0 ? '+' : ''}{formatValue(stats.varPL)} ΔPL
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

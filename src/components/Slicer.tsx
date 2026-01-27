@@ -11,15 +11,27 @@ const useStyles = makeStyles({
   container: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '8px',
-    padding: '12px',
+    gap: '2px',
+    ...shorthands.padding('4px', '6px'),
     height: '100%',
+    width: '100%',
+    justifyContent: 'center',
     ...shorthands.overflow('hidden'),
+    boxSizing: 'border-box',
   },
   label: {
-    fontSize: '12px',
+    fontSize: '10px',
     fontWeight: 600,
     color: '#605E5C',
+    lineHeight: '1.2',
+    ...shorthands.overflow('hidden'),
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  dropdown: {
+    width: '100%',
+    minWidth: 0,
+    maxWidth: '100%',
   },
 });
 
@@ -67,6 +79,18 @@ export const Slicer: React.FC<SlicerProps> = ({ dimension, title }) => {
         else if (dimension === 'Origin') rawOptions = Array.from(new Set(shipments.map(s => s.origin)));
         else if (dimension === 'Destination') rawOptions = Array.from(new Set(shipments.map(s => s.destination)));
     }
+    // Portfolio
+    else if (scenario === 'Portfolio') {
+        const portfolioEntities = useStore.getState().portfolioEntities;
+        const controversyScores = useStore.getState().controversyScores;
+        if (dimension === 'Region') rawOptions = Array.from(new Set(portfolioEntities.map(e => e.region)));
+        else if (dimension === 'Sector') rawOptions = Array.from(new Set(portfolioEntities.map(e => e.sector)));
+        else if (dimension === 'Category') rawOptions = Array.from(new Set(controversyScores.map(c => c.category)));
+        else if (dimension === 'Score') rawOptions = ['1', '2', '3', '4', '5'];
+        else if (dimension === 'ChangeDirection') rawOptions = ['Increase', 'Decrease', 'No Change'];
+        else if (dimension === 'Source') rawOptions = Array.from(new Set(portfolioEntities.map(e => e.source)));
+        else if (dimension === 'Group') rawOptions = Array.from(new Set(controversyScores.map(c => c.group)));
+    }
 
     if (rawOptions.length === 0) {
         // Fallback for generic property matching if not explicitly mapped above
@@ -98,10 +122,12 @@ export const Slicer: React.FC<SlicerProps> = ({ dimension, title }) => {
       {title && <label className={styles.label} htmlFor={dropdownId}>{title}</label>}
       <Dropdown
         aria-labelledby={dropdownId}
-        placeholder={`Select ${dimension}...`}
+        placeholder="All"
         value={activeFilters[dimension] || ''}
         onOptionSelect={handleSelect}
         clearable
+        size="small"
+        className={styles.dropdown}
       >
         {options.map((option) => (
           <Option key={option} value={option}>

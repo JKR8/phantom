@@ -13,9 +13,10 @@ import { useThemeStore } from '../store/useThemeStore';
 interface DonutChartProps {
   dimension: 'Region' | 'Category';
   metric: 'revenue' | 'profit';
+  manualData?: Array<{ label: string; value: number }>;
 }
 
-export const DonutChart: React.FC<DonutChartProps> = ({ dimension, metric }) => {
+export const DonutChart: React.FC<DonutChartProps> = ({ dimension, metric, manualData }) => {
   const filteredSales = useFilteredSales();
   const stores = useStore((state) => state.stores);
   const products = useStore((state) => state.products);
@@ -24,6 +25,10 @@ export const DonutChart: React.FC<DonutChartProps> = ({ dimension, metric }) => 
   const { getColor, highlightColor } = useThemeStore();
 
   const data = useMemo(() => {
+    if (manualData && manualData.length > 0) {
+      return manualData.map((d) => ({ name: d.label, value: d.value }));
+    }
+
     const aggregation: Record<string, number> = {};
 
     filteredSales.forEach((sale) => {
@@ -45,7 +50,7 @@ export const DonutChart: React.FC<DonutChartProps> = ({ dimension, metric }) => 
       name,
       value: Math.round(value),
     }));
-  }, [filteredSales, dimension, metric, stores, products]);
+  }, [manualData, filteredSales, dimension, metric, stores, products]);
 
   const handleClick = (data: any) => {
     if (data && data.name) {

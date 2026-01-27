@@ -10,6 +10,7 @@ import { useThemeStore } from '../store/useThemeStore';
 interface TreemapProps {
   dimension: 'Region' | 'Category';
   metric: 'revenue' | 'profit';
+  manualData?: Array<{ label: string; value: number }>;
 }
 
 const CustomContent = (props: any) => {
@@ -40,13 +41,17 @@ const CustomContent = (props: any) => {
     );
   };
 
-export const Treemap: React.FC<TreemapProps> = ({ dimension, metric }) => {
+export const Treemap: React.FC<TreemapProps> = ({ dimension, metric, manualData }) => {
   const filteredSales = useFilteredSales();
   const stores = useStore((state) => state.stores);
   const products = useStore((state) => state.products);
   const { getColor } = useThemeStore();
 
   const data = useMemo(() => {
+    if (manualData && manualData.length > 0) {
+      return manualData.map((d) => ({ name: d.label, value: d.value })).sort((a, b) => b.value - a.value);
+    }
+
     const aggregation: Record<string, number> = {};
 
     filteredSales.forEach((sale) => {
@@ -66,7 +71,7 @@ export const Treemap: React.FC<TreemapProps> = ({ dimension, metric }) => {
             value: Math.round(value),
         }))
         .sort((a, b) => b.value - a.value);
-  }, [filteredSales, dimension, metric, stores, products]);
+  }, [manualData, filteredSales, dimension, metric, stores, products]);
   
   // Create an array of colors
   const colors = [0,1,2,3,4,5].map(i => getColor(i));
