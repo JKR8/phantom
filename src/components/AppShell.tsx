@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   makeStyles,
   shorthands,
@@ -16,7 +17,6 @@ import {
   HomeRegular,
   AddRegular,
   DatabaseRegular,
-  AppsRegular,
   DocumentRegular,
   ShieldRegular,
   GridRegular,
@@ -25,6 +25,7 @@ import {
 import { FieldsPane } from './FieldsPane';
 import { VisualizationsPane } from './VisualizationsPane';
 import { PropertiesPanel } from './PropertiesPanel';
+import { DataModelPanel } from './DataModelPanel';
 import { FFMAPanel } from './FFMAPanel';
 import { UserMenu } from './UserMenu';
 import { SaveDashboardButton } from './SaveDashboardDialog';
@@ -32,6 +33,7 @@ import { ShareButton } from './ShareDialog';
 import { ExportButton } from './ExportButton';
 import { useStore } from '../store/useStore';
 import { Templates } from '../store/templates';
+import { useAuth } from '../auth/useAuth';
 
 const useStyles = makeStyles({
   container: {
@@ -49,6 +51,8 @@ const useStyles = makeStyles({
     ...shorthands.padding(0, '12px'),
     justifyContent: 'space-between',
     flexShrink: 0,
+    boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+    zIndex: 10,
   },
   topBarLeft: {
     display: 'flex',
@@ -72,9 +76,36 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     alignItems: 'center',
     ...shorthands.padding('12px', 0),
-    gap: '20px',
+    gap: '4px',
     borderRight: `1px solid ${tokens.colorNeutralStroke2}`,
     flexShrink: 0,
+  },
+  navButton: {
+    width: '36px',
+    height: '36px',
+    minWidth: '36px',
+    ...shorthands.borderRadius('6px'),
+    ':hover': {
+      backgroundColor: '#E8E6E3',
+    },
+  },
+  navButtonActiveStyle: {
+    width: '36px',
+    height: '36px',
+    minWidth: '36px',
+    ...shorthands.borderRadius('6px'),
+    backgroundColor: '#D6D6D6',
+    position: 'relative' as const,
+    '::before': {
+      content: '""',
+      position: 'absolute' as const,
+      left: 0,
+      top: '6px',
+      bottom: '6px',
+      width: '3px',
+      backgroundColor: '#0078D4',
+      ...shorthands.borderRadius('0', '2px', '2px', '0'),
+    },
   },
   centerArea: {
     flex: 1,
@@ -90,17 +121,19 @@ const useStyles = makeStyles({
     ...shorthands.padding('20px'),
   },
   bottomPane: {
-    height: '80px',
+    height: '110px',
     borderTop: `1px solid ${tokens.colorNeutralStroke2}`,
     flexShrink: 0,
+    backgroundColor: '#F3F2F1',
   },
   rightPane: {
     width: '240px',
     borderLeft: `1px solid ${tokens.colorNeutralStroke2}`,
     flexShrink: 0,
-    overflowY: 'auto',
+    overflow: 'hidden',
     height: '100%',
     boxSizing: 'border-box' as const,
+    backgroundColor: '#FAFAF9',
   },
   ffmaPane: {
     width: '180px',
@@ -110,7 +143,16 @@ const useStyles = makeStyles({
     height: '100%',
     boxSizing: 'border-box' as const,
   },
-  navButtonActive: {
+  dataModelPane: {
+    width: '220px',
+    borderRight: `1px solid ${tokens.colorNeutralStroke2}`,
+    flexShrink: 0,
+    overflowY: 'auto',
+    height: '100%',
+    boxSizing: 'border-box' as const,
+    backgroundColor: '#FAFAF9',
+  },
+  navButtonActiveLegacy: {
     backgroundColor: '#D6D6D6',
   },
   topButton: {
@@ -141,8 +183,19 @@ interface AppShellProps {
   readOnly?: boolean;
 }
 
+const navBtnStyle: React.CSSProperties = {
+  width: 36, height: 36, minWidth: 36, borderRadius: 6,
+};
+const navBtnActiveStyle: React.CSSProperties = {
+  ...navBtnStyle,
+  backgroundColor: '#D6D6D6',
+  borderLeft: '3px solid #0078D4',
+};
+
 export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
   const styles = useStyles();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const loadTemplate = useStore((state) => state.loadTemplate);
   const clearCanvas = useStore((state) => state.clearCanvas);
   const selectedItemId = useStore((state) => state.selectedItemId);
@@ -151,8 +204,13 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
   const dashboardName = useStore((state) => state.dashboardName);
   const setDashboardMeta = useStore((state) => state.setDashboardMeta);
   const [showFFMA, setShowFFMA] = React.useState(false);
+  const [showDataModel, setShowDataModel] = React.useState(false);
   const [editingTitle, setEditingTitle] = React.useState(false);
   const [titleDraft, setTitleDraft] = React.useState(dashboardName);
+
+  const handleHomeClick = () => {
+    navigate(user ? '/dashboards' : '/login');
+  };
 
   const handleTitleCommit = () => {
     const trimmed = titleDraft.trim();
@@ -231,18 +289,28 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
       <div className={styles.mainContent}>
         {!readOnly && (
           <nav className={styles.leftNav}>
-            <Button icon={<HomeRegular />} appearance="subtle" />
-            <Button icon={<AddRegular />} appearance="subtle" onClick={clearCanvas} title="New Screen" />
-            <Button icon={<DatabaseRegular />} appearance="subtle" />
-            <Button icon={<AppsRegular />} appearance="subtle" />
+            <Button icon={<HomeRegular />} appearance="subtle" style={navBtnStyle} onClick={handleHomeClick} title="My Dashboards" />
+            <Button icon={<AddRegular />} appearance="subtle" style={navBtnStyle} onClick={clearCanvas} title="New Screen" />
+            <Button
+              icon={<DatabaseRegular />}
+              appearance="subtle"
+              style={showDataModel ? navBtnActiveStyle : navBtnStyle}
+              onClick={() => setShowDataModel(!showDataModel)}
+              title="Data Model"
+            />
             <Button
               icon={<ShieldRegular />}
               appearance="subtle"
-              className={showFFMA ? styles.navButtonActive : undefined}
+              style={showFFMA ? navBtnActiveStyle : navBtnStyle}
               onClick={() => setShowFFMA(!showFFMA)}
               title="FFMA Widgets"
             />
           </nav>
+        )}
+        {showDataModel && !readOnly && (
+          <div className={styles.dataModelPane}>
+            <DataModelPanel />
+          </div>
         )}
         {showFFMA && !readOnly && (
           <div className={styles.ffmaPane}>
@@ -261,7 +329,9 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
         </div>
         {!readOnly && (
           <div className={styles.rightPane}>
-            {selectedItemId ? <PropertiesPanel /> : <FieldsPane />}
+            <div key={selectedItemId || 'fields'} className="panel-transition">
+              {selectedItemId ? <PropertiesPanel /> : <FieldsPane />}
+            </div>
           </div>
         )}
       </div>

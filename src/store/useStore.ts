@@ -4,14 +4,17 @@ import { generateRetailData, generateSaaSData, generateHRData, generateLogistics
 import { useThemeStore, PALETTES, DEFAULT_PALETTE } from './useThemeStore';
 
 const initialItems: DashboardItem[] = [
-  { id: 'slicer1', type: 'slicer', title: 'Filter by Store', layout: { x: 0, y: 0, w: 6, h: 2 }, props: { dimension: 'Store' } },
-  { id: 'card1', type: 'card', title: 'Total Revenue', layout: { x: 6, y: 0, w: 6, h: 2 }, props: { metric: 'revenue', operation: 'sum', label: 'Sum of Revenue', colorIndex: 0 } },
-  { id: 'card2', type: 'card', title: 'Total Profit', layout: { x: 12, y: 0, w: 6, h: 2 }, props: { metric: 'profit', operation: 'sum', label: 'Sum of Profit', colorIndex: 2 } },
-  { id: 'card3', type: 'card', title: 'Avg Order Value', layout: { x: 18, y: 0, w: 6, h: 2 }, props: { metric: 'revenue', operation: 'avg', label: 'Average per Transaction', colorIndex: 3 } },
-  { id: 'chart1', type: 'bar', title: 'Revenue by Region', layout: { x: 0, y: 2, w: 12, h: 5 }, props: { dimension: 'Region', metric: 'revenue' } },
-  { id: 'chart2', type: 'pie', title: 'Revenue by Category', layout: { x: 12, y: 2, w: 12, h: 5 }, props: { dimension: 'Category', metric: 'revenue' } },
-  { id: 'chart3', type: 'line', title: 'Revenue Trend', layout: { x: 0, y: 7, w: 24, h: 5 }, props: { metric: 'revenue' } },
-  { id: 'table1', type: 'table', title: 'Sales Details', layout: { x: 0, y: 12, w: 24, h: 6 }, props: { maxRows: 100 } },
+  { id: 'slicer1', type: 'slicer', title: 'Store', layout: { x: 0, y: 0, w: 2, h: 5 }, props: { dimension: 'Store' } },
+  { id: 'slicer2', type: 'slicer', title: 'Region', layout: { x: 2, y: 0, w: 2, h: 5 }, props: { dimension: 'Region' } },
+  { id: 'card1', type: 'card', title: 'Total Revenue', layout: { x: 4, y: 0, w: 4, h: 5 }, props: { metric: 'revenue', operation: 'sum', label: 'Sum of Revenue', colorIndex: 0 } },
+  { id: 'card2', type: 'card', title: 'Total Profit', layout: { x: 8, y: 0, w: 4, h: 5 }, props: { metric: 'profit', operation: 'sum', label: 'Sum of Profit', colorIndex: 2 } },
+  { id: 'card3', type: 'card', title: 'Avg Order', layout: { x: 12, y: 0, w: 4, h: 5 }, props: { metric: 'revenue', operation: 'avg', label: 'Avg per Transaction', colorIndex: 3 } },
+  { id: 'card4', type: 'card', title: 'Total Qty', layout: { x: 16, y: 0, w: 4, h: 5 }, props: { metric: 'quantity', operation: 'sum', label: 'Units Sold', colorIndex: 1 } },
+  { id: 'card5', type: 'card', title: 'Transactions', layout: { x: 20, y: 0, w: 4, h: 5 }, props: { metric: 'revenue', operation: 'count', label: 'Transactions', colorIndex: 4 } },
+  { id: 'chart1', type: 'bar', title: 'Revenue by Region', layout: { x: 0, y: 5, w: 12, h: 10 }, props: { dimension: 'Region', metric: 'revenue' } },
+  { id: 'chart2', type: 'pie', title: 'Revenue by Category', layout: { x: 12, y: 5, w: 12, h: 10 }, props: { dimension: 'Category', metric: 'revenue' } },
+  { id: 'chart3', type: 'line', title: 'Revenue Trend', layout: { x: 0, y: 15, w: 24, h: 7 }, props: { metric: 'revenue' } },
+  { id: 'table1', type: 'table', title: 'Sales Details', layout: { x: 0, y: 22, w: 24, h: 10 }, props: { maxRows: 100 } },
 ];
 
 import { Templates } from './templates';

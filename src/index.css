@@ -1,3 +1,7 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -9,4 +13,64 @@ body {
 #root {
   height: 100vh;
   width: 100vw;
+}
+
+/* Global transitions on interactive elements */
+button, input, select, textarea, [role="button"] {
+  transition: background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+/* Slim scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.25);
+}
+
+/* Selection color matching Fluent accent */
+::selection {
+  background-color: rgba(0, 120, 212, 0.3);
+  color: inherit;
+}
+
+/* Hide edge resize handles (n/s/e/w) — keep corner grips only (se/sw/ne/nw) */
+.react-resizable-handle-n,
+.react-resizable-handle-s,
+.react-resizable-handle-e,
+.react-resizable-handle-w {
+  display: none;
+}
+
+/* Make corner resize handles subtle */
+.react-resizable-handle {
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+.react-grid-item:hover .react-resizable-handle {
+  opacity: 0.5;
+}
+
+/* Text truncation utility */
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Panel transition */
+.panel-transition {
+  animation: fadeIn 150ms ease-out;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(8px); }
+  to { opacity: 1; transform: translateX(0); }
 }

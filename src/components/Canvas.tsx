@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 // @ts-ignore - @types/react-grid-layout is outdated for v2.2.2
 import { GridLayout, useContainerWidth } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
@@ -42,20 +42,44 @@ import {
   PortfolioKPICards,
 } from './portfolio';
 import { QuickShapeStrip } from './QuickShapeStrip';
+import { VariantPicker, VARIANT_PARENT_TYPES } from './VariantPicker';
 
 const GRID_COLS = 24;
-const ROW_HEIGHT = 40;
+const ROW_HEIGHT = 20;
 
 const useStyles = makeStyles({
   canvas: {
     backgroundColor: '#F2F2F2',
-    minHeight: '600px',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    backgroundImage: 'radial-gradient(circle, #E0E0E0 1px, transparent 1px)',
+    backgroundSize: '20px 20px',
+    minHeight: '900px',
+    boxShadow: '0 2px 12px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.06)',
     ...shorthands.margin('0', 'auto'),
     width: '100%',
     position: 'relative',
     ...shorthands.borderRadius('4px'),
     ...shorthands.border('1px', 'solid', '#E1DFDD'),
+  },
+  canvasDragOver: {
+    ...shorthands.border('2px', 'dashed', '#0078D4'),
+    backgroundColor: 'rgba(0,120,212,0.03)',
+  },
+  emptyState: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '8px',
+    color: '#A19F9D',
+    pointerEvents: 'none',
+    fontSize: '14px',
+  },
+  emptyIcon: {
+    fontSize: '32px',
+    color: '#C8C6C4',
   },
 });
 
@@ -74,7 +98,48 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
   const removeItem = useStore((state) => state.removeItem);
   const selectedItemId = useStore((state) => state.selectedItemId);
   const selectItem = useStore((state) => state.selectItem);
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [pendingDrop, setPendingDrop] = useState<{
+    parentType: string;
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+    pixelX: number;
+    pixelY: number;
+    prebuiltConfig?: any;
+  } | null>(null);
 
+  const finalizeDrop = (visualType: string, gridX: number, gridY: number, w: number, h: number, prebuiltConfig?: any) => {
+    const id = `visual-${Date.now()}`;
+
+    if (prebuiltConfig) {
+      setTimeout(() => {
+        addItem({
+          id,
+          type: prebuiltConfig.type as any,
+          title: prebuiltConfig.title,
+          layout: { x: gridX, y: gridY, w, h },
+          props: { ...prebuiltConfig.props },
+        });
+      }, 0);
+      return;
+    }
+
+    const recipe = getRecipeForVisual(visualType, scenario as ScenarioType);
+    const props = { ...recipe };
+    const title = generateSmartTitle(visualType, recipe, scenario as ScenarioType);
+
+    setTimeout(() => {
+      addItem({
+        id,
+        type: visualType as any,
+        title,
+        layout: { x: gridX, y: gridY, w, h },
+        props,
+      });
+    }, 0);
+  };
 
   const handleDrop = (_layout: any, item: any, e: any) => {
     // Use the global dragged type since dataTransfer may not be accessible
@@ -94,21 +159,17 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
     // Standard Layout Snap
     if (layoutMode === 'Standard') {
         const slots = SlotLayouts['Executive']; // Default to Executive for now
-        // Simple hit test: find slot that contains the dropped x/y
-        // item.x/y are in grid units
-        const hitSlot = slots.find(s => 
+        const hitSlot = slots.find(s =>
             x >= s.x && x < s.x + s.w &&
             y >= s.y && y < s.y + s.h
         );
-        
-        // If not exact hit, find closest center
+
         if (hitSlot) {
             x = hitSlot.x;
             y = hitSlot.y;
             w = hitSlot.w;
             h = hitSlot.h;
         } else {
-             // Fallback: Find closest slot by distance to center
              let minDist = Infinity;
              let closest = slots[0];
              slots.forEach(s => {
@@ -127,46 +188,29 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
         }
     }
 
-    const id = `visual-${Date.now()}`;
-
-    // If a pre-built config was dragged, use it directly
+    // If a pre-built config was dragged, use it directly (no variant picker)
     if (dragState.prebuiltConfig) {
       const cfg = dragState.prebuiltConfig;
-      // In standard mode, we override dimensions, but keep title/props
       if (layoutMode !== 'Standard') {
           w = cfg.w;
           h = cfg.h;
       }
-      setTimeout(() => {
-        addItem({
-          id,
-          type: cfg.type as any,
-          title: cfg.title,
-          layout: { x, y, w, h },
-          props: { ...cfg.props },
-        });
-      }, 0);
+      finalizeDrop(cfg.type, x, y, w, h, cfg);
       return;
     }
 
-    // Use the binding recipe to get default props based on the scenario
-    const recipe = getRecipeForVisual(visualType, scenario as ScenarioType);
-    const props = { ...recipe };
+    // Variant parent types: show picker instead of direct drop
+    if (VARIANT_PARENT_TYPES.has(visualType)) {
+      // Calculate pixel position for the popover
+      const nativeEvent = e?.nativeEvent || e;
+      const pixelX = nativeEvent?.clientX ?? 300;
+      const pixelY = nativeEvent?.clientY ?? 300;
+      setPendingDrop({ parentType: visualType, x, y, w, h, pixelX, pixelY });
+      return;
+    }
 
-    // Smart title generation from recipe
-    const title = generateSmartTitle(visualType, recipe, scenario as ScenarioType);
-
-    // Use setTimeout to let the grid finish its internal state update
-    // before adding the new item to prevent the red placeholder issue
-    setTimeout(() => {
-      addItem({
-        id,
-        type: visualType as any,
-        title,
-        layout: { x, y, w, h },
-        props,
-      });
-    }, 0);
+    // Non-variant types: drop directly
+    finalizeDrop(visualType, x, y, w, h);
   };
 
   const generateLayout = () => {
@@ -258,39 +302,50 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
     }
   };
 
-  // Fallback drop handler for when the GridLayout has no children (empty canvas).
-  // GridLayout collapses to zero height with no items, so drops land on the outer div.
+  // Fallback drop handler for canvas drops.
+  // GridLayout's onDrop handles drops on existing items; this handles drops on empty space.
   const handleCanvasDrop = (e: React.DragEvent) => {
-    if (items.length > 0) return; // GridLayout handles drops when it has children
     e.preventDefault();
+    e.stopPropagation();
+
     const visualType = dragState.visualType ||
                        e.dataTransfer?.getData?.('visualType') ||
                        e.dataTransfer?.getData?.('text/plain');
     if (!visualType) return;
 
-    const id = `visual-${Date.now()}`;
+    // Calculate grid position from mouse coordinates
+    const rect = (containerRef as React.RefObject<HTMLDivElement>).current?.getBoundingClientRect();
+    const margin = 12;
+    const colWidth = (width - (margin * (GRID_COLS + 1))) / GRID_COLS;
+
+    let gridX = 0;
+    let gridY = 0;
+
+    if (rect && width > 0) {
+      const relX = e.clientX - rect.left - margin;
+      const relY = e.clientY - rect.top - margin;
+      gridX = Math.max(0, Math.floor(relX / (colWidth + margin)));
+      gridY = Math.max(0, Math.floor(relY / (ROW_HEIGHT + margin)));
+      // Clamp to grid bounds
+      gridX = Math.min(gridX, GRID_COLS - 8);
+      gridY = Math.max(0, gridY);
+    }
 
     if (dragState.prebuiltConfig) {
       const cfg = dragState.prebuiltConfig;
-      addItem({
-        id,
-        type: cfg.type as any,
-        title: cfg.title,
-        layout: { x: 0, y: 0, w: cfg.w, h: cfg.h },
-        props: { ...cfg.props },
-      });
+      finalizeDrop(cfg.type, gridX, gridY, cfg.w, cfg.h, cfg);
       return;
     }
 
-    const recipe = getRecipeForVisual(visualType, scenario as ScenarioType);
-    const title = generateSmartTitle(visualType, recipe, scenario as ScenarioType);
-    addItem({
-      id,
-      type: visualType as any,
-      title,
-      layout: { x: 0, y: 0, w: 8, h: 4 },
-      props: { ...recipe },
-    });
+    // Variant parent types: show picker
+    if (VARIANT_PARENT_TYPES.has(visualType)) {
+      const pixelX = e.clientX;
+      const pixelY = e.clientY;
+      setPendingDrop({ parentType: visualType, x: gridX, y: gridY, w: 8, h: 4, pixelX, pixelY });
+      return;
+    }
+
+    finalizeDrop(visualType, gridX, gridY, 8, 4);
   };
 
   const handleCanvasClick = (e: React.MouseEvent) => {
@@ -355,17 +410,29 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
 
   return (
     <div
-      className={styles.canvas}
+      className={`${styles.canvas}${isDragOver ? ` ${styles.canvasDragOver}` : ''}`}
       data-testid="canvas-drop-area"
       ref={containerRef as React.RefObject<HTMLDivElement>}
       onClick={handleCanvasClick}
       onDragOver={(e) => {
           e.preventDefault();
-          e.stopPropagation();
           e.dataTransfer.dropEffect = 'copy';
       }}
-      onDrop={handleCanvasDrop}
+      onDragEnter={() => setIsDragOver(true)}
+      onDragLeave={(e) => {
+          // Only set false if leaving the canvas itself (not a child)
+          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+            setIsDragOver(false);
+          }
+      }}
+      onDrop={(e) => { setIsDragOver(false); handleCanvasDrop(e); }}
     >
+      {items.length === 0 && (
+        <div className={styles.emptyState}>
+          <span className={styles.emptyIcon}>+</span>
+          <span>Drop visuals here</span>
+        </div>
+      )}
       {mounted && width > 0 && (
         <>
         {renderSlots()}
@@ -422,6 +489,18 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
           })}
         </GridLayout>
         </>
+      )}
+      {pendingDrop && (
+        <VariantPicker
+          parentType={pendingDrop.parentType}
+          pixelX={pendingDrop.pixelX}
+          pixelY={pendingDrop.pixelY}
+          onSelect={(variantId) => {
+            finalizeDrop(variantId, pendingDrop.x, pendingDrop.y, pendingDrop.w, pendingDrop.h);
+            setPendingDrop(null);
+          }}
+          onCancel={() => setPendingDrop(null)}
+        />
       )}
     </div>
   );

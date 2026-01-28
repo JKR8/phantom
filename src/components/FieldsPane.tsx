@@ -13,21 +13,27 @@ const useStyles = makeStyles({
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
-    backgroundColor: '#F3F2F1',
+    backgroundColor: '#FAFAF9',
   },
   header: {
     ...shorthands.padding('12px'),
     borderBottom: '1px solid #E1DFDD',
     fontWeight: '600',
-    fontSize: '12px',
-    color: '#252423',
+    fontSize: '11px',
+    color: '#605E5C',
     textTransform: 'uppercase',
-    letterSpacing: '0.5px',
+    letterSpacing: '0.8px',
   },
   content: {
     flex: 1,
     overflowY: 'auto',
-    ...shorthands.padding('8px'),
+    overflowX: 'hidden',
+    ...shorthands.padding('8px', '10px'),
+  },
+  treeText: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
   tableIcon: {
     color: '#0078D4',
@@ -85,13 +91,13 @@ export const FieldsPane: React.FC = () => {
           {Object.entries(fields).map(([table, tableFields]) => (
             <TreeItem key={table} itemType="branch">
               <TreeItemLayout iconBefore={<TableRegular className={styles.tableIcon} fontSize={16} />}>
-                <Text size={200} weight="semibold">{table}</Text>
+                <Text size={200} weight="semibold" className={styles.treeText}>{table}</Text>
               </TreeItemLayout>
               <Tree>
                 {tableFields.map((field) => (
                   <TreeItem key={field.name} itemType="leaf">
                     <TreeItemLayout iconBefore={getFieldIcon(field.type, styles)}>
-                      <Text size={200}>{field.name}</Text>
+                      <Text size={200} className={styles.treeText}>{field.name}</Text>
                     </TreeItemLayout>
                   </TreeItem>
                 ))}

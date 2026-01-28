@@ -12,7 +12,7 @@ import {
   Divider,
   Checkbox,
 } from '@fluentui/react-components';
-import { AddRegular, DeleteRegular } from '@fluentui/react-icons';
+import { AddRegular, DeleteRegular, WarningRegular } from '@fluentui/react-icons';
 import { useStore } from '../store/useStore';
 import { ScenarioFields, ScenarioType, RecommendedDimensions, RecommendedMeasures } from '../store/semanticLayer';
 
@@ -24,23 +24,30 @@ const useStyles = makeStyles({
     ...shorthands.padding('12px'),
     gap: '12px',
     overflowY: 'auto',
+    backgroundColor: '#FAFAF9',
   },
   sectionHeader: {
     fontSize: '11px',
     fontWeight: '600',
     color: '#605E5C',
     textTransform: 'uppercase',
-    letterSpacing: '0.5px',
+    letterSpacing: '0.8px',
   },
   section: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '8px',
+    gap: '10px',
+    backgroundColor: 'white',
+    ...shorthands.padding('8px', '14px', '12px'),
+    ...shorthands.borderRadius('6px'),
+    minWidth: 0,
+    overflow: 'hidden',
   },
   fieldRow: {
     display: 'flex',
     flexDirection: 'column',
     gap: '4px',
+    minWidth: 0,
   },
   fieldLabel: {
     fontSize: '12px',
@@ -74,6 +81,18 @@ const useStyles = makeStyles({
     height: '100%',
     color: '#A19F9D',
     fontSize: '12px',
+  },
+  warningRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '4px',
+    fontSize: '11px',
+    color: '#D83B01',
+    ...shorthands.padding('4px', '0'),
+  },
+  warningIcon: {
+    color: '#D83B01',
+    flexShrink: 0,
   },
 });
 
@@ -214,6 +233,20 @@ export const PropertiesPanel: React.FC = () => {
     return matched || current;
   };
 
+  // Validation: check if current dimension/metric values exist in scenario
+  const isOrphanedDimension = props.dimension && !dimensionOptions.some(
+    (opt) => opt.toLowerCase() === props.dimension?.toLowerCase()
+  );
+  const isOrphanedMetric = props.metric && !metricOptions.some(
+    (opt) => opt.toLowerCase() === props.metric?.toLowerCase()
+  );
+  const isOrphanedXMetric = props.xMetric && !metricOptions.some(
+    (opt) => opt.toLowerCase() === props.xMetric?.toLowerCase()
+  );
+  const isOrphanedYMetric = props.yMetric && !metricOptions.some(
+    (opt) => opt.toLowerCase() === props.yMetric?.toLowerCase()
+  );
+
   return (
     <div className={styles.panel}>
       {/* Header */}
@@ -315,6 +348,12 @@ export const PropertiesPanel: React.FC = () => {
                 <option key={opt} value={opt}>{opt}</option>
               ))}
             </Select>
+            {isOrphanedDimension && (
+              <div className={styles.warningRow}>
+                <WarningRegular className={styles.warningIcon} fontSize={14} />
+                <span>"{props.dimension}" not in {scenario}</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -330,6 +369,12 @@ export const PropertiesPanel: React.FC = () => {
                 <option key={opt} value={opt}>{opt}</option>
               ))}
             </Select>
+            {isOrphanedMetric && (
+              <div className={styles.warningRow}>
+                <WarningRegular className={styles.warningIcon} fontSize={14} />
+                <span>"{props.metric}" not in {scenario}</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -346,6 +391,12 @@ export const PropertiesPanel: React.FC = () => {
                   <option key={opt} value={opt}>{opt}</option>
                 ))}
               </Select>
+              {isOrphanedXMetric && (
+                <div className={styles.warningRow}>
+                  <WarningRegular className={styles.warningIcon} fontSize={14} />
+                  <span>"{props.xMetric}" not in {scenario}</span>
+                </div>
+              )}
             </div>
             <div className={styles.fieldRow}>
               <Label className={styles.fieldLabel}>Y Metric</Label>
@@ -358,6 +409,12 @@ export const PropertiesPanel: React.FC = () => {
                   <option key={opt} value={opt}>{opt}</option>
                 ))}
               </Select>
+              {isOrphanedYMetric && (
+                <div className={styles.warningRow}>
+                  <WarningRegular className={styles.warningIcon} fontSize={14} />
+                  <span>"{props.yMetric}" not in {scenario}</span>
+                </div>
+              )}
             </div>
           </>
         )}
