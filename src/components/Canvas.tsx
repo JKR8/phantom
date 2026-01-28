@@ -44,14 +44,14 @@ import {
 import { QuickShapeStrip } from './QuickShapeStrip';
 import { VariantPicker, VARIANT_PARENT_TYPES } from './VariantPicker';
 
-const GRID_COLS = 24;
+const GRID_COLS = 48;  // Balanced grid for good visual spacing
 const ROW_HEIGHT = 20;
+const GRID_MARGIN: [number, number] = [8, 8];  // Gap between visuals (Power BI style)
+const GRID_PADDING: [number, number] = [12, 12];  // Canvas edge padding
 
 const useStyles = makeStyles({
   canvas: {
-    backgroundColor: '#F2F2F2',
-    backgroundImage: 'radial-gradient(circle, #E0E0E0 1px, transparent 1px)',
-    backgroundSize: '20px 20px',
+    backgroundColor: '#F3F2F1',  // Power BI canvas color
     minHeight: '900px',
     boxShadow: '0 2px 12px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.06)',
     ...shorthands.margin('0', 'auto'),
@@ -315,19 +315,20 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
 
     // Calculate grid position from mouse coordinates
     const rect = (containerRef as React.RefObject<HTMLDivElement>).current?.getBoundingClientRect();
-    const margin = 12;
-    const colWidth = (width - (margin * (GRID_COLS + 1))) / GRID_COLS;
+    const margin = GRID_MARGIN[0];
+    const padding = GRID_PADDING[0];
+    const colWidth = (width - (2 * padding) - (margin * (GRID_COLS - 1))) / GRID_COLS;
 
     let gridX = 0;
     let gridY = 0;
 
     if (rect && width > 0) {
-      const relX = e.clientX - rect.left - margin;
-      const relY = e.clientY - rect.top - margin;
+      const relX = e.clientX - rect.left - padding;
+      const relY = e.clientY - rect.top - GRID_PADDING[1];
       gridX = Math.max(0, Math.floor(relX / (colWidth + margin)));
-      gridY = Math.max(0, Math.floor(relY / (ROW_HEIGHT + margin)));
+      gridY = Math.max(0, Math.floor(relY / (ROW_HEIGHT + GRID_MARGIN[1])));
       // Clamp to grid bounds
-      gridX = Math.min(gridX, GRID_COLS - 8);
+      gridX = Math.min(gridX, GRID_COLS - 16);
       gridY = Math.max(0, gridY);
     }
 
@@ -341,11 +342,11 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
     if (VARIANT_PARENT_TYPES.has(visualType)) {
       const pixelX = e.clientX;
       const pixelY = e.clientY;
-      setPendingDrop({ parentType: visualType, x: gridX, y: gridY, w: 8, h: 4, pixelX, pixelY });
+      setPendingDrop({ parentType: visualType, x: gridX, y: gridY, w: 16, h: 8, pixelX, pixelY });
       return;
     }
 
-    finalizeDrop(visualType, gridX, gridY, 8, 4);
+    finalizeDrop(visualType, gridX, gridY, 16, 8);
   };
 
   const handleCanvasClick = (e: React.MouseEvent) => {
@@ -370,16 +371,17 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
     // But we don't have colWidth easily without calculation.
     // Let's use the 'width' from useContainerWidth()
     
-    const margin = 12;
-    const colWidth = (width - (margin * (GRID_COLS + 1))) / GRID_COLS;
+    const margin = GRID_MARGIN[0];
+    const padding = GRID_PADDING[0];
+    const colWidth = (width - (2 * padding) - (margin * (GRID_COLS - 1))) / GRID_COLS;
 
     return (
         <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }}>
             {slots.map(slot => {
-                const left = (slot.x * (colWidth + margin)) + margin;
-                const top = (slot.y * (ROW_HEIGHT + margin)) + margin;
+                const left = (slot.x * (colWidth + margin)) + padding;
+                const top = (slot.y * (ROW_HEIGHT + GRID_MARGIN[1])) + GRID_PADDING[1];
                 const slotWidth = (slot.w * colWidth) + ((slot.w - 1) * margin);
-                const slotHeight = (slot.h * ROW_HEIGHT) + ((slot.h - 1) * margin);
+                const slotHeight = (slot.h * ROW_HEIGHT) + ((slot.h - 1) * GRID_MARGIN[1]);
 
                 return (
                     <div 
@@ -436,11 +438,11 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
       {mounted && width > 0 && (
         <>
         {renderSlots()}
-        <QuickShapeStrip 
-            containerWidth={width} 
-            rowHeight={ROW_HEIGHT} 
-            cols={GRID_COLS} 
-            margin={[12, 12]} 
+        <QuickShapeStrip
+            containerWidth={width}
+            rowHeight={ROW_HEIGHT}
+            cols={GRID_COLS}
+            margin={GRID_MARGIN}
         />
         <GridLayout
           className="layout"
@@ -449,8 +451,8 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
           gridConfig={{
             cols: GRID_COLS,
             rowHeight: ROW_HEIGHT,
-            margin: [12, 12],
-            containerPadding: [12, 12]
+            margin: GRID_MARGIN,
+            containerPadding: GRID_PADDING
           }}
           dragConfig={{ handle: '.visual-header' }}
           resizeConfig={{
@@ -459,7 +461,7 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
           }}
           dropConfig={{
             enabled: !readOnly,
-            defaultItem: { w: 8, h: 4 }
+            defaultItem: { w: 16, h: 8 }
           }}
           onLayoutChange={onLayoutChange}
           onDrop={handleDrop}

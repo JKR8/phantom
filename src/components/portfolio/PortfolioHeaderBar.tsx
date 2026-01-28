@@ -19,7 +19,7 @@ const useStyles = makeStyles({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#FFFFFF',
-    ...shorthands.padding('4px', '12px'),
+    ...shorthands.padding('0px', '12px'),
     height: '100%',
     width: '100%',
     ...shorthands.borderRadius('4px'),

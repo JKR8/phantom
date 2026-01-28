@@ -1,7 +1,7 @@
 /**
  * Layout Converter - Converts Phantom grid layout to Power BI pixel positions
- * 
- * Phantom uses a 24-column grid system.
+ *
+ * Phantom uses a 60-column grid system with 20px row height (matching visible grid dots).
  * Power BI uses absolute pixel positions on a configurable canvas (default 1280×720).
  */
 
@@ -12,9 +12,9 @@ import { mapFieldToPBIColumn } from './schemaGenerator';
 export const PBI_CANVAS_WIDTH = 1280;
 export const PBI_CANVAS_HEIGHT = 720;
 
-// Phantom grid configuration
-export const PHANTOM_GRID_COLS = 24;
-export const PHANTOM_ROW_HEIGHT = 40; // Approximate row height in pixels
+// Phantom grid configuration (matches Canvas.tsx)
+export const PHANTOM_GRID_COLS = 48;
+export const PHANTOM_ROW_HEIGHT = 20;
 
 // Power BI visual type identifiers (from reverse-engineering Power BI exports)
 export const PBI_VISUAL_TYPES: Record<VisualType, string> = {
