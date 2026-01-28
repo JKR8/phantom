@@ -52,6 +52,10 @@ const GRID_PADDING: [number, number] = [12, 12];  // Canvas edge padding
 const useStyles = makeStyles({
   canvas: {
     backgroundColor: '#F3F2F1',  // Power BI canvas color
+    // Decorative dot grid pattern (28px spacing matches grid)
+    backgroundImage: 'radial-gradient(circle, #D2D0CE 1px, transparent 1px)',
+    backgroundSize: '28px 28px',
+    backgroundPosition: '14px 14px',
     minHeight: '900px',
     boxShadow: '0 2px 12px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.06)',
     ...shorthands.margin('0', 'auto'),
