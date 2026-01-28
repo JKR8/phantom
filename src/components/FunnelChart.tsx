@@ -2,7 +2,6 @@ import React, { useMemo } from 'react';
 import {
   FunnelChart as ReFunnelChart,
   Funnel,
-  LabelList,
   Tooltip,
   ResponsiveContainer,
   Cell
@@ -21,7 +20,7 @@ interface FunnelChartProps {
 }
 
 export const FunnelChart: React.FC<FunnelChartProps> = ({ dimension, metric, manualData, topN, sort = 'desc', showOther }) => {
-  const filteredSales = useFilteredSales();
+  const filteredSales = useFilteredSales(dimension);
   const stores = useStore((state) => state.stores);
   const products = useStore((state) => state.products);
   const customers = useStore((state) => state.customers);
@@ -75,33 +74,58 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({ dimension, metric, man
   const isHighlightActive = highlight && highlight.dimension === dimension;
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <ReFunnelChart>
-        <Tooltip formatter={(value: any) => formatMetricValue(metric, Number(value))} />
-        <Funnel
-          dataKey="value"
-          data={data}
-          isAnimationActive
-          onClick={(entry: any) => {
-            if (entry && entry.name) {
-              setHighlight(dimension, entry.name);
-            }
-          }}
-        >
-          <LabelList position="right" fill="#000" stroke="none" dataKey="name" />
-           {data.map((entry, index) => {
-            const isHighlighted = isHighlightActive && highlight.values.has(entry.name);
-            return (
-              <Cell
-                key={`cell-${index}`}
-                fill={getColor(index)}
-                fillOpacity={isHighlightActive ? (isHighlighted ? 1.0 : 0.4) : 1.0}
-                style={{ cursor: 'pointer' }}
-              />
-            );
-          })}
-        </Funnel>
-      </ReFunnelChart>
-    </ResponsiveContainer>
+    <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}>
+      <div style={{ flex: 1, minHeight: 0 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <ReFunnelChart>
+            <Tooltip formatter={(value: any) => formatMetricValue(metric, Number(value))} />
+            <Funnel
+              dataKey="value"
+              data={data}
+              isAnimationActive
+              onClick={(entry: any) => {
+                if (entry && entry.name) {
+                  setHighlight(dimension, entry.name);
+                }
+              }}
+            >
+               {data.map((entry, index) => {
+                const isHighlighted = isHighlightActive && highlight.values.has(entry.name);
+                return (
+                  <Cell
+                    key={`cell-${index}`}
+                    fill={getColor(index)}
+                    fillOpacity={isHighlightActive ? (isHighlighted ? 1.0 : 0.4) : 1.0}
+                    style={{ cursor: 'pointer' }}
+                  />
+                );
+              })}
+            </Funnel>
+          </ReFunnelChart>
+        </ResponsiveContainer>
+      </div>
+      <div style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        gap: '6px 12px',
+        padding: '4px 8px',
+        fontSize: 11,
+        color: '#605E5C',
+      }}>
+        {data.map((entry, index) => (
+          <span key={entry.name} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{
+              width: 10,
+              height: 10,
+              borderRadius: 2,
+              backgroundColor: getColor(index),
+              flexShrink: 0,
+            }} />
+            {entry.name}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 };

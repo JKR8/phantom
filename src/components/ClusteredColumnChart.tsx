@@ -23,7 +23,7 @@ interface ClusteredColumnChartProps {
 }
 
 export const ClusteredColumnChart: React.FC<ClusteredColumnChartProps> = ({ dimension, metric, manualData, topN, sort = 'desc', showOther }) => {
-  const filteredSales = useFilteredSales();
+  const filteredSales = useFilteredSales(dimension);
   const stores = useStore((state) => state.stores);
   const products = useStore((state) => state.products);
   const customers = useStore((state) => state.customers);

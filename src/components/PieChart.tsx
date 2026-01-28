@@ -21,7 +21,7 @@ interface PieChartProps {
 }
 
 export const PieChart: React.FC<PieChartProps> = ({ dimension, metric, manualData, topN, sort = 'desc', showOther }) => {
-  const filteredSales = useFilteredSales();
+  const filteredSales = useFilteredSales(dimension); // Exclude own dimension from cross-filter
   const stores = useStore((state) => state.stores);
   const products = useStore((state) => state.products);
   const customers = useStore((state) => state.customers);

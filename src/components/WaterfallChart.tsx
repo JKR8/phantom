@@ -20,7 +20,7 @@ interface WaterfallChartProps {
 }
 
 export const WaterfallChart: React.FC<WaterfallChartProps> = ({ dimension, metric, manualData }) => {
-  const filteredSales = useFilteredSales();
+  const filteredSales = useFilteredSales(dimension);
   const stores = useStore((state) => state.stores);
   const products = useStore((state) => state.products);
   const customers = useStore((state) => state.customers);

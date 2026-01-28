@@ -242,10 +242,40 @@ export const useStore = create<DashboardState>((set, get) => ({
 export const useHighlight = () => useStore((state) => state.highlight);
 export const useSetHighlight = () => useStore((state) => state.setHighlight);
 
-// Generic Selector for filtered data
-export const useFilteredSales = () => { // Keeping name for compatibility but it returns any[]
+// Helper to get dimension value for cross-filtering
+const getDimValue = (item: any, dimension: string, state: any): string => {
+  if (state.scenario === 'Retail') {
+    if (dimension === 'Region') {
+      const store = state.stores.find((s: any) => s.id === item.storeId);
+      return store?.region || '';
+    }
+    if (dimension === 'Category') {
+      const product = state.products.find((p: any) => p.id === item.productId);
+      return product?.category || '';
+    }
+    if (dimension === 'Store') {
+      const store = state.stores.find((s: any) => s.id === item.storeId);
+      return store?.name || '';
+    }
+    if (dimension === 'Product') {
+      const product = state.products.find((p: any) => p.id === item.productId);
+      return product?.name || '';
+    }
+  } else if (state.scenario === 'SaaS') {
+    if (dimension === 'Tier' || dimension === 'Industry' || dimension === 'Region') {
+      const customer = state.customers.find((c: any) => c.id === item.customerId);
+      return (customer as any)?.[dimension.toLowerCase()] || '';
+    }
+  }
+  // Generic fallback
+  return item?.[dimension] ?? item?.[dimension.toLowerCase()] ?? '';
+};
+
+// Generic Selector for filtered data (applies both filters AND highlight for cross-filtering)
+// Pass excludeHighlightDimension to prevent self-filtering (e.g., pie chart showing Category shouldn't filter by Category highlight)
+export const useFilteredSales = (excludeHighlightDimension?: string) => {
   const state = useStore();
-  const { scenario, filters } = state;
+  const { scenario, filters, highlight } = state;
 
   let data: any[] = [];
 
@@ -266,7 +296,18 @@ export const useFilteredSales = () => { // Keeping name for compatibility but it
   }
 
   return data.filter((item) => {
-    // Universal filtering logic
+    // Apply highlight cross-filter (skip if this chart's dimension matches the highlight)
+    if (highlight && highlight.dimension && highlight.values.size > 0) {
+      // Don't filter if this chart is showing the same dimension as the highlight
+      if (excludeHighlightDimension !== highlight.dimension) {
+        const itemValue = getDimValue(item, highlight.dimension, state);
+        if (!highlight.values.has(itemValue)) {
+          return false;
+        }
+      }
+    }
+
+    // Universal filtering logic (from slicers)
     // For Retail: Join Store/Product
     // For others: Direct property match
 
