@@ -7,7 +7,7 @@ import {
   Tooltip,
   Legend
 } from 'recharts';
-import { useStore, useFilteredSales } from '../store/useStore';
+import { useStore, useFilteredSales, useHighlight, useSetHighlight } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
 import { formatMetricValue, getDimensionValue, getMetricValue } from '../utils/chartUtils';
 
@@ -25,9 +25,9 @@ export const PieChart: React.FC<PieChartProps> = ({ dimension, metric, manualDat
   const stores = useStore((state) => state.stores);
   const products = useStore((state) => state.products);
   const customers = useStore((state) => state.customers);
-  const setFilter = useStore((state) => state.setFilter);
-  const activeFilters = useStore((state) => state.filters);
-  const { getColor, highlightColor } = useThemeStore();
+  const highlight = useHighlight();
+  const setHighlight = useSetHighlight();
+  const { getColor } = useThemeStore();
 
   const data = useMemo(() => {
     if (manualData && manualData.length > 0) {
@@ -72,14 +72,9 @@ export const PieChart: React.FC<PieChartProps> = ({ dimension, metric, manualDat
     return result;
   }, [manualData, filteredSales, dimension, metric, stores, products, topN, sort, showOther]);
 
-  const handleClick = (data: any) => {
+  const handleClick = (data: any, _index?: number, e?: React.MouseEvent) => {
     if (data && data.name) {
-      const currentFilter = activeFilters[dimension];
-      if (currentFilter === data.name) {
-        setFilter(dimension, null);
-      } else {
-        setFilter(dimension, data.name);
-      }
+      setHighlight(dimension, data.name, e?.ctrlKey || e?.metaKey);
     }
   };
 
@@ -96,12 +91,17 @@ export const PieChart: React.FC<PieChartProps> = ({ dimension, metric, manualDat
           style={{ cursor: 'pointer' }}
           label
         >
-          {data.map((entry, index) => (
-            <Cell
-              key={`cell-${index}`}
-              fill={activeFilters[dimension] === entry.name ? highlightColor : getColor(index)}
-            />
-          ))}
+          {data.map((entry, index) => {
+            const isHighlightActive = highlight && highlight.dimension === dimension;
+            const isHighlighted = isHighlightActive && highlight.values.has(entry.name);
+            return (
+              <Cell
+                key={`cell-${index}`}
+                fill={getColor(index)}
+                fillOpacity={isHighlightActive ? (isHighlighted ? 1.0 : 0.4) : 1.0}
+              />
+            );
+          })}
         </Pie>
         <Tooltip formatter={(value: any) => formatMetricValue(metric, Number(value))} />
         <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '10px' }} />

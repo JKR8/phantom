@@ -275,8 +275,15 @@ const getFormatString = (dataType: string, columnName: string) => {
   return undefined;
 };
 
-const buildDateTable = (dates: string[], includeQuarter = false, includeMonthNum = false) => {
+const buildDateTable = (
+  dates: string[],
+  includeQuarter = false,
+  includeMonthNum = false,
+  includeWeekNum = false,
+  includeDayOfWeek = false
+) => {
   const uniqueDates = Array.from(new Set(dates.map((d) => new Date(d).toISOString().split('T')[0])));
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   return uniqueDates.map((dateStr) => {
     const date = new Date(dateStr);
     const month = monthNames[date.getMonth()];
@@ -290,6 +297,17 @@ const buildDateTable = (dates: string[], includeQuarter = false, includeMonthNum
     }
     if (includeMonthNum) {
       row.MonthNum = date.getMonth() + 1;
+    }
+    if (includeWeekNum) {
+      // ISO week number calculation
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      row.WeekNum = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+    }
+    if (includeDayOfWeek) {
+      row.DayOfWeek = dayNames[date.getDay()];
     }
     return row;
   });
@@ -311,6 +329,7 @@ const buildScenarioTables = (scenario: Scenario, data: ExportData, schema: PBISc
       Profit: sale.profit,
       ProfitPL: sale.profitPL,
       ProfitPY: sale.profitPY,
+      Discount: sale.discount,
     }));
     tableRows.Store = data.stores.map((store) => ({
       StoreID: store.id,
@@ -324,7 +343,7 @@ const buildScenarioTables = (scenario: Scenario, data: ExportData, schema: PBISc
       Category: product.category,
       Price: product.price,
     }));
-    tableRows.DateTable = buildDateTable(data.sales.map((s) => s.date), false, true);
+    tableRows.DateTable = buildDateTable(data.sales.map((s) => s.date), true, true, true, true);
   } else if (scenario === 'SaaS') {
     tableRows.Subscription = data.subscriptions.map((sub) => ({
       SubscriptionID: sub.id,
@@ -335,12 +354,15 @@ const buildScenarioTables = (scenario: Scenario, data: ExportData, schema: PBISc
       MRRPY: sub.mrrPY,
       Churn: sub.churn,
       LTV: sub.ltv,
+      ARR: sub.arr,
+      CAC: sub.cac,
     }));
     tableRows.Customer = data.customers.map((cust) => ({
       CustomerID: cust.id,
       CustomerName: cust.name,
       Tier: cust.tier,
       Region: cust.region,
+      Industry: cust.industry,
     }));
     tableRows.DateTable = buildDateTable(data.subscriptions.map((s) => s.date), false, true);
   } else if (scenario === 'HR') {
@@ -349,6 +371,7 @@ const buildScenarioTables = (scenario: Scenario, data: ExportData, schema: PBISc
       EmployeeName: emp.name,
       Department: emp.department,
       Role: emp.role,
+      Office: emp.office,
       Salary: emp.salary,
       Rating: emp.rating,
       Attrition: emp.attrition,
@@ -689,6 +712,56 @@ const buildQueryState = (item: DashboardItem, scenario: Scenario, measures: DAXM
   return queryState;
 };
 
+const makeLiteral = (value: string) => ({ expr: { Literal: { Value: value } } });
+const makeSolidColor = (color: string) => ({ solid: { color: makeLiteral(`'${color}'`) } });
+
+const buildVisualObjects = (item: DashboardItem): Record<string, any> => {
+  const objects: Record<string, any> = {};
+
+  // Title formatting
+  objects.title = [{
+    properties: {
+      show: makeLiteral('true'),
+      text: makeLiteral(`'${(item.title || '').replace(/'/g, "''")}'`),
+      fontColor: makeSolidColor('#252423'),
+      fontSize: makeLiteral('12L'),
+    }
+  }];
+
+  // Category axis formatting (for chart types that have axes)
+  const axisTypes = ['bar', 'column', 'stackedBar', 'stackedColumn', 'line', 'area', 'waterfall', 'scatter'];
+  if (axisTypes.includes(item.type)) {
+    objects.categoryAxis = [{
+      properties: {
+        fontSize: makeLiteral('9L'),
+        fontColor: makeSolidColor('#605E5C'),
+      }
+    }];
+    objects.valueAxis = [{
+      properties: {
+        fontSize: makeLiteral('9L'),
+        fontColor: makeSolidColor('#605E5C'),
+        gridlineShow: makeLiteral('true'),
+        gridlineColor: makeSolidColor('#F3F2F1'),
+      }
+    }];
+  }
+
+  // Legend formatting (for charts with legends)
+  const legendTypes = ['pie', 'donut', 'stackedBar', 'stackedColumn', 'line', 'area'];
+  if (legendTypes.includes(item.type)) {
+    objects.legend = [{
+      properties: {
+        show: makeLiteral('true'),
+        fontSize: makeLiteral('9L'),
+        fontColor: makeSolidColor('#605E5C'),
+      }
+    }];
+  }
+
+  return objects;
+};
+
 const buildVisualJson = (item: DashboardItem, index: number, scenario: Scenario, measures: DAXMeasure[]) => {
   const position = gridToPixels(item.layout);
   const queryState = buildQueryState(item, scenario, measures);
@@ -709,7 +782,7 @@ const buildVisualJson = (item: DashboardItem, index: number, scenario: Scenario,
       query: {
         queryState,
       },
-      objects: {},
+      objects: buildVisualObjects(item),
       drillFilterOtherVisuals: true,
     },
   };

@@ -36,7 +36,7 @@ const useStyles = makeStyles({
   value: {
     fontSize: '32px',
     fontWeight: 'bold',
-    color: '#323130',
+    color: '#252423',
     marginTop: '2px',
   },
   footer: {

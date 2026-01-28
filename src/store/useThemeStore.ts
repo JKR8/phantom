@@ -8,7 +8,7 @@ export interface ColorPalette {
 export const PALETTES: ColorPalette[] = [
   {
     name: 'Power BI Default',
-    colors: ['#0078D4', '#00BCF2', '#00B294', '#FFB900', '#D83B01', '#B4009E', '#5C2D91', '#008272'],
+    colors: ['#118DFF', '#12239E', '#E66C37', '#6B007B', '#E044A7', '#744EC2', '#D9B300', '#D64550', '#197278', '#1AAB40'],
   },
   {
     name: 'Ocean',
@@ -57,6 +57,21 @@ export const PALETTES: ColorPalette[] = [
 ];
 
 export const DEFAULT_PALETTE = PALETTES[0];
+
+export const PBI_SEMANTIC_COLORS = {
+  good: '#1AAB40',
+  neutral: '#D9B300',
+  bad: '#D64554',
+  nullValue: '#FF7F48',
+  primaryText: '#252423',
+  secondaryText: '#605E5C',
+  tertiaryText: '#B3B0AD',
+  gridlines: '#F3F2F1',
+  visualBackground: '#FFFFFF',
+  canvasBackground: '#F2F2F2',
+  accent: '#118DFF',
+  selectionBorder: '#118DFF',
+};
 
 interface ThemeState {
   activePalette: ColorPalette;

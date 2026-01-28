@@ -100,8 +100,8 @@ export function getPBIVisualType(phantomType: VisualType): string {
 /**
  * Convert all dashboard items to PBI visual configurations
  */
-export function convertLayoutToPBI(items: DashboardItem[], scenario: Scenario): PBIVisualConfig[] {
-  return items.map((item, index) => ({
+export function convertLayoutToPBI(items: DashboardItem[], _scenario: Scenario): PBIVisualConfig[] {
+  return items.map((item) => ({
     name: `visual_${item.id}`,
     visualType: getPBIVisualType(item.type),
     position: gridToPixels(item.layout),
@@ -361,7 +361,7 @@ function generatePrototypeQuery(visual: PBIVisualConfig, scenario: Scenario): ob
   const tableRefs = new Map<string, Set<string>>();
 
   Object.values(projections).forEach((entries) => {
-    entries.forEach((entry) => {
+    entries.forEach((entry: any) => {
       const queryRef: string | undefined = entry?.queryRef;
       if (!queryRef) return;
       const match = queryRef.match(/([A-Za-z0-9_]+)\[([^\]]+)\]/);
@@ -414,7 +414,6 @@ export function calculateOptimalCanvas(items: DashboardItem[]): { width: number;
   });
 
   // Scale to fit within reasonable bounds while maintaining aspect ratio
-  const aspectRatio = 16 / 9;
   const baseWidth = PBI_CANVAS_WIDTH;
   const contentHeight = (maxY / 18) * PBI_CANVAS_HEIGHT;
   

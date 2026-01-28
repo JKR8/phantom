@@ -24,13 +24,15 @@ export interface Sale {
   profit: number;
   profitPL: number;
   profitPY: number;
+  discount: number;
 }
 
 export interface Customer {
   id: string;
   name: string;
-  tier: 'Starter' | 'Professional' | 'Enterprise';
+  tier: 'Free' | 'Starter' | 'Professional' | 'Enterprise';
   region: string;
+  industry: string;
 }
 
 export interface Subscription {
@@ -42,6 +44,8 @@ export interface Subscription {
   mrrPY: number;
   churn: number; // 0 or 1 for boolean-like, or a value
   ltv: number;
+  arr: number;
+  cac: number;
 }
 
 export interface Employee {
@@ -49,6 +53,7 @@ export interface Employee {
   name: string;
   department: string;
   role: string;
+  office: string;
   salary: number;
   rating: number; // 1-5
   attrition: number; // 0 or 1
@@ -189,6 +194,11 @@ export interface DbDashboard {
   updated_at: string;
 }
 
+export interface HighlightState {
+  dimension: string;
+  values: Set<string>;
+}
+
 export interface DashboardState {
   scenario: Scenario;
   stores: Store[];
@@ -203,12 +213,15 @@ export interface DashboardState {
   controversyScores: ControversyScore[];
   socialPosts: SocialPost[];
   filters: Record<string, any>;
+  highlight: HighlightState | null;
   items: DashboardItem[];
   selectedItemId: string | null;
   layoutMode: LayoutMode;
   setScenario: (scenario: Scenario) => void;
   setLayoutMode: (mode: LayoutMode) => void;
   setFilter: (column: string, value: any) => void;
+  setHighlight: (dimension: string, value: string, ctrlKey?: boolean) => void;
+  clearHighlight: () => void;
   clearFilters: () => void;
   addItem: (item: DashboardItem) => void;
   removeItem: (id: string) => void;

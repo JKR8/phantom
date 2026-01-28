@@ -80,11 +80,11 @@ export const StackedColumnChart: React.FC<StackedColumnChartProps> = ({ dimensio
   return (
     <ResponsiveContainer width="100%" height="100%">
       <ReBarChart data={data} margin={{ top: 20, right: 20, left: 10, bottom: 5 }} barGap={0} barCategoryGap="20%">
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#edebe9" />
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F2F1" />
         <XAxis
           dataKey="name"
           tick={{ fontSize: 9, fill: '#605E5C' }}
-          axisLine={{ stroke: '#edebe9' }}
+          axisLine={{ stroke: '#F3F2F1' }}
           tickLine={false}
         />
         <YAxis
@@ -98,15 +98,15 @@ export const StackedColumnChart: React.FC<StackedColumnChartProps> = ({ dimensio
             formatMetricValue(metric, Number(value)),
             name === 'ac' ? 'Actual' : 'Plan'
           ]}
-          contentStyle={{ fontSize: '11px', borderRadius: '4px', border: '1px solid #edebe9' }}
+          contentStyle={{ fontSize: '11px', borderRadius: '4px', border: '1px solid #F3F2F1' }}
         />
         <Legend
           formatter={(value) => value === 'ac' ? 'AC' : 'PL'}
           wrapperStyle={{ fontSize: '10px' }}
         />
-        <ReferenceLine y={0} stroke="#323130" />
+        <ReferenceLine y={0} stroke="#252423" />
         <Bar dataKey="pl" fill="#999999" name="pl" radius={[2, 2, 0, 0]} />
-        <Bar dataKey="ac" fill="#323130" name="ac" radius={[2, 2, 0, 0]}>
+        <Bar dataKey="ac" fill="#252423" name="ac" radius={[2, 2, 0, 0]}>
           <LabelList
             dataKey="variancePct"
             position="top"
@@ -117,7 +117,7 @@ export const StackedColumnChart: React.FC<StackedColumnChartProps> = ({ dimensio
             style={{
               fontSize: '8px',
               fontWeight: 'bold',
-              fill: '#323130',
+              fill: '#252423',
             }}
           />
         </Bar>

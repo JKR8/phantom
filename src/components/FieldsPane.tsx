@@ -20,7 +20,7 @@ const useStyles = makeStyles({
     borderBottom: '1px solid #E1DFDD',
     fontWeight: '600',
     fontSize: '12px',
-    color: '#323130',
+    color: '#252423',
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
   },

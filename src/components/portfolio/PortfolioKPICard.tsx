@@ -17,7 +17,7 @@ const useStyles = makeStyles({
   value: {
     fontSize: '28px',
     fontWeight: '700',
-    color: '#323130',
+    color: '#252423',
     lineHeight: 1.1,
   },
   valueRed: {

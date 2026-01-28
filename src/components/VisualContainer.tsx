@@ -40,7 +40,7 @@ const useStyles = makeStyles({
   title: {
     fontSize: '12px',
     fontWeight: 'semibold',
-    color: '#323130',
+    color: '#252423',
   },
   content: {
     flex: 1,

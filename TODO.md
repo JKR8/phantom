@@ -5,6 +5,16 @@ Curated Standards for Power BI delivery. Phantom is a standards-driven prototypi
 
 **Core loop:** Drop → Auto-populate → Shape → Refine → Export
 
+## Recently Completed (January 2026)
+- [x] Cross-highlighting (setHighlight; 40% opacity dimming; Ctrl+Click multi-select; slicers still filter)
+- [x] Realistic data distributions (Pareto, log-normal, exponential decay, seeded PRNG, AR(1) + seasonal patterns)
+- [x] Data volume: Retail 2000 sales / 30 stores / 80 products, SaaS 2400 subs / 150 customers, HR 300 employees
+- [x] New data fields: discount (Sale), industry (Customer), arr/cac (Subscription), office (Employee)
+- [x] 12 color palettes (added Warm Neutral, Industrial, Boardroom) + PBI semantic colors
+- [x] Corrected Power BI Default palette (#118DFF primary, 10 colors)
+- [x] PBIP export: visual formatting objects, Retail/Finance/Social DAX generators, extended DateTable
+- [x] Bug fixes: Canvas isDirty on mount, ScatterChart memo deps, getMetricValue camelCase lookup
+
 ---
 
 ## PBIP Export (Critical Path)
@@ -44,8 +54,8 @@ Legend: ✅ ready, ⚠️ partial/misaligned, ⏳ pending PBIP verification
 ---
 
 ## Bug Fixes / QA (Add to backlog)
-- [ ] Fix metric lookup for camelCase fields (e.g. `SentimentScore`, `MarketValue`) so charts/cards don’t show 0
-- [ ] Recompute Scatter chart when dimension/scenario data changes (memo deps)
+- [x] Fix metric lookup for camelCase fields (e.g. `SentimentScore`, `MarketValue`) so charts/cards don't show 0
+- [x] Recompute Scatter chart when dimension/scenario data changes (memo deps)
 - [x] Export table projections: include default columns when `props.columns` is undefined
 - [x] Export field mapping: handle case-insensitive dimension names (e.g. `region` → `Region`)
 - [ ] Resolve Fluent UI `mergeClasses` warnings in console (style composition)
@@ -80,7 +90,9 @@ A Standards Pack is what turns Phantom from "a grid with charts" into "curated c
 - [ ] Consistent font family and weight rules
 
 ### 1c. Color & Accessibility
-- [x] 9 color palettes (PBI Default, Ocean, Forest, Sunset, Mono, Corporate, Zebra, Social, Portfolio)
+- [x] 12 color palettes (PBI Default, Ocean, Forest, Sunset, Mono, Corporate, Zebra, Social, Portfolio, Warm Neutral, Industrial, Boardroom)
+- [x] PBI semantic colors defined (good/neutral/bad/accent/gridlines/canvas/text)
+- [x] Canvas background #F2F2F2, primary text #252423, gridlines #F3F2F1
 - [x] Real-time palette switching
 - [ ] WCAG AA contrast enforcement on all palette/background combinations
 - [ ] Colorblind-safe validation for palette selections
@@ -212,7 +224,7 @@ Slots solve: alignment perfection, consistent spacing, "it always looks pro," pr
 - [x] Build fact table generator with configurable dimensions
 - [x] Create dimension table auto-generation (Date, Product, Customer, etc.)
 - [ ] Implement DAX measure library for common calculations
-- [ ] Build realistic data distribution algorithms
+- [x] Build realistic data distribution algorithms (distributions.ts + seasonality.ts)
 - [x] Create industry-specific data profiles (6 scenarios)
 - [x] Export to Power BI (PBIP) with relationships intact
 

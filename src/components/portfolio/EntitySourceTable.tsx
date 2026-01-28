@@ -33,7 +33,7 @@ const useStyles = makeStyles({
     fontWeight: '600',
     fontSize: '9px',
     backgroundColor: '#F3F2F1',
-    color: '#323130',
+    color: '#252423',
     ...shorthands.padding('4px', '6px'),
     textTransform: 'uppercase',
     letterSpacing: '0.3px',
@@ -41,7 +41,7 @@ const useStyles = makeStyles({
   cell: {
     fontSize: '10px',
     ...shorthands.padding('2px', '6px'),
-    color: '#323130',
+    color: '#252423',
     ...shorthands.borderBottom('1px', 'solid', '#EDEBE9'),
     lineHeight: '1.3',
   },
@@ -55,7 +55,7 @@ const useStyles = makeStyles({
   totalCell: {
     fontSize: '10px',
     ...shorthands.padding('3px', '6px'),
-    color: '#323130',
+    color: '#252423',
     fontWeight: '600',
   },
   totalValue: {

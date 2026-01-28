@@ -116,11 +116,11 @@ export const WaterfallChart: React.FC<WaterfallChartProps> = ({ dimension, metri
     <div style={{ width: '100%', height: '100%', backgroundColor: 'white' }}>
         <ResponsiveContainer width="100%" height="100%">
         <ReBarChart data={data} margin={{ top: 30, right: 30, left: 20, bottom: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#edebe9" />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F2F1" />
             <XAxis 
                 dataKey="name" 
                 tick={{ fontSize: 9, fill: '#605E5C' }} 
-                axisLine={{ stroke: '#edebe9' }}
+                axisLine={{ stroke: '#F3F2F1' }}
                 tickLine={false}
             />
             <YAxis 
@@ -131,7 +131,7 @@ export const WaterfallChart: React.FC<WaterfallChartProps> = ({ dimension, metri
             />
             <Tooltip 
                 formatter={(val: any) => [formatMetricValue(metric, Number(val[1] - val[0])), 'Change']}
-                contentStyle={{ fontSize: '12px', borderRadius: '4px', border: '1px solid #edebe9' }}
+                contentStyle={{ fontSize: '12px', borderRadius: '4px', border: '1px solid #F3F2F1' }}
             />
             <Bar dataKey="value" radius={[2, 2, 0, 0]}>
             {data.map((entry, index) => (
@@ -141,7 +141,7 @@ export const WaterfallChart: React.FC<WaterfallChartProps> = ({ dimension, metri
                 dataKey="displayValue" 
                 position="top" 
                 formatter={(val: any) => formatValue(Number(val))}
-                style={{ fontSize: '10px', fontWeight: 'bold', fill: '#323130' }}
+                style={{ fontSize: '10px', fontWeight: 'bold', fill: '#252423' }}
             />
             </Bar>
         </ReBarChart>

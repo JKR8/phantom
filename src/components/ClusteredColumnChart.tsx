@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
   Cell
 } from 'recharts';
-import { useStore, useFilteredSales } from '../store/useStore';
+import { useStore, useFilteredSales, useHighlight, useSetHighlight } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
 import { formatMetricValue, getDimensionValue, getMetricValue } from '../utils/chartUtils';
 
@@ -27,9 +27,9 @@ export const ClusteredColumnChart: React.FC<ClusteredColumnChartProps> = ({ dime
   const stores = useStore((state) => state.stores);
   const products = useStore((state) => state.products);
   const customers = useStore((state) => state.customers);
-  const setFilter = useStore((state) => state.setFilter);
-  const activeFilters = useStore((state) => state.filters);
-  const { getColor, highlightColor } = useThemeStore();
+  const highlight = useHighlight();
+  const setHighlight = useSetHighlight();
+  const { getColor } = useThemeStore();
 
   const data = useMemo(() => {
     if (manualData && manualData.length > 0) {
@@ -73,45 +73,45 @@ export const ClusteredColumnChart: React.FC<ClusteredColumnChartProps> = ({ dime
     return result;
   }, [manualData, filteredSales, dimension, metric, stores, products, topN, sort, showOther]);
 
-  const handleClick = (data: any) => {
+  const handleClick = (data: any, e?: React.MouseEvent) => {
     if (data && data.name) {
-      const currentFilter = activeFilters[dimension];
-      if (currentFilter === data.name) {
-        setFilter(dimension, null);
-      } else {
-        setFilter(dimension, data.name);
-      }
+      setHighlight(dimension, data.name, e?.ctrlKey || e?.metaKey);
     }
   };
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <ReBarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }} onClick={(e: any) => {
+      <ReBarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }} onClick={(e: any, event?: any) => {
         if (e && e.activePayload) {
-          handleClick(e.activePayload[0].payload);
+          handleClick(e.activePayload[0].payload, event);
         }
       }}>
-        <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={true} />
-        <XAxis 
-          dataKey="name" 
-          tick={{ fontSize: 10 }}
+        <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={true} stroke="#F3F2F1" />
+        <XAxis
+          dataKey="name"
+          tick={{ fontSize: 10, fill: '#605E5C' }}
         />
         <YAxis
           tickFormatter={(value) => formatMetricValue(metric, Number(value), true)}
-          tick={{ fontSize: 10 }}
+          tick={{ fontSize: 10, fill: '#605E5C' }}
         />
         <Tooltip
           formatter={(value: any) => formatMetricValue(metric, Number(value))}
           contentStyle={{ fontSize: '12px' }}
         />
         <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-          {data.map((entry, index) => (
-            <Cell
-              key={`cell-${index}`}
-              fill={activeFilters[dimension] === entry.name ? highlightColor : getColor(index)}
-              style={{ cursor: 'pointer' }}
-            />
-          ))}
+          {data.map((entry, index) => {
+            const isHighlightActive = highlight && highlight.dimension === dimension;
+            const isHighlighted = isHighlightActive && highlight.values.has(entry.name);
+            return (
+              <Cell
+                key={`cell-${index}`}
+                fill={getColor(index)}
+                fillOpacity={isHighlightActive ? (isHighlighted ? 1.0 : 0.4) : 1.0}
+                style={{ cursor: 'pointer' }}
+              />
+            );
+          })}
         </Bar>
       </ReBarChart>
     </ResponsiveContainer>

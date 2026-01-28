@@ -44,7 +44,7 @@ const useStyles = makeStyles({
   },
   fieldLabel: {
     fontSize: '12px',
-    color: '#323130',
+    color: '#252423',
     fontWeight: '500',
   },
   typeLabel: {

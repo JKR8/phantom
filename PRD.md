@@ -30,7 +30,7 @@ Phantom is a web-based "Micro-BI" prototyping tool that enables consultants and 
  │   USER PICKS A STARTING POINT                                           │
  │                                                                         │
  │   ┌──────────────┐    ┌──────────────────────────────────────────────┐  │
- │   │  Scenario     │    │  Template Library (8 pre-built dashboards)  │  │
+ │   │  Scenario     │    │  Template Library (9 pre-built dashboards)  │  │
  │   │  Selector     │    │                                             │  │
  │   │               │    │  Sales · Marketing · HR · Logistics         │  │
  │   │  Retail       │    │  Finance · IBCS · Social · Portfolio        │  │
@@ -44,9 +44,10 @@ Phantom is a web-based "Micro-BI" prototyping tool that enables consultants and 
  │          ▼                            ▼                                  │
  │  ┌──────────────────────────────────────────────────────────────────┐   │
  │  │                                                                   │   │
- │  │   DATA ENGINE  (engine/dataGenerator.ts)                          │   │
+ │  │   DATA ENGINE  (engine/dataGenerator.ts + distributions.ts         │   │
+ │  │                 + seasonality.ts)                                  │   │
  │  │                                                                   │   │
- │  │   Faker.js generates mathematically linked relational data:       │   │
+ │  │   Statistical distributions + Faker.js generate realistic data:   │   │
  │  │                                                                   │   │
  │  │   ┌────────────────┐     ┌─────────────────┐                     │   │
  │  │   │  Dimensions     │     │  Facts            │                    │   │
@@ -114,21 +115,21 @@ Phantom is a web-based "Micro-BI" prototyping tool that enables consultants and 
  │  │  │ └────┴──────────┴──┘  │  │  │   ┌───────────▼─────────────┐    │  │
  │  │  └───────────────────────┘  │  │   │ layoutConverter.ts       │    │  │
  │  │                             │  │   │                         │    │  │
- │  │  CROSS-FILTERING LOOP:     │  │   │ Grid coords → PBI pixel  │    │  │
+ │  │  CROSS-HIGHLIGHTING LOOP:   │  │   │ Grid coords → PBI pixel  │    │  │
  │  │                             │  │   │ positions + visual.json   │    │  │
  │  │  Click chart segment        │  │   │ query bindings            │    │  │
  │  │    │                        │  │   └───────────┬─────────────┘    │  │
  │  │    ▼                        │  │               │                  │  │
- │  │  setFilter(col, val)        │  │               ▼                  │  │
+ │  │  setHighlight(dim, val)     │  │               ▼                  │  │
  │  │    │                        │  │   ┌─────────────────────────┐    │  │
  │  │    ▼                        │  │   │  PBIP OUTPUT             │    │  │
- │  │  Zustand store updates      │  │   │                         │    │  │
- │  │    │                        │  │   │  Project.pbip            │    │  │
- │  │    ▼                        │  │   │  ├─ Report/              │    │  │
- │  │  ALL visuals re-render      │  │   │  │  └─ visuals/*.json   │    │  │
- │  │  with filtered data         │  │   │  └─ SemanticModel/      │    │  │
- │  │    │                        │  │   │     ├─ model.tmdl       │    │  │
- │  │    ▼                        │  │   │     └─ tables/*.tmdl    │    │  │
+ │  │  Non-matching data dims     │  │   │                         │    │  │
+ │  │  to 40% opacity             │  │   │  Project.pbip            │    │  │
+ │  │    │                        │  │   │  ├─ Report/              │    │  │
+ │  │    ▼                        │  │   │  │  └─ visuals/*.json   │    │  │
+ │  │  Ctrl+Click = multi-select  │  │   │  └─ SemanticModel/      │    │  │
+ │  │  Slicers still use          │  │   │     ├─ model.tmdl       │    │  │
+ │  │    setFilter(col, val)      │  │   │     └─ tables/*.tmdl    │    │  │
  │  │  Click again = clear        │  │   │                         │    │  │
  │  │                             │  │   │  Opens in PBI Desktop    │    │  │
  │  └────────────────────────────┘  │   └─────────────────────────┘    │  │
@@ -137,18 +138,18 @@ Phantom is a web-based "Micro-BI" prototyping tool that enables consultants and 
  │                                                                         │
  │  TECH STACK                                                             │
  │  React 18 + TypeScript + Vite | Fluent UI v9 | Recharts | Zustand      │
- │  react-grid-layout | Faker.js v10 | TMDL + PBIP native format          │
+ │  react-grid-layout | Faker.js v10 | Supabase | TMDL + PBIP format      │
  │                                                                         │
- │  9 COLOR PALETTES                                                       │
+ │  12 COLOR PALETTES                                                      │
  │  PBI Default · Ocean · Forest · Sunset · Mono · Corporate              │
  │  Zebra (IBCS) · Social · Portfolio                                      │
+ │  Warm Neutral · Industrial · Boardroom                                  │
  │                                                                         │
-│  7 SCENARIOS           20+ VISUAL TYPES         8 TEMPLATES             │
-│  Retail · SaaS         Bar · Column · Line      Sales · Marketing       │
-│  HR · Logistics        Area · Pie · Donut       HR · Logistics          │
-│  Portfolio · Social    Scatter · Funnel          Finance · IBCS          │
-│  Finance               Treemap · Gauge           Social · Portfolio      │
- │                        Treemap · Gauge           Social · Portfolio      │
+ │  7 SCENARIOS           20+ VISUAL TYPES         9 TEMPLATES             │
+ │  Retail · SaaS         Bar · Column · Line      Sales · Marketing       │
+ │  HR · Logistics        Area · Pie · Donut       HR · Logistics          │
+ │  Portfolio · Social    Scatter · Funnel          Finance · IBCS          │
+ │  Finance               Treemap · Gauge           Social · Portfolio      │
  │                        Waterfall · Table                                 │
  │                        Matrix · Card · Slicer                            │
  │                        + 9 Portfolio visuals                             │
@@ -207,6 +208,7 @@ Phantom is a web-based "Micro-BI" prototyping tool that enables consultants and 
 ### Project Structure
 ```
 src/
+├── auth/                       # Supabase auth components
 ├── components/
 │   ├── AppShell.tsx            # Main layout shell (top bar, nav, panes)
 │   ├── Canvas.tsx              # Grid-based visual canvas with drag-drop
@@ -217,6 +219,12 @@ src/
 │   ├── ExportButton.tsx        # Export dropdown (PBIP, JSON)
 │   ├── FFMAPanel.tsx           # FFMA reporting language widgets
 │   ├── ColorPicker.tsx         # Theme/palette selector
+│   ├── AutoSave.tsx            # Auto-save to Supabase
+│   ├── SaveDashboardDialog.tsx # Save dialog
+│   ├── ShareDialog.tsx         # Public share link dialog
+│   ├── UserMenu.tsx            # Auth user menu
+│   ├── QuickShapeStrip.tsx     # Inline visual shaping controls
+│   ├── DashboardCard.tsx       # Dashboard listing card
 │   ├── BarChart.tsx            # Bar/column charts
 │   ├── StackedBarChart.tsx     # Stacked bar
 │   ├── ClusteredColumnChart.tsx # Clustered column
@@ -247,19 +255,28 @@ src/
 │       ├── DateRangePicker.tsx
 │       └── JustificationSearch.tsx
 ├── engine/
-│   └── dataGenerator.ts        # Fake data generation (7 scenarios)
+│   ├── dataGenerator.ts        # Star schema data generation (7 scenarios)
+│   ├── distributions.ts        # Pareto, log-normal, exponential decay
+│   └── seasonality.ts          # Seasonal + AR(1) time-series patterns
 ├── export/
 │   ├── index.ts                # Export entry point
 │   ├── schemaGenerator.ts      # Star schema definitions per scenario
 │   ├── daxGenerator.ts         # DAX measure extraction from visuals
 │   ├── pbipWriter.ts           # PBIP export assembly
 │   └── layoutConverter.ts      # Phantom layout → PBI visual positions
+├── lib/                        # Supabase client + utilities
+├── pages/                      # Route pages (editor, dashboard list)
 ├── store/
 │   ├── useStore.ts             # Main Zustand store (data, filters, items)
 │   ├── useThemeStore.ts        # Color palette/theme state
-│   └── templates.ts            # Pre-built dashboard templates (8)
-└── types/
-    └── index.ts                # TypeScript interfaces
+│   ├── templates.ts            # Pre-built dashboard templates (9)
+│   ├── semanticLayer.ts        # Field role definitions
+│   ├── bindingRecipes.ts       # Visual type → default field bindings
+│   └── slotLayouts.ts          # Layout archetype slot definitions
+├── types/
+│   └── index.ts                # TypeScript interfaces
+└── utils/
+    └── chartUtils.ts           # Shared chart helpers
 ```
 
 ---
@@ -273,9 +290,9 @@ Users select a business scenario from the top bar. Each generates linked relatio
 
 | Scenario | Dimensions | Measures | Rows |
 |----------|------------|----------|------|
-| **Retail** | Store, Region, Product, Category | Revenue, Profit, Quantity + PL/PY variants | 1000 sales |
-| **SaaS** | Customer, Tier, Region | MRR, Churn, LTV + PL/PY variants | 1000 subscriptions |
-| **HR** | Employee, Department, Role | Salary, Rating, Attrition, Tenure | 200 employees |
+| **Retail** | Store, Region, Product, Category | Revenue, Profit, Quantity, Discount + PL/PY variants | 2000 sales |
+| **SaaS** | Customer, Tier, Region, Industry | MRR, Churn, LTV, ARR, CAC + PL/PY variants | 2400 subscriptions |
+| **HR** | Employee, Department, Role, Office | Salary, Rating, Attrition, Tenure | 300 employees |
 | **Logistics** | Origin, Destination, Carrier | Cost, Weight, On-Time | 500 shipments |
 | **Portfolio** | Entity, Sector, Region, Source | Market Value, Controversy Score, Score Change | Multiple entities |
 | **Social** | User, Platform, Sentiment, Location | Engagements, Mentions, Sentiment Score | 1200 posts |
@@ -308,7 +325,7 @@ All visuals subscribe and re-render on filter changes. Toggle behavior: clicking
 Every visual wrapped in a container with:
 - Draggable header (title bar)
 - Resize handles (corners/edges)
-- Selection state (blue border `#0078D4`)
+- Selection state (blue border `#118DFF`)
 - Delete capability
 
 #### FR-2.3: Drag-to-Canvas
@@ -346,7 +363,7 @@ Users drag visual types from the Visualizations Pane onto the canvas:
 | Portfolio Visuals | Done | Mixed | 9 specialized ESG components |
 
 #### FR-3.1: Chart Theming
-- 9 built-in color palettes:
+- 12 built-in color palettes:
   1. Power BI Default
   2. Ocean
   3. Forest
@@ -356,24 +373,29 @@ Users drag visual types from the Visualizations Pane onto the canvas:
   7. Zebra (IBCS)
   8. Social
   9. Portfolio
+  10. Warm Neutral
+  11. Industrial
+  12. Boardroom
 - Real-time palette switching via dropdown
 - Consistent colors across all visuals
-- 8 colors per palette
+- 8-10 colors per palette
 
 ---
 
 ### 4. Interactivity
 
-#### FR-4.1: Cross-Filtering
+#### FR-4.1: Cross-Highlighting
 ```
 User clicks "Electronics" on Donut Chart
-  → Global filter: { Category: "Electronics" }
-  → Bar Chart filters to Electronics only
-  → KPI Cards recalculate sums
-  → Table shows only Electronics rows
-```
+  → setHighlight({ dimension: "category", value: "Electronics" })
+  → Bar Chart: Electronics bar stays full opacity, others dim to 40%
+  → KPI Cards: recalculate sums for highlighted data
+  → Table: highlights matching rows
+  Ctrl+Click = multi-select (additive highlighting)
+  Click again = clear highlight
 
-**Toggle behavior:** Clicking same element again clears the filter.
+Slicers use setFilter(col, val) — removes non-matching data entirely.
+```
 
 #### FR-4.2: Visual Selection & Properties
 - Click visual → blue border selection state
@@ -460,10 +482,12 @@ Pre-built dashboard templates for quick-start:
 |---------|-------|
 | Top Bar | `#252423` |
 | Left Nav | `#F0F0F0` |
-| Canvas Background | `#EAEAEA` |
+| Canvas Background | `#F2F2F2` |
 | Visual Background | `#FFFFFF` |
 | Borders | `#E1DFDD` |
-| Selection | `#0078D4` |
+| Selection | `#118DFF` |
+| Primary Text | `#252423` |
+| Gridlines | `#F3F2F1` |
 
 #### Layout Regions
 ```
@@ -471,7 +495,7 @@ Pre-built dashboard templates for quick-start:
 │  Top Bar (#252423) - File, Templates, Export, Share      │
 ├────┬──────────────────────────────────────────┬─────────┤
 │ L  │                                          │ Right   │
-│ e  │         Canvas (#EAEAEA)                 │ Pane    │
+│ e  │         Canvas (#F2F2F2)                 │ Pane    │
 │ f  │    ┌─────────┐  ┌─────────┐             │         │
 │ t  │    │ Visual  │  │ Visual  │             │Fields / │
 │    │    └─────────┘  └─────────┘             │Props    │
@@ -502,7 +526,7 @@ Side panel for FFMA reporting language widgets. Toggleable from left nav. Contai
 | 20+ chart types with cross-filtering | Done |
 | KPI Cards (filtered, Sum/Avg/Count) | Done |
 | Data Table (filtered) | Done |
-| Theme/Color Picker (9 palettes) | Done |
+| Theme/Color Picker (12 palettes) | Done |
 | Slicer Component | Done |
 | Line Chart | Done |
 | Grid Layout (drag, resize, snap) | Done |
@@ -517,9 +541,12 @@ Side panel for FFMA reporting language widgets. Toggleable from left nav. Contai
 | Visualizations Pane (drag to canvas) | Done |
 | Add/remove visuals dynamically | Done |
 | Visual selection & focus | Done |
-| PBIP export with star schema | In Progress |
+| PBIP export with star schema | Done (pending Desktop validation) |
 | JSON export | Done |
-| 8 pre-built templates | Done |
+| 9 pre-built templates | Done |
+| Supabase auth/persistence | Done |
+| Auto-save/sharing | Done |
+| Cross-highlighting (40% opacity dimming) | Done |
 | Properties Panel (title, dimension, metric) | Done |
 | FFMA side panel | Done |
 | Portfolio monitoring module | Done |

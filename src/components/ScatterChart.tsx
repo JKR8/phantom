@@ -47,7 +47,7 @@ export const ScatterChart: React.FC<ScatterChartProps> = ({ xMetric = 'revenue',
     });
 
     return Object.values(aggregation);
-  }, [manualData, filteredSales, xMetric, yMetric]);
+  }, [manualData, filteredSales, xMetric, yMetric, dimension, stores, products, customers]);
 
   return (
     <ResponsiveContainer width="100%" height="100%">

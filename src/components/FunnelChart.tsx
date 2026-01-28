@@ -7,7 +7,7 @@ import {
   ResponsiveContainer,
   Cell
 } from 'recharts';
-import { useStore, useFilteredSales } from '../store/useStore';
+import { useStore, useFilteredSales, useHighlight, useSetHighlight } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
 import { formatMetricValue, getDimensionValue, getMetricValue } from '../utils/chartUtils';
 
@@ -25,6 +25,8 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({ dimension, metric, man
   const stores = useStore((state) => state.stores);
   const products = useStore((state) => state.products);
   const customers = useStore((state) => state.customers);
+  const highlight = useHighlight();
+  const setHighlight = useSetHighlight();
   const { getColor } = useThemeStore();
 
   const data = useMemo(() => {
@@ -70,6 +72,8 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({ dimension, metric, man
     return result;
   }, [manualData, filteredSales, dimension, metric, stores, products, topN, sort, showOther]);
 
+  const isHighlightActive = highlight && highlight.dimension === dimension;
+
   return (
     <ResponsiveContainer width="100%" height="100%">
       <ReFunnelChart>
@@ -78,11 +82,24 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({ dimension, metric, man
           dataKey="value"
           data={data}
           isAnimationActive
+          onClick={(entry: any) => {
+            if (entry && entry.name) {
+              setHighlight(dimension, entry.name);
+            }
+          }}
         >
           <LabelList position="right" fill="#000" stroke="none" dataKey="name" />
-           {data.map((_, index) => (
-            <Cell key={`cell-${index}`} fill={getColor(index)} />
-          ))}
+           {data.map((entry, index) => {
+            const isHighlighted = isHighlightActive && highlight.values.has(entry.name);
+            return (
+              <Cell
+                key={`cell-${index}`}
+                fill={getColor(index)}
+                fillOpacity={isHighlightActive ? (isHighlighted ? 1.0 : 0.4) : 1.0}
+                style={{ cursor: 'pointer' }}
+              />
+            );
+          })}
         </Funnel>
       </ReFunnelChart>
     </ResponsiveContainer>

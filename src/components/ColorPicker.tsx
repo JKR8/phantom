@@ -15,7 +15,7 @@ const useStyles = makeStyles({
   header: {
     fontWeight: '600',
     fontSize: '12px',
-    color: '#323130',
+    color: '#252423',
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
     marginBottom: '8px',

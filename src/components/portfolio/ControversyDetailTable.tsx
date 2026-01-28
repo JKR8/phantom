@@ -33,7 +33,7 @@ const useStyles = makeStyles({
     fontWeight: '600',
     fontSize: '10px',
     backgroundColor: '#F3F2F1',
-    color: '#323130',
+    color: '#252423',
     ...shorthands.padding('8px'),
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
@@ -63,13 +63,13 @@ const useStyles = makeStyles({
   cell: {
     fontSize: '11px',
     ...shorthands.padding('6px', '8px'),
-    color: '#323130',
+    color: '#252423',
     ...shorthands.borderBottom('1px', 'solid', '#E1DFDD'),
     verticalAlign: 'top',
   },
   entityName: {
     fontWeight: '500',
-    color: '#323130',
+    color: '#252423',
   },
   categoryCell: {
     color: '#605E5C',

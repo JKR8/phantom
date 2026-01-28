@@ -29,6 +29,9 @@ export const getMetricValue = (item: any, metric?: string) => {
   if (!metric) return 0;
   const direct = item?.[metric];
   if (typeof direct === 'number') return direct;
+  // camelCase fallback: e.g. "SentimentScore" → "sentimentScore"
+  const camel = item?.[metric[0].toLowerCase() + metric.slice(1)];
+  if (typeof camel === 'number') return camel;
   const lower = item?.[metric.toLowerCase()];
   return typeof lower === 'number' ? lower : 0;
 };
@@ -64,6 +67,16 @@ export const getDimensionValue = (item: any, dimension: string, context: Dimensi
     return customers.find((c) => c.id === item.customerId)?.name || 'Unknown';
   }
 
+  if (dimension === 'Industry' && item?.customerId) {
+    return customers.find((c) => c.id === item.customerId)?.industry || 'Unknown';
+  }
+
+  if (dimension === 'Office' && item?.office) {
+    return item.office;
+  }
+
+  // Try direct property, then camelCase, then lowercase
   const dimKey = dimension.toLowerCase();
-  return item?.[dimKey] ?? item?.[dimension] ?? 'Unknown';
+  const camelKey = dimension[0].toLowerCase() + dimension.slice(1);
+  return item?.[dimension] ?? item?.[camelKey] ?? item?.[dimKey] ?? 'Unknown';
 };

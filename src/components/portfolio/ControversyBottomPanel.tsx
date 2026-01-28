@@ -66,14 +66,14 @@ const useStyles = makeStyles({
     fontWeight: '600',
     fontSize: '9px',
     backgroundColor: '#F3F2F1',
-    color: '#323130',
+    color: '#252423',
     ...shorthands.padding('6px', '8px'),
     textTransform: 'uppercase',
   },
   cell: {
     fontSize: '10px',
     ...shorthands.padding('4px', '8px'),
-    color: '#323130',
+    color: '#252423',
     ...shorthands.borderBottom('1px', 'solid', '#E1DFDD'),
   },
   selectedRow: {
@@ -99,18 +99,18 @@ const useStyles = makeStyles({
   justificationTitle: {
     fontSize: '11px',
     fontWeight: '600',
-    color: '#323130',
+    color: '#252423',
     marginBottom: '8px',
   },
   justificationText: {
     fontSize: '11px',
-    color: '#323130',
+    color: '#252423',
     lineHeight: '1.5',
   },
   rightPanelTitle: {
     fontSize: '10px',
     fontWeight: '600',
-    color: '#323130',
+    color: '#252423',
     marginBottom: '8px',
   },
   rightPanelItem: {
@@ -120,7 +120,7 @@ const useStyles = makeStyles({
   },
   rightPanelValue: {
     fontSize: '10px',
-    color: '#323130',
+    color: '#252423',
     fontWeight: '500',
   },
   mvLatestDate: {

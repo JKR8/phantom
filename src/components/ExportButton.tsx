@@ -14,7 +14,6 @@ import {
   MenuPopover,
   Spinner,
   Dialog,
-  DialogTrigger,
   DialogSurface,
   DialogTitle,
   DialogBody,

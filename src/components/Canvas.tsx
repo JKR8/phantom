@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 // @ts-ignore - @types/react-grid-layout is outdated for v2.2.2
 import { GridLayout, useContainerWidth } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
@@ -48,7 +48,7 @@ const ROW_HEIGHT = 40;
 
 const useStyles = makeStyles({
   canvas: {
-    backgroundColor: '#E8E8E8',
+    backgroundColor: '#F2F2F2',
     minHeight: '600px',
     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
     ...shorthands.margin('0', 'auto'),
@@ -247,7 +247,12 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
     }
   };
 
+  const isInitialMount = useRef(true);
   const onLayoutChange = (layout: any) => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     if (mounted) {
       updateLayout(layout);
     }

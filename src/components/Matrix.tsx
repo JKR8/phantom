@@ -23,9 +23,9 @@ const useStyles = makeStyles({
     fontWeight: '600',
     fontSize: '9px',
     textAlign: 'right',
-    color: '#323130',
+    color: '#252423',
     ...shorthands.padding('4px', '6px'),
-    borderBottom: '2px solid #323130',
+    borderBottom: '2px solid #252423',
     whiteSpace: 'nowrap',
   },
   firstHeaderCell: {
@@ -36,7 +36,7 @@ const useStyles = makeStyles({
     fontSize: '10px',
     ...shorthands.padding('3px', '6px'),
     textAlign: 'right',
-    borderBottom: '1px solid #edebe9',
+    borderBottom: '1px solid #F3F2F1',
   },
   firstCell: {
     textAlign: 'left',

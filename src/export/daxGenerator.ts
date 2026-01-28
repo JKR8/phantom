@@ -23,7 +23,7 @@ const aggregationPatterns: Record<string, (table: string, column: string) => str
   sum: (table, column) => `SUM(${table}[${column}])`,
   avg: (table, column) => `AVERAGE(${table}[${column}])`,
   average: (table, column) => `AVERAGE(${table}[${column}])`,
-  count: (table, column) => `COUNTROWS(${table})`,
+  count: (table, _column) => `COUNTROWS(${table})`,
   min: (table, column) => `MIN(${table}[${column}])`,
   max: (table, column) => `MAX(${table}[${column}])`,
   distinctcount: (table, column) => `DISTINCTCOUNT(${table}[${column}])`,
@@ -116,9 +116,8 @@ export function generateBaseMeasures(bindings: Array<{
   operation: string;
   table: string;
   column: string;
-}>, scenario: Scenario): DAXMeasure[] {
+}>, _scenario: Scenario): DAXMeasure[] {
   const measures: DAXMeasure[] = [];
-  const factTable = getFactTableForScenario(scenario);
 
   bindings.forEach(binding => {
     const { metric, operation, table, column } = binding;
@@ -163,9 +162,9 @@ export function generateVarianceMeasures(bindings: Array<{
   operation: string;
   table: string;
   column: string;
-}>, scenario: Scenario): DAXMeasure[] {
+}>, _scenario: Scenario): DAXMeasure[] {
   const measures: DAXMeasure[] = [];
-  
+
   // Find metrics that have AC, PL, PY variants
   const baseMetrics = new Set<string>();
   bindings.forEach(b => {
@@ -180,7 +179,6 @@ export function generateVarianceMeasures(bindings: Array<{
 
     if (!hasBase) return;
 
-    const baseMeasureName = `Total ${baseMetric}`;
     const metricLabel = baseMetric.charAt(0).toUpperCase() + baseMetric.slice(1);
 
     // Δ PY (Variance to Prior Year)
@@ -261,8 +259,6 @@ export function generateWaterfallMeasures(items: DashboardItem[], scenario: Scen
     // Get the dimension table/column mapping
     const dimMapping = mapFieldToPBIColumn(scenario, dimension);
     const factTable = getFactTableForScenario(scenario);
-    const metricMapping = mapFieldToPBIColumn(scenario, metric);
-
     // Waterfall Start (PY Total)
     measures.push({
       name: `Waterfall${suffix} Start`,
@@ -340,7 +336,7 @@ _PYTotal + _RunningVariance`,
 /**
  * Generate portfolio-specific measures
  */
-export function generatePortfolioMeasures(items: DashboardItem[], scenario: Scenario): DAXMeasure[] {
+export function generatePortfolioMeasures(_items: DashboardItem[], scenario: Scenario): DAXMeasure[] {
   if (scenario !== 'Portfolio') return [];
 
   const measures: DAXMeasure[] = [];
@@ -426,7 +422,7 @@ CALCULATE(
 /**
  * Generate HR-specific measures
  */
-export function generateHRMeasures(items: DashboardItem[], scenario: Scenario): DAXMeasure[] {
+export function generateHRMeasures(_items: DashboardItem[], scenario: Scenario): DAXMeasure[] {
   if (scenario !== 'HR') return [];
 
   const measures: DAXMeasure[] = [];
@@ -477,7 +473,7 @@ IF(_Total > 0, DIVIDE(_Attrited, _Total), BLANK())`,
 /**
  * Generate Logistics-specific measures
  */
-export function generateLogisticsMeasures(items: DashboardItem[], scenario: Scenario): DAXMeasure[] {
+export function generateLogisticsMeasures(_items: DashboardItem[], scenario: Scenario): DAXMeasure[] {
   if (scenario !== 'Logistics') return [];
 
   const measures: DAXMeasure[] = [];
@@ -530,7 +526,7 @@ IF(_Total > 0, DIVIDE(_OnTime, _Total), BLANK())`,
 /**
  * Generate SaaS-specific measures
  */
-export function generateSaaSMeasures(items: DashboardItem[], scenario: Scenario): DAXMeasure[] {
+export function generateSaaSMeasures(_items: DashboardItem[], scenario: Scenario): DAXMeasure[] {
   if (scenario !== 'SaaS') return [];
 
   const measures: DAXMeasure[] = [];
@@ -583,11 +579,176 @@ IF(_Customers > 0, DIVIDE(_TotalMRR, _Customers), BLANK())`,
 }
 
 /**
+ * Generate Retail-specific measures
+ */
+export function generateRetailMeasures(_items: DashboardItem[], scenario: Scenario): DAXMeasure[] {
+  if (scenario !== 'Retail') return [];
+
+  const measures: DAXMeasure[] = [];
+
+  // Margin %
+  measures.push({
+    name: 'Margin %',
+    expression: `
+VAR _Revenue = SUM(Sales[Revenue])
+VAR _Profit = SUM(Sales[Profit])
+RETURN
+IF(_Revenue <> 0, DIVIDE(_Profit, _Revenue), BLANK())`,
+    displayFolder: 'Retail KPIs',
+    formatString: '0.0%',
+    description: 'Profit margin as percentage of revenue',
+  });
+
+  // YoY Growth
+  measures.push({
+    name: 'YoY Growth',
+    expression: `
+VAR _AC = SUM(Sales[Revenue])
+VAR _PY = SUM(Sales[RevenuePY])
+RETURN
+IF(_PY <> 0, DIVIDE(_AC - _PY, ABS(_PY)), BLANK())`,
+    displayFolder: 'Retail KPIs',
+    formatString: '0.0%',
+    description: 'Year-over-year revenue growth percentage',
+  });
+
+  // Revenue per Store
+  measures.push({
+    name: 'Revenue per Store',
+    expression: `
+VAR _Revenue = SUM(Sales[Revenue])
+VAR _Stores = DISTINCTCOUNT(Sales[StoreID])
+RETURN
+IF(_Stores > 0, DIVIDE(_Revenue, _Stores), BLANK())`,
+    displayFolder: 'Retail KPIs',
+    formatString: '$#,##0',
+    description: 'Average revenue per store',
+  });
+
+  // Average Order Value
+  measures.push({
+    name: 'Avg Order Value',
+    expression: `
+VAR _Revenue = SUM(Sales[Revenue])
+VAR _Orders = COUNTROWS(Sales)
+RETURN
+IF(_Orders > 0, DIVIDE(_Revenue, _Orders), BLANK())`,
+    displayFolder: 'Retail KPIs',
+    formatString: '$#,##0.00',
+    description: 'Average revenue per transaction',
+  });
+
+  return measures;
+}
+
+/**
+ * Generate Finance-specific measures
+ */
+export function generateFinanceMeasures(_items: DashboardItem[], scenario: Scenario): DAXMeasure[] {
+  if (scenario !== 'Finance') return [];
+
+  const measures: DAXMeasure[] = [];
+
+  // Budget vs Actual Variance %
+  measures.push({
+    name: 'Budget Variance %',
+    expression: `
+VAR _Actual = CALCULATE(SUM(FinanceRecord[Amount]), FinanceRecord[Scenario] = "Actual")
+VAR _Budget = CALCULATE(SUM(FinanceRecord[Amount]), FinanceRecord[Scenario] = "Budget")
+RETURN
+IF(_Budget <> 0, DIVIDE(_Actual - _Budget, ABS(_Budget)), BLANK())`,
+    displayFolder: 'Finance KPIs',
+    formatString: '0.0%',
+    description: 'Actual vs Budget variance percentage',
+  });
+
+  // Forecast Accuracy
+  measures.push({
+    name: 'Forecast Accuracy',
+    expression: `
+VAR _Actual = CALCULATE(SUM(FinanceRecord[Amount]), FinanceRecord[Scenario] = "Actual")
+VAR _Forecast = CALCULATE(SUM(FinanceRecord[Amount]), FinanceRecord[Scenario] = "Forecast")
+RETURN
+IF(_Forecast <> 0, 1 - ABS(DIVIDE(_Actual - _Forecast, _Forecast)), BLANK())`,
+    displayFolder: 'Finance KPIs',
+    formatString: '0.0%',
+    description: 'Forecast accuracy (1 - absolute percentage error)',
+  });
+
+  // Net Variance
+  measures.push({
+    name: 'Net Variance',
+    expression: `SUM(FinanceRecord[Variance])`,
+    displayFolder: 'Finance KPIs',
+    formatString: '$#,##0',
+    description: 'Total variance (Actual - Budget)',
+  });
+
+  return measures;
+}
+
+/**
+ * Generate Social-specific measures
+ */
+export function generateSocialMeasures(_items: DashboardItem[], scenario: Scenario): DAXMeasure[] {
+  if (scenario !== 'Social') return [];
+
+  const measures: DAXMeasure[] = [];
+
+  // Avg Engagement Rate
+  measures.push({
+    name: 'Avg Engagement Rate',
+    expression: `AVERAGE(SocialPost[Engagements])`,
+    displayFolder: 'Social KPIs',
+    formatString: '#,##0.0',
+    description: 'Average engagements per post',
+  });
+
+  // Positive Sentiment %
+  measures.push({
+    name: 'Positive Sentiment %',
+    expression: `
+VAR _Positive = CALCULATE(COUNTROWS(SocialPost), SocialPost[Sentiment] = "Positive")
+VAR _Total = COUNTROWS(SocialPost)
+RETURN
+IF(_Total > 0, DIVIDE(_Positive, _Total), BLANK())`,
+    displayFolder: 'Social KPIs',
+    formatString: '0.0%',
+    description: 'Percentage of posts with positive sentiment',
+  });
+
+  // Net Sentiment
+  measures.push({
+    name: 'Net Sentiment',
+    expression: `
+VAR _Positive = CALCULATE(COUNTROWS(SocialPost), SocialPost[Sentiment] = "Positive")
+VAR _Negative = CALCULATE(COUNTROWS(SocialPost), SocialPost[Sentiment] = "Negative")
+VAR _Total = COUNTROWS(SocialPost)
+RETURN
+IF(_Total > 0, DIVIDE(_Positive - _Negative, _Total), BLANK())`,
+    displayFolder: 'Social KPIs',
+    formatString: '0.0%',
+    description: 'Net sentiment score ((Positive - Negative) / Total)',
+  });
+
+  // Total Mentions
+  measures.push({
+    name: 'Total Mentions',
+    expression: `SUM(SocialPost[Mentions])`,
+    displayFolder: 'Social KPIs',
+    formatString: '#,##0',
+    description: 'Total mentions across all posts',
+  });
+
+  return measures;
+}
+
+/**
  * Main function - generate all DAX measures for a dashboard
  */
 export function generateAllMeasures(items: DashboardItem[], scenario: Scenario): DAXMeasure[] {
   const bindings = extractMetricBindings(items, scenario);
-  
+
   const measures: DAXMeasure[] = [
     ...generateBaseMeasures(bindings, scenario),
     ...generateVarianceMeasures(bindings, scenario),
@@ -596,6 +757,9 @@ export function generateAllMeasures(items: DashboardItem[], scenario: Scenario):
     ...generateHRMeasures(items, scenario),
     ...generateLogisticsMeasures(items, scenario),
     ...generateSaaSMeasures(items, scenario),
+    ...generateRetailMeasures(items, scenario),
+    ...generateFinanceMeasures(items, scenario),
+    ...generateSocialMeasures(items, scenario),
   ];
 
   // Deduplicate measures by name

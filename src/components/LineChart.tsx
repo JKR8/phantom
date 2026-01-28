@@ -140,11 +140,11 @@ export const LineChart: React.FC<LineChartProps> = ({ metric, manualData, compar
         data={data}
         margin={{ top: 20, right: 20, left: 10, bottom: 5 }}
       >
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#edebe9" />
+        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F2F1" />
         <XAxis
           dataKey="name"
           tick={{ fontSize: 9, fill: '#605E5C' }}
-          axisLine={{ stroke: '#edebe9' }}
+          axisLine={{ stroke: '#F3F2F1' }}
           tickLine={false}
         />
         <YAxis
@@ -159,9 +159,9 @@ export const LineChart: React.FC<LineChartProps> = ({ metric, manualData, compar
             formatValue(Number(value)),
             name === 'ac' ? 'Actual' : name === 'pl' ? 'Plan' : name === 'py' ? 'Prior Year' : 'Variance'
           ]}
-          contentStyle={{ fontSize: '11px', borderRadius: '4px', border: '1px solid #edebe9' }}
+          contentStyle={{ fontSize: '11px', borderRadius: '4px', border: '1px solid #F3F2F1' }}
         />
-        <ReferenceLine y={0} stroke="#323130" />
+        <ReferenceLine y={0} stroke="#252423" />
         {/* PL line (dashed grey) */}
         {showPL && (
           <Line
@@ -190,9 +190,9 @@ export const LineChart: React.FC<LineChartProps> = ({ metric, manualData, compar
         <Line
           type="monotone"
           dataKey="ac"
-          stroke="#323130"
+          stroke="#252423"
           strokeWidth={2}
-          dot={{ r: 3, fill: '#323130', stroke: '#323130' }}
+          dot={{ r: 3, fill: '#252423', stroke: '#252423' }}
           name="ac"
         />
         {/* Variance bars (pins) */}

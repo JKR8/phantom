@@ -28,6 +28,7 @@ export const useStore = create<DashboardState>((set, get) => ({
   controversyScores: [],
   socialPosts: [],
   filters: {},
+  highlight: null,
   items: initialItems,
   selectedItemId: null,
   layoutMode: 'Free',
@@ -68,7 +69,36 @@ export const useStore = create<DashboardState>((set, get) => ({
       return { filters: newFilters, isDirty: true };
     });
   },
-  clearFilters: () => set({ filters: {}, isDirty: true }),
+  setHighlight: (dimension: string, value: string, ctrlKey = false) => {
+    set((state) => {
+      const current = state.highlight;
+      // If clicking the same dimension
+      if (current && current.dimension === dimension) {
+        if (ctrlKey) {
+          // Ctrl+Click: toggle value in the set
+          const newValues = new Set(current.values);
+          if (newValues.has(value)) {
+            newValues.delete(value);
+          } else {
+            newValues.add(value);
+          }
+          // If empty, clear highlight
+          if (newValues.size === 0) return { highlight: null };
+          return { highlight: { dimension, values: newValues } };
+        } else {
+          // Regular click: toggle single value
+          if (current.values.has(value) && current.values.size === 1) {
+            return { highlight: null };
+          }
+          return { highlight: { dimension, values: new Set([value]) } };
+        }
+      }
+      // Different dimension or no current highlight
+      return { highlight: { dimension, values: new Set([value]) } };
+    });
+  },
+  clearHighlight: () => set({ highlight: null }),
+  clearFilters: () => set({ filters: {}, highlight: null, isDirty: true }),
   addItem: (item) => set((state) => ({ items: [...state.items, item], isDirty: true })),
   removeItem: (id) => set((state) => ({ items: state.items.filter((i) => i.id !== id), isDirty: true })),
   updateLayout: (layout) =>
@@ -106,7 +136,7 @@ export const useStore = create<DashboardState>((set, get) => ({
       ),
       isDirty: true,
     })),
-  clearCanvas: () => set({ items: [], selectedItemId: null, filters: {}, isDirty: true }),
+  clearCanvas: () => set({ items: [], selectedItemId: null, filters: {}, highlight: null, isDirty: true }),
   loadTemplate: (templateName: string) => {
     const template = Templates.find(t => t.name === templateName);
     if (template) {
@@ -203,6 +233,10 @@ export const useStore = create<DashboardState>((set, get) => ({
     useThemeStore.getState().setPalette(DEFAULT_PALETTE);
   },
 }));
+
+// Highlight selector - returns current highlight state
+export const useHighlight = () => useStore((state) => state.highlight);
+export const useSetHighlight = () => useStore((state) => state.setHighlight);
 
 // Generic Selector for filtered data
 export const useFilteredSales = () => { // Keeping name for compatibility but it returns any[]

@@ -26,7 +26,7 @@ const useStyles = makeStyles({
   kpiValue: {
     fontSize: '20px',
     fontWeight: '700',
-    color: '#323130',
+    color: '#252423',
     lineHeight: '1',
   },
   kpiValueRed: {

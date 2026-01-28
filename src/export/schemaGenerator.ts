@@ -82,6 +82,7 @@ const retailSchema: PBISchema = {
         { name: 'Profit', dataType: 'double', summarizeBy: 'sum' },
         { name: 'ProfitPL', dataType: 'double', summarizeBy: 'sum' },
         { name: 'ProfitPY', dataType: 'double', summarizeBy: 'sum' },
+        { name: 'Discount', dataType: 'double', summarizeBy: 'sum' },
       ]
     },
     {
@@ -143,6 +144,7 @@ const saasSchema: PBISchema = {
         { name: 'CustomerName', dataType: 'string', summarizeBy: 'none' },
         { name: 'Tier', dataType: 'string', summarizeBy: 'none' },
         { name: 'Region', dataType: 'string', summarizeBy: 'none' },
+        { name: 'Industry', dataType: 'string', summarizeBy: 'none' },
       ]
     },
     {
@@ -157,6 +159,8 @@ const saasSchema: PBISchema = {
         { name: 'MRRPY', dataType: 'double', summarizeBy: 'sum' },
         { name: 'Churn', dataType: 'int64', summarizeBy: 'sum' },
         { name: 'LTV', dataType: 'double', summarizeBy: 'average' },
+        { name: 'ARR', dataType: 'double', summarizeBy: 'sum' },
+        { name: 'CAC', dataType: 'double', summarizeBy: 'average' },
       ]
     },
     {
@@ -207,6 +211,7 @@ const hrSchema: PBISchema = {
         { name: 'EmployeeName', dataType: 'string', summarizeBy: 'none' },
         { name: 'Department', dataType: 'string', summarizeBy: 'none' },
         { name: 'Role', dataType: 'string', summarizeBy: 'none' },
+        { name: 'Office', dataType: 'string', summarizeBy: 'none' },
         { name: 'Salary', dataType: 'double', summarizeBy: 'sum' },
         { name: 'Rating', dataType: 'int64', summarizeBy: 'average' },
         { name: 'Attrition', dataType: 'int64', summarizeBy: 'sum' },
@@ -538,7 +543,7 @@ export function getFactTableForScenario(scenario: Scenario): string {
 export function mapFieldToPBIColumn(scenario: Scenario, field: string): { table: string; column: string } {
   const factTable = getFactTableForScenario(scenario);
 
-  const scenarioMappings: Record<string, { table: string; column: string }> = (() => {
+  const scenarioMappings = ((): Record<string, { table: string; column: string }> => {
     switch (scenario) {
       case 'Retail':
         return {
@@ -552,11 +557,13 @@ export function mapFieldToPBIColumn(scenario: Scenario, field: string): { table:
           Region: { table: 'Customer', column: 'Region' },
           Tier: { table: 'Customer', column: 'Tier' },
           Customer: { table: 'Customer', column: 'CustomerName' },
+          Industry: { table: 'Customer', column: 'Industry' },
         };
       case 'HR':
         return {
           Department: { table: 'Employee', column: 'Department' },
           Role: { table: 'Employee', column: 'Role' },
+          Office: { table: 'Employee', column: 'Office' },
         };
       case 'Logistics':
         return {
