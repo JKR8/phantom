@@ -143,14 +143,11 @@ const useStyles = makeStyles({
     height: '100%',
     boxSizing: 'border-box' as const,
   },
-  dataModelPane: {
-    width: '220px',
-    borderRight: `1px solid ${tokens.colorNeutralStroke2}`,
-    flexShrink: 0,
-    overflowY: 'auto',
-    height: '100%',
-    boxSizing: 'border-box' as const,
+  dataModelView: {
+    flex: 1,
+    overflow: 'auto',
     backgroundColor: '#FAFAF9',
+    ...shorthands.padding('20px'),
   },
   navButtonActiveLegacy: {
     backgroundColor: '#D6D6D6',
@@ -307,32 +304,37 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
             />
           </nav>
         )}
-        {showDataModel && !readOnly && (
-          <div className={styles.dataModelPane}>
-            <DataModelPanel />
-          </div>
-        )}
-        {showFFMA && !readOnly && (
+        {showFFMA && !readOnly && !showDataModel && (
           <div className={styles.ffmaPane}>
             <FFMAPanel />
           </div>
         )}
-        <div className={styles.centerArea}>
-          <main className={styles.canvasArea}>
-            {children}
-          </main>
-          {!readOnly && (
-            <div className={styles.bottomPane}>
-              <VisualizationsPane />
-            </div>
-          )}
-        </div>
-        {!readOnly && (
-          <div className={styles.rightPane}>
-            <div key={selectedItemId || 'fields'} className="panel-transition">
-              {selectedItemId ? <PropertiesPanel /> : <FieldsPane />}
-            </div>
+        {showDataModel && !readOnly ? (
+          /* Full-screen data model view */
+          <div className={styles.dataModelView}>
+            <DataModelPanel />
           </div>
+        ) : (
+          /* Normal canvas view */
+          <>
+            <div className={styles.centerArea}>
+              <main className={styles.canvasArea}>
+                {children}
+              </main>
+              {!readOnly && (
+                <div className={styles.bottomPane}>
+                  <VisualizationsPane />
+                </div>
+              )}
+            </div>
+            {!readOnly && (
+              <div className={styles.rightPane}>
+                <div key={selectedItemId || 'fields'} className="panel-transition">
+                  {selectedItemId ? <PropertiesPanel /> : <FieldsPane />}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

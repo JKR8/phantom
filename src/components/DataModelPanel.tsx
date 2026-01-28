@@ -157,39 +157,48 @@ const StarSchemas: Record<ScenarioType, StarSchema> = {
 
 const useStyles = makeStyles({
   container: {
+    width: '100%',
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
-    backgroundColor: '#FAFAF9',
+    backgroundColor: '#F3F2F1',
+    ...shorthands.borderRadius('8px'),
+    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
   },
   header: {
-    ...shorthands.padding('12px'),
+    ...shorthands.padding('16px', '24px'),
     borderBottom: '1px solid #E1DFDD',
-    fontWeight: '600',
-    fontSize: '11px',
-    color: '#605E5C',
-    textTransform: 'uppercase',
-    letterSpacing: '0.8px',
+    backgroundColor: '#fff',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    ...shorthands.borderRadius('8px', '8px', '0', '0'),
   },
-  scenarioLabel: {
-    ...shorthands.padding('8px', '12px'),
+  headerTitle: {
+    fontWeight: '600',
+    fontSize: '18px',
+    color: '#323130',
+  },
+  scenarioBadge: {
     fontSize: '12px',
-    color: '#252423',
+    color: '#fff',
+    backgroundColor: '#0078D4',
+    ...shorthands.padding('4px', '12px'),
+    ...shorthands.borderRadius('12px'),
     fontWeight: '500',
-    backgroundColor: '#F3F2F1',
-    borderBottom: '1px solid #E1DFDD',
   },
   content: {
     flex: 1,
-    overflowY: 'auto',
-    overflowX: 'hidden',
-    ...shorthands.padding('12px'),
-    position: 'relative',
+    overflow: 'auto',
+    ...shorthands.padding('40px'),
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   schemaContainer: {
     position: 'relative',
-    minHeight: '400px',
-    width: '100%',
+    minWidth: '800px',
+    minHeight: '500px',
   },
   svgLayer: {
     position: 'absolute',
@@ -204,25 +213,27 @@ const useStyles = makeStyles({
     position: 'absolute',
     backgroundColor: '#fff',
     ...shorthands.border('1px', 'solid', '#E1DFDD'),
-    ...shorthands.borderRadius('4px'),
-    boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-    minWidth: '120px',
+    ...shorthands.borderRadius('6px'),
+    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+    minWidth: '160px',
     zIndex: 1,
   },
   factTable: {
     ...shorthands.border('2px', 'solid', '#0078D4'),
+    boxShadow: '0 4px 12px rgba(0,120,212,0.2)',
   },
   dimensionTable: {
     ...shorthands.border('1px', 'solid', '#8A8886'),
   },
   tableHeader: {
-    ...shorthands.padding('6px', '8px'),
+    ...shorthands.padding('10px', '14px'),
     fontWeight: '600',
-    fontSize: '11px',
+    fontSize: '13px',
     borderBottom: '1px solid #E1DFDD',
     display: 'flex',
     alignItems: 'center',
-    gap: '4px',
+    gap: '6px',
+    ...shorthands.borderRadius('5px', '5px', '0', '0'),
   },
   factHeader: {
     backgroundColor: '#0078D4',
@@ -233,31 +244,31 @@ const useStyles = makeStyles({
     color: '#323130',
   },
   tableFields: {
-    ...shorthands.padding('4px', '0'),
+    ...shorthands.padding('6px', '0'),
   },
   fieldRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '4px',
-    ...shorthands.padding('2px', '8px'),
-    fontSize: '10px',
+    gap: '6px',
+    ...shorthands.padding('4px', '14px'),
+    fontSize: '12px',
     color: '#605E5C',
   },
   keyIcon: {
     color: '#D83B01',
-    fontSize: '10px',
+    fontSize: '12px',
   },
   measureIcon: {
     color: '#107C10',
-    fontSize: '10px',
+    fontSize: '12px',
   },
   attrIcon: {
     color: '#5C2D91',
-    fontSize: '10px',
+    fontSize: '12px',
   },
   dateIcon: {
     color: '#D83B01',
-    fontSize: '10px',
+    fontSize: '12px',
   },
 });
 
@@ -308,42 +319,43 @@ export const DataModelPanel: React.FC = () => {
   const scenario = useStore((s) => s.scenario) as ScenarioType;
   const schema = StarSchemas[scenario];
 
-  // Calculate positions for star layout
-  // Fact table in center, dimensions around it
-  const factX = 50;
-  const factY = 160;
+  // Center fact table, dimensions arranged in a circle around it
+  const centerX = 400;
+  const centerY = 280;
+  const factX = centerX - 80;
+  const factY = centerY - 60;
 
-  // Position dimensions in an arc above/around the fact table
+  // Position dimensions evenly around the fact table
+  const dimCount = schema.dimensions.length;
+  const radius = 220;
   const dimPositions = schema.dimensions.map((_, i) => {
-    const count = schema.dimensions.length;
-    // Spread dimensions in an arc from top-left to top-right
-    const angle = Math.PI * (0.25 + (0.5 * i / Math.max(count - 1, 1)));
-    const radius = 140;
+    // Start from top and go clockwise
+    const angle = -Math.PI / 2 + (2 * Math.PI * i) / dimCount;
     return {
-      x: factX + 40 + radius * Math.cos(angle) - 60,
-      y: factY - radius * Math.sin(angle) + 20,
+      x: centerX + radius * Math.cos(angle) - 80,
+      y: centerY + radius * Math.sin(angle) - 50,
     };
   });
 
-  // Calculate SVG connection lines
-  const factCenterX = factX + 60;
-  const factCenterY = factY + 50;
+  // Calculate SVG connection lines from fact to each dimension
+  const factCenterX = factX + 80;
+  const factCenterY = factY + 80;
   const lines = schema.dimensions.map((dim, i) => {
-    const dimX = dimPositions[i].x + 60;
-    const dimY = dimPositions[i].y + 40;
-    return { x1: factCenterX, y1: factCenterY, x2: dimX, y2: dimY, key: dim.name };
+    const dimCenterX = dimPositions[i].x + 80;
+    const dimCenterY = dimPositions[i].y + 50;
+    return { x1: factCenterX, y1: factCenterY, x2: dimCenterX, y2: dimCenterY, key: dim.name };
   });
-
-  const svgHeight = Math.max(400, factY + 150);
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>Data Model</div>
-      <div className={styles.scenarioLabel}>Scenario: {scenario}</div>
+      <div className={styles.header}>
+        <span className={styles.headerTitle}>Data Model</span>
+        <span className={styles.scenarioBadge}>{scenario}</span>
+      </div>
       <div className={styles.content}>
-        <div className={styles.schemaContainer} style={{ height: svgHeight }}>
+        <div className={styles.schemaContainer}>
           {/* SVG relationship lines */}
-          <svg className={styles.svgLayer} style={{ height: svgHeight }}>
+          <svg className={styles.svgLayer} width="800" height="560">
             {lines.map((line) => (
               <g key={line.key}>
                 <line
@@ -352,22 +364,24 @@ export const DataModelPanel: React.FC = () => {
                   x2={line.x2}
                   y2={line.y2}
                   stroke="#8A8886"
-                  strokeWidth={1.5}
+                  strokeWidth={2}
                 />
                 {/* Cardinality markers: 1 on dimension side, * on fact side */}
                 <text
-                  x={line.x2 + (line.x1 - line.x2) * 0.15}
-                  y={line.y2 + (line.y1 - line.y2) * 0.15 - 4}
-                  fontSize={9}
+                  x={line.x2 + (line.x1 - line.x2) * 0.12}
+                  y={line.y2 + (line.y1 - line.y2) * 0.12 - 6}
+                  fontSize={11}
                   fill="#605E5C"
+                  fontWeight="600"
                 >
                   1
                 </text>
                 <text
-                  x={line.x1 + (line.x2 - line.x1) * 0.15}
-                  y={line.y1 + (line.y2 - line.y1) * 0.15 - 4}
-                  fontSize={9}
+                  x={line.x1 + (line.x2 - line.x1) * 0.12}
+                  y={line.y1 + (line.y2 - line.y1) * 0.12 - 6}
+                  fontSize={11}
                   fill="#605E5C"
+                  fontWeight="600"
                 >
                   *
                 </text>
@@ -375,10 +389,10 @@ export const DataModelPanel: React.FC = () => {
             ))}
           </svg>
 
-          {/* Fact table */}
+          {/* Fact table (center) */}
           <TableCard table={schema.fact} x={factX} y={factY} styles={styles} />
 
-          {/* Dimension tables */}
+          {/* Dimension tables (around the fact) */}
           {schema.dimensions.map((dim, i) => (
             <TableCard
               key={dim.name}
