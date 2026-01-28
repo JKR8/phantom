@@ -14,8 +14,8 @@ const initialItems: DashboardItem[] = [
   { id: 'card5', type: 'card', title: 'Transactions', layout: { x: 40, y: 0, w: 8, h: 5 }, props: { metric: 'revenue', operation: 'count', label: 'Transactions', colorIndex: 4 } },
   { id: 'chart1', type: 'bar', title: 'Revenue by Region', layout: { x: 0, y: 5, w: 24, h: 10 }, props: { dimension: 'Region', metric: 'revenue' } },
   { id: 'chart2', type: 'pie', title: 'Revenue by Category', layout: { x: 24, y: 5, w: 24, h: 10 }, props: { dimension: 'Category', metric: 'revenue' } },
-  { id: 'chart3', type: 'line', title: 'Revenue Trend', layout: { x: 0, y: 15, w: 48, h: 7 }, props: { metric: 'revenue' } },
-  { id: 'table1', type: 'table', title: 'Sales Details', layout: { x: 0, y: 22, w: 48, h: 10 }, props: { maxRows: 100 } },
+  { id: 'chart3', type: 'line', title: 'Revenue Trend', layout: { x: 0, y: 15, w: 48, h: 10 }, props: { metric: 'revenue' } },
+  { id: 'table1', type: 'table', title: 'Sales Details', layout: { x: 0, y: 25, w: 48, h: 10 }, props: { maxRows: 100 } },
 ];
 
 import { Templates } from './templates';
@@ -242,8 +242,25 @@ export const useStore = create<DashboardState>((set, get) => ({
 export const useHighlight = () => useStore((state) => state.highlight);
 export const useSetHighlight = () => useStore((state) => state.setHighlight);
 
+// Time bucket helpers for cross-filtering
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const QUARTERS = ['Q1', 'Q2', 'Q3', 'Q4'];
+
+const getTimeBucket = (date: Date, grain: 'month' | 'quarter' | 'year'): string => {
+  if (grain === 'year') return `${date.getFullYear()}`;
+  if (grain === 'quarter') return QUARTERS[Math.floor(date.getMonth() / 3)];
+  return MONTHS[date.getMonth()];
+};
+
 // Helper to get dimension value for cross-filtering
 const getDimValue = (item: any, dimension: string, state: any): string => {
+  // Handle time dimensions (_time_month, _time_quarter, _time_year)
+  if (dimension.startsWith('_time_')) {
+    const grain = dimension.replace('_time_', '') as 'month' | 'quarter' | 'year';
+    const date = new Date(item.date);
+    return getTimeBucket(date, grain);
+  }
+
   if (state.scenario === 'Retail') {
     if (dimension === 'Region') {
       const store = state.stores.find((s: any) => s.id === item.storeId);

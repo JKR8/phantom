@@ -11,7 +11,7 @@ import {
   ReferenceLine,
   Cell
 } from 'recharts';
-import { useFilteredSales } from '../store/useStore';
+import { useFilteredSales, useHighlight, useSetHighlight } from '../store/useStore';
 
 interface LineChartProps {
   metric: string;
@@ -19,6 +19,9 @@ interface LineChartProps {
   comparison?: 'none' | 'pl' | 'py' | 'both';
   timeGrain?: 'month' | 'quarter' | 'year';
 }
+
+// Time dimension key for cross-filtering
+const getTimeDimension = (grain: 'month' | 'quarter' | 'year') => `_time_${grain}`;
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const QUARTERS = ['Q1', 'Q2', 'Q3', 'Q4'];
@@ -36,7 +39,17 @@ function getTimeBuckets(grain: 'month' | 'quarter' | 'year'): string[] {
 }
 
 export const LineChart: React.FC<LineChartProps> = ({ metric, manualData, comparison = 'both', timeGrain = 'month' }) => {
-  const filteredSales = useFilteredSales();
+  const timeDimension = getTimeDimension(timeGrain);
+  const filteredSales = useFilteredSales(timeDimension);
+  useHighlight(); // Subscribe to highlight changes for re-render
+  const setHighlight = useSetHighlight();
+
+  const handleClick = (data: any) => {
+    if (data && data.activePayload && data.activePayload[0]) {
+      const name = data.activePayload[0].payload.name;
+      setHighlight(timeDimension, name, false);
+    }
+  };
 
   const data = useMemo(() => {
     if (manualData && manualData.length > 0) {
@@ -139,6 +152,8 @@ export const LineChart: React.FC<LineChartProps> = ({ metric, manualData, compar
       <ComposedChart
         data={data}
         margin={{ top: 20, right: 20, left: 10, bottom: 5 }}
+        onClick={handleClick}
+        style={{ cursor: 'pointer' }}
       >
         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F2F1" />
         <XAxis
