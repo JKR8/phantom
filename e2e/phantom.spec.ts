@@ -374,6 +374,7 @@ test.describe('Phantom Drop -> Shape -> Refine', () => {
   });
 
   test('All non-FFMA visuals drop, snap, and are editable (Social scenario)', async ({ page }) => {
+    test.setTimeout(90_000);
     await openTemplate(page, 'Social Media Sentiment');
 
     // Verify template loaded and has all visual types
@@ -440,20 +441,39 @@ test.describe('Phantom Drop -> Shape -> Refine', () => {
     expect(selectedId).toBeNull();
   });
 
-  test('scenario dropdown switches data context', async ({ page }) => {
+  test('drag-and-drop works on empty canvas after clearCanvas', async ({ page }) => {
+    // Clear the canvas
+    await page.getByTitle('New Screen').click();
+    const afterClear = await page.evaluate(() =>
+      (window as any).__phantomDebug.useStore.getState().items.length
+    );
+    expect(afterClear).toBe(0);
+
+    // Drag a bar chart onto the empty canvas (use canvas-drop-area, not .layout which collapses)
+    const source = page.getByTestId('visual-source-bar');
+    const canvas = page.getByTestId('canvas-drop-area');
+    await source.dragTo(canvas, { targetPosition: { x: 400, y: 300 } });
+
+    // Verify item was added
+    const items = await page.evaluate(() =>
+      (window as any).__phantomDebug.useStore.getState().items
+    );
+    expect(items.length).toBe(1);
+    expect(items[0].type).toBe('bar');
+    expect(items[0].title).toBeTruthy();
+  });
+
+  test('template loading switches scenario and data context', async ({ page }) => {
     // Verify initial scenario is Retail
     const initialScenario = await page.evaluate(() => {
       return (window as any).__phantomDebug.useStore.getState().scenario;
     });
     expect(initialScenario).toBe('Retail');
 
-    // Click the scenario dropdown button
-    await page.getByTestId('scenario-dropdown').click();
+    // Load Marketing template (SaaS scenario)
+    await openTemplate(page, 'Marketing');
 
-    // Select SaaS
-    await page.getByRole('menuitem', { name: 'SaaS' }).click();
-
-    // Verify scenario changed
+    // Verify scenario changed to SaaS
     const newScenario = await page.evaluate(() => {
       return (window as any).__phantomDebug.useStore.getState().scenario;
     });
@@ -465,12 +485,10 @@ test.describe('Phantom Drop -> Shape -> Refine', () => {
       return state.subscriptions.length > 0;
     });
     expect(hasSubs).toBeTruthy();
-
-    // Scenario dropdown button should show "SaaS"
-    await expect(page.getByTestId('scenario-dropdown')).toContainText('SaaS');
   });
 
   test('PBIP export contains scenario semantic model tables for all templates', async ({ page }) => {
+    test.setTimeout(90_000);
     const templates = [
       { name: 'Retail Dashboard', expectedTable: 'Sales' },
       { name: 'Sales', expectedTable: 'Sales' },

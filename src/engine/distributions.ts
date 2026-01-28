@@ -14,7 +14,7 @@ function mulberry32(seed: number) {
 }
 
 /** Box-Muller transform: generates a standard normal variate from two uniform variates */
-function boxMuller(rand: () => number): number {
+export function boxMuller(rand: () => number): number {
   let u = 0, v = 0;
   while (u === 0) u = rand();
   while (v === 0) v = rand();

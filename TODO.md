@@ -67,7 +67,7 @@ Legend: ✅ ready, ⚠️ partial/misaligned, ⏳ pending PBIP verification
 - [ ] Add PBIP Desktop verification notes/results per scenario
 
 **Validation Log**
-- 2026-01-28: `npm run test:e2e -- --reporter=line` (pass; console warnings from Fluent `mergeClasses` still present)
+- 2026-01-28: `npm run test:e2e -- --reporter=line` 30/30 pass (fixed timeouts for Social-drop-all and PBIP-all-templates tests; Fluent `mergeClasses` console warnings still present)
 
 ---
 
@@ -223,7 +223,7 @@ Slots solve: alignment perfection, consistent spacing, "it always looks pro," pr
 - [x] Design star schema template architecture
 - [x] Build fact table generator with configurable dimensions
 - [x] Create dimension table auto-generation (Date, Product, Customer, etc.)
-- [ ] Implement DAX measure library for common calculations
+- [x] Implement DAX measure library for common calculations
 - [x] Build realistic data distribution algorithms (distributions.ts + seasonality.ts)
 - [x] Create industry-specific data profiles (6 scenarios)
 - [x] Export to Power BI (PBIP) with relationships intact

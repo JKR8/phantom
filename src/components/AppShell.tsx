@@ -145,8 +145,6 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
   const styles = useStyles();
   const loadTemplate = useStore((state) => state.loadTemplate);
   const clearCanvas = useStore((state) => state.clearCanvas);
-  const scenario = useStore((state) => state.scenario);
-  const setScenario = useStore((state) => state.setScenario);
   const selectedItemId = useStore((state) => state.selectedItemId);
   const layoutMode = useStore((state) => state.layoutMode);
   const setLayoutMode = useStore((state) => state.setLayoutMode);
@@ -155,8 +153,6 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
   const [showFFMA, setShowFFMA] = React.useState(false);
   const [editingTitle, setEditingTitle] = React.useState(false);
   const [titleDraft, setTitleDraft] = React.useState(dashboardName);
-
-  const scenarios: Array<'Retail' | 'SaaS' | 'HR' | 'Logistics' | 'Finance' | 'Portfolio' | 'Social'> = ['Retail', 'SaaS', 'HR', 'Logistics', 'Finance', 'Portfolio', 'Social'];
 
   const handleTitleCommit = () => {
     const trimmed = titleDraft.trim();
@@ -209,18 +205,6 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
                   </MenuList>
                 </MenuPopover>
               </Menu>
-              <Menu>
-                <MenuTrigger disableButtonEnhancement>
-                  <Button appearance="subtle" className={styles.topButton} size="small" icon={<DatabaseRegular />} data-testid="scenario-dropdown">{scenario}</Button>
-                </MenuTrigger>
-                <MenuPopover>
-                  <MenuList>
-                    {scenarios.map(s => (
-                        <MenuItem key={s} onClick={() => setScenario(s)}>{s}</MenuItem>
-                    ))}
-                  </MenuList>
-                </MenuPopover>
-              </Menu>
               <Button
                 appearance="subtle"
                 className={styles.topButton}
@@ -230,7 +214,6 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
               >
                 {layoutMode} Layout
               </Button>
-              <Button appearance="subtle" className={styles.topButton} size="small">File</Button>
               <ExportButton />
             </>
           )}

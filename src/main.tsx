@@ -9,6 +9,10 @@ import { createPBIPPackage } from './export'
 import { gridToPixels } from './export/layoutConverter'
 import { useStore } from './store/useStore'
 import { getRecipeForVisual, generateSmartTitle } from './store/bindingRecipes'
+import { generateAllMeasures, extractMetricBindings, generateBaseMeasures, generateVarianceMeasures } from './export/daxGenerator'
+import { generateRetailData, generateSaaSData, generateHRData, generateLogisticsData, generatePortfolioData, generateSocialData, generateFinanceData } from './engine/dataGenerator'
+import { paretoSample, logNormalSample, exponentialDecaySample, createSeededRandom, boxMuller, ar1Process, clamp, normalizeToTotal, weightedChoice } from './engine/distributions'
+import { useThemeStore } from './store/useThemeStore'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
@@ -30,5 +34,30 @@ if (import.meta.env.DEV) {
     useStore,
     getRecipeForVisual,
     generateSmartTitle,
+    // DAX generation
+    generateAllMeasures,
+    extractMetricBindings,
+    generateBaseMeasures,
+    generateVarianceMeasures,
+    // Data generators
+    generateRetailData,
+    generateSaaSData,
+    generateHRData,
+    generateLogisticsData,
+    generatePortfolioData,
+    generateSocialData,
+    generateFinanceData,
+    // Distribution utilities
+    paretoSample,
+    logNormalSample,
+    exponentialDecaySample,
+    createSeededRandom,
+    boxMuller,
+    ar1Process,
+    clamp,
+    normalizeToTotal,
+    weightedChoice,
+    // Theme
+    useThemeStore,
   };
 }

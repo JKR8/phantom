@@ -258,6 +258,41 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
     }
   };
 
+  // Fallback drop handler for when the GridLayout has no children (empty canvas).
+  // GridLayout collapses to zero height with no items, so drops land on the outer div.
+  const handleCanvasDrop = (e: React.DragEvent) => {
+    if (items.length > 0) return; // GridLayout handles drops when it has children
+    e.preventDefault();
+    const visualType = dragState.visualType ||
+                       e.dataTransfer?.getData?.('visualType') ||
+                       e.dataTransfer?.getData?.('text/plain');
+    if (!visualType) return;
+
+    const id = `visual-${Date.now()}`;
+
+    if (dragState.prebuiltConfig) {
+      const cfg = dragState.prebuiltConfig;
+      addItem({
+        id,
+        type: cfg.type as any,
+        title: cfg.title,
+        layout: { x: 0, y: 0, w: cfg.w, h: cfg.h },
+        props: { ...cfg.props },
+      });
+      return;
+    }
+
+    const recipe = getRecipeForVisual(visualType, scenario as ScenarioType);
+    const title = generateSmartTitle(visualType, recipe, scenario as ScenarioType);
+    addItem({
+      id,
+      type: visualType as any,
+      title,
+      layout: { x: 0, y: 0, w: 8, h: 4 },
+      props: { ...recipe },
+    });
+  };
+
   const handleCanvasClick = (e: React.MouseEvent) => {
     // Only deselect if clicking directly on the canvas background
     if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('layout')) {
@@ -329,6 +364,7 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
           e.stopPropagation();
           e.dataTransfer.dropEffect = 'copy';
       }}
+      onDrop={handleCanvasDrop}
     >
       {mounted && width > 0 && (
         <>

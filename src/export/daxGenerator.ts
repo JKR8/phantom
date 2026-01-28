@@ -175,9 +175,15 @@ export function generateVarianceMeasures(bindings: Array<{
   baseMetrics.forEach(baseMetric => {
     const hasPL = bindings.some(b => b.metric === `${baseMetric}PL`);
     const hasPY = bindings.some(b => b.metric === `${baseMetric}PY`);
-    const hasBase = bindings.some(b => b.metric === baseMetric);
+    const baseBinding = bindings.find(b => b.metric === baseMetric);
 
-    if (!hasBase) return;
+    if (!baseBinding) return;
+
+    const operation = baseBinding.operation;
+    const operationLabel = operation === 'sum' ? 'Total' :
+                          operation === 'avg' || operation === 'average' ? 'Avg' :
+                          operation === 'count' ? 'Count of' :
+                          operation.charAt(0).toUpperCase() + operation.slice(1);
 
     const metricLabel = baseMetric.charAt(0).toUpperCase() + baseMetric.slice(1);
 
@@ -186,8 +192,8 @@ export function generateVarianceMeasures(bindings: Array<{
       measures.push({
         name: `${metricLabel} ΔPY`,
         expression: `
-VAR _AC = [Total ${metricLabel}]
-VAR _PY = [Total ${metricLabel} PY]
+VAR _AC = [${operationLabel} ${metricLabel}]
+VAR _PY = [${operationLabel} ${metricLabel} PY]
 RETURN
 _AC - _PY`,
         displayFolder: 'Variance Measures',
@@ -199,8 +205,8 @@ _AC - _PY`,
       measures.push({
         name: `${metricLabel} ΔPY%`,
         expression: `
-VAR _AC = [Total ${metricLabel}]
-VAR _PY = [Total ${metricLabel} PY]
+VAR _AC = [${operationLabel} ${metricLabel}]
+VAR _PY = [${operationLabel} ${metricLabel} PY]
 RETURN
 IF(_PY <> 0, DIVIDE(_AC - _PY, ABS(_PY)), BLANK())`,
         displayFolder: 'Variance Measures',
@@ -214,8 +220,8 @@ IF(_PY <> 0, DIVIDE(_AC - _PY, ABS(_PY)), BLANK())`,
       measures.push({
         name: `${metricLabel} ΔPL`,
         expression: `
-VAR _AC = [Total ${metricLabel}]
-VAR _PL = [Total ${metricLabel} Plan]
+VAR _AC = [${operationLabel} ${metricLabel}]
+VAR _PL = [${operationLabel} ${metricLabel} Plan]
 RETURN
 _AC - _PL`,
         displayFolder: 'Variance Measures',
@@ -227,8 +233,8 @@ _AC - _PL`,
       measures.push({
         name: `${metricLabel} ΔPL%`,
         expression: `
-VAR _AC = [Total ${metricLabel}]
-VAR _PL = [Total ${metricLabel} Plan]
+VAR _AC = [${operationLabel} ${metricLabel}]
+VAR _PL = [${operationLabel} ${metricLabel} Plan]
 RETURN
 IF(_PL <> 0, DIVIDE(_AC - _PL, ABS(_PL)), BLANK())`,
         displayFolder: 'Variance Measures',

@@ -1,6 +1,6 @@
 import { faker } from '@faker-js/faker';
 import { Store, Product, Sale, Customer, Subscription, Employee, Shipment, PortfolioEntity, ControversyScore, SocialPost, FinanceRecord } from '../types';
-import { paretoSample, logNormalSample, exponentialDecaySample, weightedChoice, createSeededRandom, clamp } from './distributions';
+import { paretoSample, logNormalSample, exponentialDecaySample, weightedChoice, createSeededRandom, clamp, boxMuller } from './distributions';
 import { generateSeasonalDates } from './seasonality';
 
 export const generateRetailData = () => {
@@ -162,7 +162,7 @@ export const generateHRData = () => {
     const department = weightedChoice(departments, deptWeights, rand);
     const office = weightedChoice(offices, officeWeights, rand);
     const band = salaryBands[department] || { mu: 11.2, sigma: 0.3 };
-    const salary = Math.round(Math.exp(band.mu + band.sigma * (rand() * 2 - 1)));
+    const salary = Math.round(Math.exp(band.mu + band.sigma * boxMuller(rand)));
     const tenure = Math.round(clamp(tenureValues[i], 0, 20) * 10) / 10;
 
     // Attrition: exponential decay - 38% Year 1, much lower after
