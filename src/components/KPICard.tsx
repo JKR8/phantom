@@ -1,15 +1,26 @@
 import React, { useMemo } from 'react';
 import { makeStyles, shorthands, Text } from '@fluentui/react-components';
 import { useFilteredSales } from '../store/useStore';
+import { useThemeStore } from '../store/useThemeStore';
 
 const useStyles = makeStyles({
-  container: {
+  outer: {
     height: '100%',
+    display: 'flex',
+    flexDirection: 'row',
+    backgroundColor: 'white',
+  },
+  accentBar: {
+    width: '4px',
+    flexShrink: 0,
+    ...shorthands.borderRadius('2px', 0, 0, '2px'),
+  },
+  container: {
+    flex: 1,
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
     ...shorthands.padding('8px', '12px'),
-    backgroundColor: 'white',
   },
   header: {
     display: 'flex',
@@ -70,32 +81,47 @@ const useStyles = makeStyles({
 interface KPICardProps {
   value?: string | number;
   label: string;
-  metric?: 'revenue' | 'profit' | 'quantity' | 'mrr' | 'ltv';
-  operation?: 'sum' | 'avg';
+  metric?: string;
+  operation?: 'sum' | 'avg' | 'count'; // Added count
   colorIndex?: number;
   manualData?: Array<{ label: string; value: number }>;
+  showVariance?: boolean;
 }
 
-export const KPICard: React.FC<KPICardProps> = ({ value: explicitValue, label, metric, operation = 'sum', manualData }) => {
+export const KPICard: React.FC<KPICardProps> = ({ value: explicitValue, label, metric, operation = 'sum', colorIndex, manualData, showVariance = true }) => {
   const styles = useStyles();
   const filteredData = useFilteredSales();
+  const { getColor } = useThemeStore();
 
   const stats = useMemo(() => {
     if (!metric) return null;
     if (filteredData.length === 0) return null;
 
-    const acSum = filteredData.reduce((acc, item) => acc + (item[metric] || 0), 0);
+    // @ts-ignore
+    const acSum = filteredData.reduce((acc, item) => acc + (item[metric] || item[metric.toLowerCase()] || 0), 0);
     
     // Attempt to get PL and PY fields
     const plKey = `${metric}PL`;
     const pyKey = `${metric}PY`;
     
-    const plSum = filteredData.reduce((acc, item) => acc + (item[plKey] || item[metric] * 0.95 || 0), 0);
-    const pySum = filteredData.reduce((acc, item) => acc + (item[pyKey] || item[metric] * 0.9 || 0), 0);
+    // @ts-ignore
+    const plSum = filteredData.reduce((acc, item) => acc + (item[plKey] || (item[metric] || item[metric.toLowerCase()]) * 0.95 || 0), 0);
+    // @ts-ignore
+    const pySum = filteredData.reduce((acc, item) => acc + (item[pyKey] || (item[metric] || item[metric.toLowerCase()]) * 0.9 || 0), 0);
 
-    const ac = operation === 'avg' ? acSum / filteredData.length : acSum;
-    const pl = operation === 'avg' ? plSum / filteredData.length : plSum;
-    const py = operation === 'avg' ? pySum / filteredData.length : pySum;
+    let ac = acSum;
+    let pl = plSum;
+    let py = pySum;
+
+    if (operation === 'avg') {
+        ac = acSum / filteredData.length;
+        pl = plSum / filteredData.length;
+        py = pySum / filteredData.length;
+    } else if (operation === 'count') {
+        ac = filteredData.length;
+        pl = filteredData.length; // No real target for count usually
+        py = filteredData.length;
+    }
 
     const varPY = ac - py;
     const varPYPct = py !== 0 ? (varPY / py) * 100 : 0;
@@ -118,35 +144,42 @@ export const KPICard: React.FC<KPICardProps> = ({ value: explicitValue, label, m
 
   const displayValue = manualValue !== undefined ? formatValue(manualValue) : explicitValue !== undefined ? explicitValue : formatValue(stats!.ac);
 
+  const accentColor = colorIndex !== undefined ? getColor(colorIndex) : undefined;
+
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <Text className={styles.label}>{label}</Text>
-        <Text className={styles.value}>{displayValue}</Text>
-      </div>
-      
-      {stats && (
-        <div className={styles.footer}>
-          <div className={styles.varianceRow}>
-            <div className={`${styles.dot} ${stats.varPY >= 0 ? styles.dotPositive : styles.dotNegative}`} />
-            <span className={`${styles.variancePercent} ${stats.varPY >= 0 ? styles.positive : styles.negative}`}>
-              {stats.varPY >= 0 ? '+' : ''}{stats.varPYPct.toFixed(1)}%
-            </span>
-            <span className={styles.varianceAbsolute}>
-              |{stats.varPY >= 0 ? '+' : ''}{formatValue(stats.varPY)} ΔPY
-            </span>
-          </div>
-          <div className={styles.varianceRow}>
-            <div className={`${styles.dot} ${stats.varPL >= 0 ? styles.dotPositive : styles.dotNegative}`} />
-            <span className={`${styles.variancePercent} ${stats.varPL >= 0 ? styles.positive : styles.negative}`}>
-              {stats.varPL >= 0 ? '+' : ''}{stats.varPLPct.toFixed(1)}%
-            </span>
-            <span className={styles.varianceAbsolute}>
-              |{stats.varPL >= 0 ? '+' : ''}{formatValue(stats.varPL)} ΔPL
-            </span>
-          </div>
-        </div>
+    <div className={styles.outer}>
+      {accentColor && (
+        <div className={styles.accentBar} style={{ backgroundColor: accentColor }} />
       )}
+      <div className={styles.container}>
+        <div className={styles.header}>
+          <Text className={styles.label}>{label}</Text>
+          <Text className={styles.value}>{displayValue}</Text>
+        </div>
+
+        {stats && showVariance && (
+          <div className={styles.footer}>
+            <div className={styles.varianceRow}>
+              <div className={`${styles.dot} ${stats.varPY >= 0 ? styles.dotPositive : styles.dotNegative}`} />
+              <span className={`${styles.variancePercent} ${stats.varPY >= 0 ? styles.positive : styles.negative}`}>
+                {stats.varPY >= 0 ? '+' : ''}{stats.varPYPct.toFixed(1)}%
+              </span>
+              <span className={styles.varianceAbsolute}>
+                |{stats.varPY >= 0 ? '+' : ''}{formatValue(stats.varPY)} ΔPY
+              </span>
+            </div>
+            <div className={styles.varianceRow}>
+              <div className={`${styles.dot} ${stats.varPL >= 0 ? styles.dotPositive : styles.dotNegative}`} />
+              <span className={`${styles.variancePercent} ${stats.varPL >= 0 ? styles.positive : styles.negative}`}>
+                {stats.varPL >= 0 ? '+' : ''}{stats.varPLPct.toFixed(1)}%
+              </span>
+              <span className={styles.varianceAbsolute}>
+                |{stats.varPL >= 0 ? '+' : ''}{formatValue(stats.varPL)} ΔPL
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

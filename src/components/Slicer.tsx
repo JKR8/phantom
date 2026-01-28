@@ -46,6 +46,7 @@ export const Slicer: React.FC<SlicerProps> = ({ dimension, title }) => {
   const customers = useStore((state) => state.customers);
   const employees = useStore((state) => state.employees);
   const shipments = useStore((state) => state.shipments);
+  const socialPosts = useStore((state) => state.socialPosts);
   const scenario = useStore((state) => state.scenario);
   
   const setFilter = useStore((state) => state.setFilter);
@@ -79,6 +80,21 @@ export const Slicer: React.FC<SlicerProps> = ({ dimension, title }) => {
         else if (dimension === 'Origin') rawOptions = Array.from(new Set(shipments.map(s => s.origin)));
         else if (dimension === 'Destination') rawOptions = Array.from(new Set(shipments.map(s => s.destination)));
     }
+    // Social
+    else if (scenario === 'Social') {
+        if (dimension === 'Platform') rawOptions = Array.from(new Set(socialPosts.map(p => p.platform)));
+        else if (dimension === 'Sentiment') rawOptions = Array.from(new Set(socialPosts.map(p => p.sentiment)));
+        else if (dimension === 'Location') rawOptions = Array.from(new Set(socialPosts.map(p => p.location)));
+        else if (dimension === 'User') rawOptions = Array.from(new Set(socialPosts.map(p => p.user)));
+    }
+    // Finance
+    else if (scenario === 'Finance') {
+        const financeRecords = useStore.getState().financeRecords;
+        if (dimension === 'Account') rawOptions = Array.from(new Set(financeRecords.map(r => r.account)));
+        else if (dimension === 'Region') rawOptions = Array.from(new Set(financeRecords.map(r => r.region)));
+        else if (dimension === 'BusinessUnit') rawOptions = Array.from(new Set(financeRecords.map(r => r.businessUnit)));
+        else if (dimension === 'Scenario') rawOptions = Array.from(new Set(financeRecords.map(r => r.scenario)));
+    }
     // Portfolio
     else if (scenario === 'Portfolio') {
         const portfolioEntities = useStore.getState().portfolioEntities;
@@ -99,6 +115,8 @@ export const Slicer: React.FC<SlicerProps> = ({ dimension, title }) => {
          else if (scenario === 'SaaS') source = customers;
          else if (scenario === 'HR') source = employees;
          else if (scenario === 'Logistics') source = shipments;
+         else if (scenario === 'Social') source = socialPosts;
+         else if (scenario === 'Finance') source = useStore.getState().financeRecords;
 
          const key = dimension.toLowerCase();
          // @ts-ignore
@@ -107,7 +125,7 @@ export const Slicer: React.FC<SlicerProps> = ({ dimension, title }) => {
     }
 
     return rawOptions.sort();
-  }, [dimension, stores, products, customers, employees, shipments, scenario]);
+  }, [dimension, stores, products, customers, employees, shipments, socialPosts, scenario]);
 
   const handleSelect = (_: any, data: { optionValue: string | undefined }) => {
      // If the placeholder/clearing is handled or if we want a clear button,

@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker';
-import { Store, Product, Sale, Customer, Subscription, Employee, Shipment, PortfolioEntity, ControversyScore } from '../types';
+import { Store, Product, Sale, Customer, Subscription, Employee, Shipment, PortfolioEntity, ControversyScore, SocialPost, FinanceRecord } from '../types';
 
 export const generateRetailData = () => {
   const regions = ['North America', 'Europe', 'Asia Pacific', 'Latin America'];
@@ -211,7 +211,7 @@ export const generatePortfolioData = () => {
 
   portfolioEntities.forEach((entity) => {
     // Each entity can have 1-3 controversy scores
-    const numScores = faker.number.int({ min: 1, max: 3 });
+    const numScores = faker.number.int({ min: 3, max: 5 });
 
     for (let i = 0; i < numScores; i++) {
       const category = faker.helpers.arrayElement(categories);
@@ -244,4 +244,57 @@ export const generatePortfolioData = () => {
   });
 
   return { portfolioEntities, controversyScores, barChartGroups };
+};
+
+export const generateSocialData = () => {
+  const platforms = ['X', 'LinkedIn', 'Instagram', 'TikTok', 'Reddit', 'YouTube'];
+  const locations = ['New York', 'London', 'Berlin', 'Toronto', 'Sydney', 'Singapore', 'Dubai', 'Sao Paulo'];
+  const sentiments: Array<'Positive' | 'Neutral' | 'Negative'> = ['Positive', 'Neutral', 'Negative'];
+
+  const socialPosts: SocialPost[] = Array.from({ length: 1200 }).map(() => {
+    const sentiment = faker.helpers.arrayElement(sentiments);
+    const baseScore = sentiment === 'Positive'
+      ? faker.number.float({ min: 0.2, max: 1 })
+      : sentiment === 'Negative'
+        ? faker.number.float({ min: -1, max: -0.2 })
+        : faker.number.float({ min: -0.2, max: 0.2 });
+
+    return {
+      id: faker.string.uuid(),
+      date: faker.date.recent({ days: 180 }).toISOString(),
+      user: faker.internet.username(),
+      location: faker.helpers.arrayElement(locations),
+      platform: faker.helpers.arrayElement(platforms),
+      sentiment,
+      engagements: faker.number.int({ min: 10, max: 5000 }),
+      mentions: faker.number.int({ min: 1, max: 250 }),
+      sentimentScore: parseFloat(baseScore.toFixed(2)),
+    };
+  });
+
+  return { socialPosts };
+};
+
+export const generateFinanceData = () => {
+  const accounts = ['Revenue', 'COGS', 'Operating Expenses', 'Marketing', 'R&D', 'G&A'];
+  const regions = ['North America', 'Europe', 'APAC', 'LATAM'];
+  const businessUnits = ['Consumer', 'Enterprise', 'SMB', 'Platform'];
+  const scenarios: Array<'Actual' | 'Budget' | 'Forecast'> = ['Actual', 'Budget', 'Forecast'];
+
+  const financeRecords: FinanceRecord[] = Array.from({ length: 1200 }).map(() => {
+    const amount = faker.number.int({ min: 5000, max: 500000 });
+    const variance = faker.number.int({ min: -50000, max: 50000 });
+    return {
+      id: faker.string.uuid(),
+      date: faker.date.recent({ days: 365 }).toISOString(),
+      account: faker.helpers.arrayElement(accounts),
+      region: faker.helpers.arrayElement(regions),
+      businessUnit: faker.helpers.arrayElement(businessUnits),
+      scenario: faker.helpers.arrayElement(scenarios),
+      amount,
+      variance,
+    };
+  });
+
+  return { financeRecords };
 };

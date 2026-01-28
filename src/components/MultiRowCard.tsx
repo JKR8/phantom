@@ -1,7 +1,9 @@
 import React, { useMemo } from 'react';
 import { makeStyles, shorthands, Text } from '@fluentui/react-components';
 import { useThemeStore } from '../store/useThemeStore';
-import { useFilteredSales } from '../store/useStore';
+import { useFilteredSales, useStore } from '../store/useStore';
+import { ScenarioFields, ScenarioType } from '../store/semanticLayer';
+import { formatMetricValue, getMetricValue } from '../utils/chartUtils';
 
 const useStyles = makeStyles({
   container: {
@@ -30,24 +32,27 @@ const useStyles = makeStyles({
 });
 
 interface MultiRowCardProps {
+  fields?: string[];
 }
 
-export const MultiRowCard: React.FC<MultiRowCardProps> = () => {
+export const MultiRowCard: React.FC<MultiRowCardProps> = ({ fields }) => {
   const styles = useStyles();
   const { getColor } = useThemeStore();
   const filteredSales = useFilteredSales();
+  const scenario = useStore((state) => state.scenario) as ScenarioType;
 
   const stats = useMemo(() => {
-    const sumRevenue = filteredSales.reduce((acc, sale) => acc + sale.revenue, 0);
-    const sumProfit = filteredSales.reduce((acc, sale) => acc + sale.profit, 0);
-    const sumQty = filteredSales.reduce((acc, sale) => acc + sale.quantity, 0);
+    const defaultFields = ScenarioFields[scenario]?.filter((f) => f.role === 'Measure').slice(0, 3).map((f) => f.name) || [];
+    const selectedFields = (fields && fields.length > 0 ? fields : defaultFields).filter(Boolean);
 
-    return [
-      { label: 'Total Sales', value: `$${(sumRevenue / 1000).toFixed(1)}K` },
-      { label: 'Total Profit', value: `$${(sumProfit / 1000).toFixed(1)}K` },
-      { label: 'Total Qty', value: sumQty.toLocaleString() },
-    ];
-  }, [filteredSales]);
+    return selectedFields.map((field) => {
+      const sum = filteredSales.reduce((acc, sale) => acc + getMetricValue(sale, field), 0);
+      return {
+        label: field,
+        value: formatMetricValue(field, sum, true),
+      };
+    });
+  }, [filteredSales, fields, scenario]);
 
   return (
     <div className={styles.container}>

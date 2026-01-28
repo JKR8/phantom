@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-Phantom is a web-based "Micro-BI" prototyping tool that enables consultants and analysts to generate interactive dashboard prototypes in seconds. Unlike static design tools (Figma) or heavy engineering solutions (Power BI Desktop), Phantom populates charts with mathematically consistent fake data that supports cross-filtering and drill-down interactions out of the box.
+Phantom is a web-based "Micro-BI" prototyping tool that enables consultants and analysts to generate interactive dashboard prototypes in seconds. Unlike static design tools (Figma) or heavy engineering solutions (Power BI Desktop), Phantom populates charts with mathematically consistent fake data that supports cross-filtering and drill-down interactions out of the box, then exports data-loaded PBIP projects.
 
 **Core Value Proposition:** *"Looks like Power BI, works like magic."*
 
@@ -143,10 +143,11 @@ Phantom is a web-based "Micro-BI" prototyping tool that enables consultants and 
  │  PBI Default · Ocean · Forest · Sunset · Mono · Corporate              │
  │  Zebra (IBCS) · Social · Portfolio                                      │
  │                                                                         │
- │  6 SCENARIOS           20+ VISUAL TYPES         8 TEMPLATES             │
- │  Retail · SaaS         Bar · Column · Line      Sales · Marketing       │
- │  HR · Logistics        Area · Pie · Donut       HR · Logistics          │
- │  Portfolio · Social    Scatter · Funnel          Finance · IBCS          │
+│  7 SCENARIOS           20+ VISUAL TYPES         8 TEMPLATES             │
+│  Retail · SaaS         Bar · Column · Line      Sales · Marketing       │
+│  HR · Logistics        Area · Pie · Donut       HR · Logistics          │
+│  Portfolio · Social    Scatter · Funnel          Finance · IBCS          │
+│  Finance               Treemap · Gauge           Social · Portfolio      │
  │                        Treemap · Gauge           Social · Portfolio      │
  │                        Waterfall · Table                                 │
  │                        Matrix · Card · Slicer                            │
@@ -163,7 +164,7 @@ Phantom is a web-based "Micro-BI" prototyping tool that enables consultants and 
 1. Enable rapid dashboard prototyping without real data connections
 2. Deliver Power BI-like interactivity (cross-filtering, drill-down) instantly
 3. Provide pixel-perfect UI fidelity to Power BI Service
-4. Export working PBIP projects with star schema and DAX measures
+4. Export working PBIP projects with star schema, DAX measures, and loadable data
 5. Curate industry-specific scenario templates with best practice layouts
 
 ### Success Metrics (MVP)
@@ -171,7 +172,7 @@ Phantom is a web-based "Micro-BI" prototyping tool that enables consultants and 
 - [x] User can arrange 6+ visual types on a drag-and-drop canvas
 - [x] Cross-filtering works between all visuals
 - [x] UI is indistinguishable from Power BI Service at first glance
-- [x] Export to PBIP with star schema and positioned visuals
+- [ ] Export to PBIP with star schema, positioned visuals, and loadable data (implemented in app; pending Power BI Desktop validation)
 
 ---
 
@@ -246,12 +247,12 @@ src/
 │       ├── DateRangePicker.tsx
 │       └── JustificationSearch.tsx
 ├── engine/
-│   └── dataGenerator.ts        # Fake data generation (6 scenarios)
+│   └── dataGenerator.ts        # Fake data generation (7 scenarios)
 ├── export/
 │   ├── index.ts                # Export entry point
 │   ├── schemaGenerator.ts      # Star schema definitions per scenario
 │   ├── daxGenerator.ts         # DAX measure extraction from visuals
-│   ├── pbitWriter.ts           # PBIP file assembly
+│   ├── pbipWriter.ts           # PBIP export assembly
 │   └── layoutConverter.ts      # Phantom layout → PBI visual positions
 ├── store/
 │   ├── useStore.ts             # Main Zustand store (data, filters, items)
@@ -277,7 +278,8 @@ Users select a business scenario from the top bar. Each generates linked relatio
 | **HR** | Employee, Department, Role | Salary, Rating, Attrition, Tenure | 200 employees |
 | **Logistics** | Origin, Destination, Carrier | Cost, Weight, On-Time | 500 shipments |
 | **Portfolio** | Entity, Sector, Region, Source | Market Value, Controversy Score, Score Change | Multiple entities |
-| **Social** | (Uses Retail schema as base) | Revenue, Profit, Quantity | 1000 sales |
+| **Social** | User, Platform, Sentiment, Location | Engagements, Mentions, Sentiment Score | 1200 posts |
+| **Finance** | Account, BusinessUnit, Region, Scenario | Amount, Variance | 1200 records |
 
 #### FR-1.2: Relational Data Integrity
 The engine generates linked tables in star schema format:
@@ -422,7 +424,9 @@ Key capabilities:
 - TMDL format semantic model (native Power BI developer format)
 - Positioned visuals with query bindings to semantic model
 - DAX measures auto-generated from dashboard visual configurations
-- Opens directly in Power BI Desktop
+- Opens directly in Power BI Desktop with data loaded (critical requirement)
+
+**Current status:** PBIP export implemented. Package includes report + semantic model with embedded sample data.
 
 #### FR-5.2: JSON Export
 Downloads dashboard configuration as JSON for backup/sharing.
@@ -493,7 +497,7 @@ Side panel for FFMA reporting language widgets. Toggleable from left nav. Contai
 
 | Deliverable | Status |
 |-------------|--------|
-| Relational Data Generator (6 scenarios) | Done |
+| Relational Data Generator (7 scenarios) | Done |
 | Zustand Store with filtering | Done |
 | 20+ chart types with cross-filtering | Done |
 | KPI Cards (filtered, Sum/Avg/Count) | Done |
@@ -513,7 +517,7 @@ Side panel for FFMA reporting language widgets. Toggleable from left nav. Contai
 | Visualizations Pane (drag to canvas) | Done |
 | Add/remove visuals dynamically | Done |
 | Visual selection & focus | Done |
-| PBIP export with star schema | Done |
+| PBIP export with star schema | In Progress |
 | JSON export | Done |
 | 8 pre-built templates | Done |
 | Properties Panel (title, dimension, metric) | Done |

@@ -7,6 +7,60 @@ Curated Standards for Power BI delivery. Phantom is a standards-driven prototypi
 
 ---
 
+## PBIP Export (Critical Path)
+**Goal:** Export a real PBIP project with a working semantic model and loadable data (point of difference).
+
+- [x] Implement true PBIP output (folder-based project with `.pbip` manifest and `SemanticModel/` TMDL)
+- [x] Include data pipeline so PBIP opens with data (embedded sample dataset in TMDL partitions)
+- [ ] Validate PBIP opens in latest Power BI Desktop (automated + manual verification)
+- [x] Ensure visual field bindings map to `Table[Column]` in PBIP report JSON
+- [x] Replace PBIT placeholder references in UI/docs with PBIP language
+
+**PBIP Validation Checklist (handoff-ready):**
+- [ ] Open PBIP in Power BI Desktop (latest) for each template
+- [ ] Refresh succeeds without errors
+- [ ] Visuals render with data (no blank visuals)
+- [ ] Cross-filtering works on at least one chart per page
+- [ ] Exported layout matches Phantom grid positions
+
+---
+
+## Scenario Library Status (Target: 6–8 high-quality scenarios)
+**Goal:** Each scenario has a curated template, valid data model, and verified PBIP export.
+
+| Scenario | Template | Data Model | PBIP Export | Notes |
+|---|---|---|---|---|
+| Retail | Sales | ✅ | ⏳ | Baseline scenario |
+| SaaS | Marketing | ✅ | ⏳ | Uses Customer/Subscription |
+| HR | HR Attrition | ✅ | ⏳ | Employee facts |
+| Logistics | Supply Chain | ✅ | ⏳ | Shipment facts |
+| Social | Social Media Sentiment | ✅ | ⏳ | SocialPost fact |
+| Portfolio | Portfolio Monitoring | ✅ | ⏳ | PortfolioEntity + ControversyScore |
+| Finance (P&L) | Finance | ✅ | ⏳ | Dedicated Finance scenario + schema |
+| IBCS / Zebra | Zebra (IBCS) | ✅ | ⏳ | Finance scenario (IBCS styling) |
+
+Legend: ✅ ready, ⚠️ partial/misaligned, ⏳ pending PBIP verification
+
+---
+
+## Bug Fixes / QA (Add to backlog)
+- [ ] Fix metric lookup for camelCase fields (e.g. `SentimentScore`, `MarketValue`) so charts/cards don’t show 0
+- [ ] Recompute Scatter chart when dimension/scenario data changes (memo deps)
+- [x] Export table projections: include default columns when `props.columns` is undefined
+- [x] Export field mapping: handle case-insensitive dimension names (e.g. `region` → `Region`)
+- [ ] Resolve Fluent UI `mergeClasses` warnings in console (style composition)
+
+---
+
+## Testing & Validation
+- [x] `npm run test:e2e -- --reporter=line` passes (drop/shape/refine + Social slice + PBIP table presence)
+- [ ] Add PBIP Desktop verification notes/results per scenario
+
+**Validation Log**
+- 2026-01-28: `npm run test:e2e -- --reporter=line` (pass; console warnings from Fluent `mergeClasses` still present)
+
+---
+
 ## Epic 1: Standards Pack (v1)
 **Goal:** A locked set of opinionated defaults that govern every new visual — the core product, not a nice-to-have
 
@@ -62,15 +116,15 @@ A Standards Pack is what turns Phantom from "a grid with charts" into "curated c
 A minimal inline control strip that appears on drop — not a modal, not the full Properties Panel.
 
 **Bar/Column Quick Shape:**
-- [ ] Bars control: 2 | 5 | 10 | All (Top N by selected measure + optional "Other" bucket)
-- [ ] Breakdown dropdown: recommended dimensions from scenario (Category → Product → Store, etc.)
-- [ ] Measure dropdown: recommended measures from scenario (Revenue / Profit / Quantity, etc.)
-- [ ] Sort toggle: value desc (default) / asc / alpha
-- [ ] "Show Other" toggle: on/off when Bars < All
+- [ ] (Awaiting Test) Bars control: 2 | 5 | 10 | All (Top N by selected measure + optional "Other" bucket)
+- [ ] (Awaiting Test) Breakdown dropdown: recommended dimensions from scenario (Category → Product → Store, etc.)
+- [ ] (Awaiting Test) Measure dropdown: recommended measures from scenario (Revenue / Profit / Quantity, etc.)
+- [ ] (Awaiting Test) Sort toggle: value desc (default) / asc / alpha
+- [ ] (Awaiting Test) "Show Other" toggle: on/off when Bars < All
 
 **Card Quick Shape:**
-- [ ] Measure dropdown
-- [ ] Aggregation: Sum | Avg | Count | Min | Max
+- [ ] (Awaiting Test) Measure dropdown
+- [ ] (Awaiting Test) Aggregation: Sum | Avg | Count | Min | Max
 - [ ] Format: auto | K | M | % | #,##0
 
 **Line/Area Quick Shape:**
@@ -100,26 +154,26 @@ A minimal inline control strip that appears on drop — not a modal, not the ful
 ### 3a. Semantic Roles
 Tag every field in every scenario with a role so Phantom knows what to bind where.
 
-- [ ] Define role taxonomy: Time | Entity | Geography | Category | Measure | Identifier
-- [ ] Tag Retail fields (Date→Time, Store→Entity, Region→Geography, Category→Category, Revenue→Measure, etc.)
-- [ ] Tag SaaS fields (Date→Time, Customer→Entity, Region→Geography, Tier→Category, MRR→Measure, etc.)
-- [ ] Tag HR fields (Employee→Entity, Department→Category, Salary→Measure, Rating→Measure, etc.)
-- [ ] Tag Logistics fields (Date→Time, Origin→Geography, Carrier→Entity, Cost→Measure, etc.)
-- [ ] Tag Portfolio fields (Entity→Entity, Sector→Category, Region→Geography, MarketValue→Measure, etc.)
-- [ ] Tag Social fields (same as Retail base)
+- [ ] (Awaiting Test) Define role taxonomy: Time | Entity | Geography | Category | Measure | Identifier
+- [ ] (Awaiting Test) Tag Retail fields (Date→Time, Store→Entity, Region→Geography, Category→Category, Revenue→Measure, etc.)
+- [ ] (Awaiting Test) Tag SaaS fields (Date→Time, Customer→Entity, Region→Geography, Tier→Category, MRR→Measure, etc.)
+- [ ] (Awaiting Test) Tag HR fields (Employee→Entity, Department→Category, Salary→Measure, Rating→Measure, etc.)
+- [ ] (Awaiting Test) Tag Logistics fields (Date→Time, Origin→Geography, Carrier→Entity, Cost→Measure, etc.)
+- [ ] (Awaiting Test) Tag Portfolio fields (Entity→Entity, Sector→Category, Region→Geography, MarketValue→Measure, etc.)
+- [ ] (Awaiting Test) Tag Social fields (same as Retail base)
 
 ### 3b. Binding Recipes (per visual type)
 Each visual type gets a recipe that picks defaults from available roles.
 
-- [ ] Bar/Column recipe: Category axis → best Category role (fallback Geography → Entity), Value → primary measure, Bars → 5, Sort → value desc
-- [ ] Line/Area recipe: X-axis → Time role, Value → primary measure, auto-detect grain
-- [ ] Pie/Donut recipe: Slices → best Category role, Value → primary measure, max 6 slices + Other
-- [ ] Card recipe: Value → primary measure, Aggregation → Sum
-- [ ] Table recipe: Columns → Entity + top 3 measures, Rows → 25
-- [ ] Funnel recipe: Stages → Category role, Value → primary measure
-- [ ] Scatter recipe: X → primary measure, Y → secondary measure, Size → tertiary measure
-- [ ] Treemap recipe: Group → Category role, Size → primary measure
-- [ ] Matrix recipe: Rows → Category, Columns → Time, Values → primary measure
+- [ ] (Awaiting Test) Bar/Column recipe: Category axis → best Category role (fallback Geography → Entity), Value → primary measure, Bars → 5, Sort → value desc
+- [ ] (Awaiting Test) Line/Area recipe: X-axis → Time role, Value → primary measure, auto-detect grain
+- [ ] (Awaiting Test) Pie/Donut recipe: Slices → best Category role, Value → primary measure, max 6 slices + Other
+- [ ] (Awaiting Test) Card recipe: Value → primary measure, Aggregation → Sum
+- [ ] (Awaiting Test) Table recipe: Columns → Entity + top 3 measures, Rows → 25
+- [ ] (Awaiting Test) Funnel recipe: Stages → Category role, Value → primary measure
+- [ ] (Awaiting Test) Scatter recipe: X → primary measure, Y → secondary measure, Size → tertiary measure
+- [ ] (Awaiting Test) Treemap recipe: Group → Category role, Size → primary measure
+- [ ] (Awaiting Test) Matrix recipe: Rows → Category, Columns → Time, Values → primary measure
 
 ### 3c. Recommended Fields Lists
 - [ ] Per scenario, define ordered "recommended dimensions" list (best → fallback)
@@ -132,17 +186,17 @@ Each visual type gets a recipe that picks defaults from available roles.
 **Goal:** Standards-driven layout that goes beyond grid snap — visuals land in predefined slots
 
 ### 4a. Layout Mode Toggle
-- [ ] Add "Standard Layout" / "Free Layout" toggle to canvas toolbar
-- [ ] Free Layout = current behavior (grid snap, free placement)
-- [ ] Standard Layout = predefined slot regions that visuals snap into
+- [ ] (Awaiting Test) Add "Standard Layout" / "Free Layout" toggle to canvas toolbar
+- [ ] (Awaiting Test) Free Layout = current behavior (grid snap, free placement)
+- [ ] (Awaiting Test) Standard Layout = predefined slot regions that visuals snap into
 
 ### 4b. Slot Definitions
-- [ ] Define slot regions per archetype:
+- [ ] (Awaiting Test) Define slot regions per archetype:
   - **Executive:** Header KPIs (row 0-2) → Main Trend (row 2-8) → Supporting Breakdown (row 8-13)
   - **Diagnostic:** Filter Bar (row 0-2) → Comparison Charts (row 2-8) → Detail Table (row 8-14)
   - **Operational:** Dense KPIs (row 0-3) → Multi-chart Grid (row 3-10) → Action List (row 10-14)
-- [ ] Visual highlight on slot regions during drag
-- [ ] Auto-size visual to fill the slot it's dropped into
+- [ ] (Awaiting Test) Visual highlight on slot regions during drag
+- [ ] (Awaiting Test) Auto-size visual to fill the slot it's dropped into
 - [ ] Allow slot overflow (visual spans two slots) in Free Layout
 
 ### 4c. Benefits
@@ -176,7 +230,7 @@ Slots solve: alignment perfection, consistent spacing, "it always looks pro," pr
 - [x] Build template 4: Logistics (Supply Chain)
 - [x] Build template 5: Finance (P&L / Waterfall)
 - [x] Build templates 6-8: IBCS (Zebra), Social, Portfolio
-- [ ] Test PBIP export workflow for all templates
+- [ ] Test PBIP export workflow for all templates (Desktop open + data load)
 - [ ] Document template usage
 - [ ] Map each template to a layout archetype (Epic 4)
 
@@ -212,13 +266,13 @@ Slots solve: alignment perfection, consistent spacing, "it always looks pro," pr
 **Sprint goal:** A consultant can drop any of the 6 core visuals onto the canvas and get a workshop-ready result with minimal shaping.
 
 ### Deliverables
-- [ ] Semantic roles for all 6 scenarios (Epic 3a)
-- [ ] Binding recipes for Bar, Column, Line, Pie, Card, Table (Epic 3b)
-- [ ] Top N / Bars control with "Other" bucket (Epic 2b)
-- [ ] Breakdown selector with recommended dims list (Epic 2b + 3c)
-- [ ] Measure selector with recommended measures list (Epic 2b + 3c)
-- [ ] Quick Shape strip UI for bar/column (Epic 2b)
-- [ ] Slot layouts for Executive + Diagnostic archetypes (Epic 4b)
+- [ ] (Awaiting Test) Semantic roles for all 6 scenarios (Epic 3a)
+- [ ] (Awaiting Test) Binding recipes for Bar, Column, Line, Pie, Card, Table (Epic 3b)
+- [ ] (Awaiting Test) Top N / Bars control with "Other" bucket (Epic 2b)
+- [ ] (Awaiting Test) Breakdown selector with recommended dims list (Epic 2b + 3c)
+- [ ] (Awaiting Test) Measure selector with recommended measures list (Epic 2b + 3c)
+- [ ] (Awaiting Test) Quick Shape strip UI for bar/column (Epic 2b)
+- [ ] (Awaiting Test) Slot layouts for Executive + Diagnostic archetypes (Epic 4b)
 - [ ] Fields Pane → drag to axes (existing TODO from PRD)
 
 ### Acceptance Test

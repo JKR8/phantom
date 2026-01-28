@@ -1,7 +1,7 @@
 /**
  * Export Button Component
  * 
- * Provides a dropdown menu with export options including Power BI Template (.pbit) export.
+ * Provides a dropdown menu with export options including Power BI Project (PBIP) export.
  */
 
 import React, { useState } from 'react';
@@ -31,7 +31,7 @@ import {
   CheckmarkCircleRegular,
 } from '@fluentui/react-icons';
 import { useStore } from '../store/useStore';
-import { downloadPBITFile, generateAllMeasures, getSchemaForScenario } from '../export';
+import { downloadPBIPPackage, generateAllMeasures, getSchemaForScenario } from '../export';
 
 const useStyles = makeStyles({
   dialogContent: {
@@ -81,7 +81,8 @@ export const ExportButton: React.FC = () => {
       const measures = generateAllMeasures(items, scenario);
 
       // Perform the export
-      await downloadPBITFile(items, scenario);
+      const state = useStore.getState();
+      await downloadPBIPPackage(items, scenario, state);
 
       // Show success dialog with summary
       setExportSummary({
@@ -141,7 +142,7 @@ export const ExportButton: React.FC = () => {
         <MenuPopover>
           <MenuList>
             <MenuItem icon={<DocumentDataRegular />} onClick={handlePBIExport}>
-              Power BI Template (.pbit)
+              Power BI Project (PBIP)
             </MenuItem>
             <MenuItem icon={<ImageRegular />} onClick={handlePNGExport}>
               Image (PNG)
@@ -161,7 +162,7 @@ export const ExportButton: React.FC = () => {
               <div style={{ textAlign: 'center' }}>
                 <CheckmarkCircleRegular className={styles.successIcon} fontSize={48} />
               </div>
-              <p>Your Power BI Template has been exported successfully!</p>
+              <p>Your Power BI Project export is ready!</p>
               {exportSummary && (
                 <>
                   <p><strong>Export Summary:</strong></p>
@@ -175,12 +176,11 @@ export const ExportButton: React.FC = () => {
               )}
               <p><strong>Two files downloaded:</strong></p>
               <ul className={styles.summaryList}>
-                <li><code>.pbit</code> - Power BI Template (open in Power BI Desktop)</li>
+                <li><code>.pbip.zip</code> - PBIP project package (unzip, then open the <code>.pbip</code> file)</li>
                 <li><code>_Guide.md</code> - Documentation with schema, measures, and setup instructions</li>
               </ul>
               <p style={{ fontSize: '12px', color: '#605E5C' }}>
-                Open the .pbit file in Power BI Desktop and connect your data source. 
-                Refer to the guide for detailed instructions on configuring the data model.
+                Unzip the package, then open the <code>.pbip</code> manifest in Power BI Desktop (Developer mode enabled).
               </p>
             </DialogContent>
             <DialogActions>

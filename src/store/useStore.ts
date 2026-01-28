@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { DashboardState, Scenario, DashboardItem } from '../types';
-import { generateRetailData, generateSaaSData, generateHRData, generateLogisticsData, generatePortfolioData } from '../engine/dataGenerator';
-import { useThemeStore, PALETTES } from './useThemeStore';
+import { DashboardState, Scenario, DashboardItem, LayoutMode, DbDashboard } from '../types';
+import { generateRetailData, generateSaaSData, generateHRData, generateLogisticsData, generatePortfolioData, generateSocialData, generateFinanceData } from '../engine/dataGenerator';
+import { useThemeStore, PALETTES, DEFAULT_PALETTE } from './useThemeStore';
 
 const initialItems: DashboardItem[] = [
   { id: 'slicer1', type: 'slicer', title: 'Filter by Store', layout: { x: 0, y: 0, w: 6, h: 2 }, props: { dimension: 'Store' } },
@@ -23,25 +23,40 @@ export const useStore = create<DashboardState>((set, get) => ({
   subscriptions: [],
   employees: [],
   shipments: [],
+  financeRecords: [],
   portfolioEntities: [],
   controversyScores: [],
+  socialPosts: [],
   filters: {},
   items: initialItems,
   selectedItemId: null,
+  layoutMode: 'Free',
+  // Persistence fields
+  dashboardId: null,
+  dashboardName: 'Untitled Dashboard',
+  isPublic: false,
+  shareId: null,
+  isDirty: false,
+  lastSavedAt: null,
   setScenario: (scenario: Scenario) => {
-    const emptyState = { stores: [], products: [], sales: [], customers: [], subscriptions: [], employees: [], shipments: [], portfolioEntities: [], controversyScores: [], filters: {} };
+    const emptyState = { stores: [], products: [], sales: [], customers: [], subscriptions: [], employees: [], shipments: [], financeRecords: [], portfolioEntities: [], controversyScores: [], socialPosts: [], filters: {} };
     if (scenario === 'Retail') {
-      set({ scenario, ...emptyState, ...generateRetailData() });
+      set({ scenario, ...emptyState, ...generateRetailData(), isDirty: true });
     } else if (scenario === 'SaaS') {
-      set({ scenario, ...emptyState, ...generateSaaSData() });
+      set({ scenario, ...emptyState, ...generateSaaSData(), isDirty: true });
     } else if (scenario === 'HR') {
-      set({ scenario, ...emptyState, ...generateHRData() });
+      set({ scenario, ...emptyState, ...generateHRData(), isDirty: true });
     } else if (scenario === 'Logistics') {
-      set({ scenario, ...emptyState, ...generateLogisticsData() });
+      set({ scenario, ...emptyState, ...generateLogisticsData(), isDirty: true });
     } else if (scenario === 'Portfolio') {
-      set({ scenario, ...emptyState, ...generatePortfolioData() });
+      set({ scenario, ...emptyState, ...generatePortfolioData(), isDirty: true });
+    } else if (scenario === 'Social') {
+      set({ scenario, ...emptyState, ...generateSocialData(), isDirty: true });
+    } else if (scenario === 'Finance') {
+      set({ scenario, ...emptyState, ...generateFinanceData(), isDirty: true });
     }
   },
+  setLayoutMode: (mode: LayoutMode) => set({ layoutMode: mode, isDirty: true }),
   setFilter: (column, value) => {
     set((state) => {
       const newFilters = { ...state.filters };
@@ -50,12 +65,12 @@ export const useStore = create<DashboardState>((set, get) => ({
       } else {
         newFilters[column] = value;
       }
-      return { filters: newFilters };
+      return { filters: newFilters, isDirty: true };
     });
   },
-  clearFilters: () => set({ filters: {} }),
-  addItem: (item) => set((state) => ({ items: [...state.items, item] })),
-  removeItem: (id) => set((state) => ({ items: state.items.filter((i) => i.id !== id) })),
+  clearFilters: () => set({ filters: {}, isDirty: true }),
+  addItem: (item) => set((state) => ({ items: [...state.items, item], isDirty: true })),
+  removeItem: (id) => set((state) => ({ items: state.items.filter((i) => i.id !== id), isDirty: true })),
   updateLayout: (layout) =>
     set((state) => {
       const newItems = state.items.map((item) => {
@@ -74,7 +89,7 @@ export const useStore = create<DashboardState>((set, get) => ({
         }
         return item;
       });
-      return { items: newItems };
+      return { items: newItems, isDirty: true };
     }),
   selectItem: (id: string | null) => set({ selectedItemId: id }),
   updateItemProps: (id: string, props: any) =>
@@ -82,13 +97,16 @@ export const useStore = create<DashboardState>((set, get) => ({
       items: state.items.map((item) =>
         item.id === id ? { ...item, props: { ...item.props, ...props } } : item
       ),
+      isDirty: true,
     })),
   updateItemTitle: (id: string, title: string) =>
     set((state) => ({
       items: state.items.map((item) =>
         item.id === id ? { ...item, title } : item
       ),
+      isDirty: true,
     })),
+  clearCanvas: () => set({ items: [], selectedItemId: null, filters: {}, isDirty: true }),
   loadTemplate: (templateName: string) => {
     const template = Templates.find(t => t.name === templateName);
     if (template) {
@@ -97,19 +115,92 @@ export const useStore = create<DashboardState>((set, get) => ({
         if (currentScenario !== template.scenario) {
             get().setScenario(template.scenario);
         }
-        
-        // Switch theme if specified
+
+        // Switch theme if specified, otherwise reset to default
         if (template.theme) {
             const palette = PALETTES.find(p => p.name === template.theme);
             if (palette) {
                 useThemeStore.getState().setPalette(palette);
             }
+        } else {
+            useThemeStore.getState().setPalette(DEFAULT_PALETTE);
         }
 
         // Then set items
-        set({ items: JSON.parse(JSON.stringify(template.items)) });
+        set({ items: JSON.parse(JSON.stringify(template.items)), isDirty: true });
     }
-  }
+  },
+  // Persistence actions
+  setDashboardMeta: (meta) => set((state) => ({
+    dashboardId: meta.id !== undefined ? meta.id : state.dashboardId,
+    dashboardName: meta.name !== undefined ? meta.name : state.dashboardName,
+    isPublic: meta.isPublic !== undefined ? meta.isPublic : state.isPublic,
+    shareId: meta.shareId !== undefined ? meta.shareId : state.shareId,
+  })),
+  markDirty: () => set({ isDirty: true }),
+  markClean: () => set({ isDirty: false }),
+  loadDashboardFromDb: (db: DbDashboard) => {
+    const scenario = db.scenario as Scenario;
+    const emptyState = { stores: [], products: [], sales: [], customers: [], subscriptions: [], employees: [], shipments: [], financeRecords: [], portfolioEntities: [], controversyScores: [], socialPosts: [], filters: {} };
+    let dataState = {};
+    if (scenario === 'Retail') dataState = generateRetailData();
+    else if (scenario === 'SaaS') dataState = generateSaaSData();
+    else if (scenario === 'HR') dataState = generateHRData();
+    else if (scenario === 'Logistics') dataState = generateLogisticsData();
+    else if (scenario === 'Portfolio') dataState = generatePortfolioData();
+    else if (scenario === 'Social') dataState = generateSocialData();
+    else if (scenario === 'Finance') dataState = generateFinanceData();
+
+    // Restore theme palette
+    if (db.theme_palette) {
+      const palette = PALETTES.find(p => p.name === db.theme_palette);
+      if (palette) useThemeStore.getState().setPalette(palette);
+    }
+
+    set({
+      ...emptyState,
+      ...dataState,
+      scenario,
+      items: db.items || [],
+      filters: db.filters || {},
+      layoutMode: (db.layout_mode || 'Free') as LayoutMode,
+      selectedItemId: null,
+      dashboardId: db.id,
+      dashboardName: db.name,
+      isPublic: db.is_public,
+      shareId: db.share_id,
+      isDirty: false,
+      lastSavedAt: db.updated_at,
+    });
+  },
+  getSerializableState: () => {
+    const state = get();
+    return {
+      scenario: state.scenario,
+      items: state.items,
+      filters: state.filters,
+      layoutMode: state.layoutMode,
+      themePalette: useThemeStore.getState().activePalette.name,
+    };
+  },
+  resetToNew: () => {
+    const emptyState = { stores: [], products: [], sales: [], customers: [], subscriptions: [], employees: [], shipments: [], financeRecords: [], portfolioEntities: [], controversyScores: [], socialPosts: [], filters: {} };
+    set({
+      ...emptyState,
+      ...generateRetailData(),
+      scenario: 'Retail',
+      items: initialItems,
+      selectedItemId: null,
+      layoutMode: 'Free',
+      dashboardId: null,
+      dashboardName: 'Untitled Dashboard',
+      isPublic: false,
+      shareId: null,
+      isDirty: false,
+      lastSavedAt: null,
+    });
+    useThemeStore.getState().setPalette(DEFAULT_PALETTE);
+  },
 }));
 
 // Generic Selector for filtered data
@@ -129,6 +220,10 @@ export const useFilteredSales = () => { // Keeping name for compatibility but it
     data = state.shipments;
   } else if (scenario === 'Portfolio') {
     data = state.controversyScores;
+  } else if (scenario === 'Social') {
+    data = state.socialPosts;
+  } else if (scenario === 'Finance') {
+    data = state.financeRecords;
   }
 
   return data.filter((item) => {
@@ -165,6 +260,16 @@ export const useFilteredSales = () => { // Keeping name for compatibility but it
           if (value === 'No Change' && item.scoreChange !== 0) return false;
         }
         if (column === 'Group' && item.group !== value) return false;
+      } else if (scenario === 'Social') {
+        if (column === 'Platform' && item.platform !== value) return false;
+        if (column === 'Sentiment' && item.sentiment !== value) return false;
+        if (column === 'Location' && item.location !== value) return false;
+        if (column === 'User' && item.user !== value) return false;
+      } else if (scenario === 'Finance') {
+        if (column === 'Account' && item.account !== value) return false;
+        if (column === 'Region' && item.region !== value) return false;
+        if (column === 'BusinessUnit' && item.businessUnit !== value) return false;
+        if (column === 'Scenario' && item.scenario !== value) return false;
       } else {
         // HR and Logistics are flat for now
         const key = column.toLowerCase();

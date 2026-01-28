@@ -67,6 +67,17 @@ export interface Shipment {
   onTime: number; // 0 or 1
 }
 
+export interface FinanceRecord {
+  id: string;
+  date: string;
+  account: string;
+  region: string;
+  businessUnit: string;
+  scenario: 'Actual' | 'Budget' | 'Forecast';
+  amount: number;
+  variance: number;
+}
+
 // Portfolio Monitoring types
 export interface PortfolioEntity {
   id: string;
@@ -96,7 +107,21 @@ export interface ControversyScore {
   group: string; // For bar chart grouping (USA, EMEA, APAC, CEMAR, Gulf+, Basic Capital, etc.)
 }
 
-export type Scenario = 'Retail' | 'SaaS' | 'HR' | 'Logistics' | 'Social' | 'Portfolio';
+// Social scenario types
+export interface SocialPost {
+  id: string;
+  date: string;
+  user: string;
+  location: string;
+  platform: string;
+  sentiment: 'Positive' | 'Neutral' | 'Negative';
+  engagements: number;
+  mentions: number;
+  sentimentScore: number; // -1 to 1
+}
+
+export type Scenario = 'Retail' | 'SaaS' | 'HR' | 'Logistics' | 'Social' | 'Portfolio' | 'Finance';
+export type LayoutMode = 'Free' | 'Standard';
 
 export type VisualType =
   | 'bar'
@@ -141,6 +166,29 @@ export interface DashboardItem {
   props?: any;
 }
 
+export interface DashboardSnapshot {
+  scenario: Scenario;
+  items: DashboardItem[];
+  filters: Record<string, any>;
+  layoutMode: LayoutMode;
+  themePalette: string;
+}
+
+export interface DbDashboard {
+  id: string;
+  user_id: string;
+  name: string;
+  scenario: string;
+  items: DashboardItem[];
+  filters: Record<string, any>;
+  layout_mode: string;
+  theme_palette: string;
+  is_public: boolean;
+  share_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface DashboardState {
   scenario: Scenario;
   stores: Store[];
@@ -150,12 +198,16 @@ export interface DashboardState {
   subscriptions: Subscription[];
   employees: Employee[];
   shipments: Shipment[];
+  financeRecords: FinanceRecord[];
   portfolioEntities: PortfolioEntity[];
   controversyScores: ControversyScore[];
+  socialPosts: SocialPost[];
   filters: Record<string, any>;
   items: DashboardItem[];
   selectedItemId: string | null;
+  layoutMode: LayoutMode;
   setScenario: (scenario: Scenario) => void;
+  setLayoutMode: (mode: LayoutMode) => void;
   setFilter: (column: string, value: any) => void;
   clearFilters: () => void;
   addItem: (item: DashboardItem) => void;
@@ -165,4 +217,19 @@ export interface DashboardState {
   selectItem: (id: string | null) => void;
   updateItemProps: (id: string, props: any) => void;
   updateItemTitle: (id: string, title: string) => void;
+  clearCanvas: () => void;
+  // Persistence fields
+  dashboardId: string | null;
+  dashboardName: string;
+  isPublic: boolean;
+  shareId: string | null;
+  isDirty: boolean;
+  lastSavedAt: string | null;
+  // Persistence actions
+  setDashboardMeta: (meta: { id?: string | null; name?: string; isPublic?: boolean; shareId?: string | null }) => void;
+  markDirty: () => void;
+  markClean: () => void;
+  loadDashboardFromDb: (db: DbDashboard) => void;
+  getSerializableState: () => DashboardSnapshot;
+  resetToNew: () => void;
 }

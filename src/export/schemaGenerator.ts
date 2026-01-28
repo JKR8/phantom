@@ -395,6 +395,96 @@ const portfolioSchema: PBISchema = {
 };
 
 /**
+ * Finance Schema: FinanceRecord (fact - flat)
+ */
+const financeSchema: PBISchema = {
+  description: 'Finance P&L Schema - finance record fact table with account and variance fields',
+  tables: [
+    {
+      name: 'FinanceRecord',
+      description: 'Finance fact table - account, region, business unit, scenario',
+      columns: [
+        { name: 'FinanceID', dataType: 'string', summarizeBy: 'none' },
+        { name: 'Date', dataType: 'dateTime', summarizeBy: 'none' },
+        { name: 'Account', dataType: 'string', summarizeBy: 'none' },
+        { name: 'Region', dataType: 'string', summarizeBy: 'none' },
+        { name: 'BusinessUnit', dataType: 'string', summarizeBy: 'none' },
+        { name: 'Scenario', dataType: 'string', summarizeBy: 'none' },
+        { name: 'Amount', dataType: 'double', summarizeBy: 'sum' },
+        { name: 'Variance', dataType: 'double', summarizeBy: 'sum' },
+      ]
+    },
+    {
+      name: 'DateTable',
+      description: 'Date dimension',
+      columns: [
+        { name: 'Date', dataType: 'dateTime', summarizeBy: 'none' },
+        { name: 'Year', dataType: 'int64', summarizeBy: 'none' },
+        { name: 'Month', dataType: 'string', summarizeBy: 'none' },
+        { name: 'MonthNum', dataType: 'int64', summarizeBy: 'none', isHidden: true },
+      ]
+    }
+  ],
+  relationships: [
+    {
+      name: 'FinanceRecord_Date',
+      fromTable: 'FinanceRecord',
+      fromColumn: 'Date',
+      toTable: 'DateTable',
+      toColumn: 'Date',
+      crossFilteringBehavior: 'oneDirection',
+      isActive: true
+    }
+  ]
+};
+
+/**
+ * Social Schema: SocialPost (fact - flat)
+ */
+const socialSchema: PBISchema = {
+  description: 'Social Listening Schema - SocialPost fact table with engagement and sentiment fields',
+  tables: [
+    {
+      name: 'SocialPost',
+      description: 'Social post fact table - platform, sentiment, and engagement metrics',
+      columns: [
+        { name: 'PostID', dataType: 'string', summarizeBy: 'none', isHidden: true },
+        { name: 'Date', dataType: 'dateTime', summarizeBy: 'none' },
+        { name: 'User', dataType: 'string', summarizeBy: 'none' },
+        { name: 'Location', dataType: 'string', summarizeBy: 'none' },
+        { name: 'Platform', dataType: 'string', summarizeBy: 'none' },
+        { name: 'Sentiment', dataType: 'string', summarizeBy: 'none' },
+        { name: 'Engagements', dataType: 'int64', summarizeBy: 'sum' },
+        { name: 'Mentions', dataType: 'int64', summarizeBy: 'sum' },
+        { name: 'SentimentScore', dataType: 'double', summarizeBy: 'average' },
+      ]
+    },
+    {
+      name: 'DateTable',
+      description: 'Date dimension - auto-generated calendar table',
+      columns: [
+        { name: 'Date', dataType: 'dateTime', summarizeBy: 'none' },
+        { name: 'Year', dataType: 'int64', summarizeBy: 'none' },
+        { name: 'Quarter', dataType: 'string', summarizeBy: 'none' },
+        { name: 'Month', dataType: 'string', summarizeBy: 'none' },
+        { name: 'MonthNum', dataType: 'int64', summarizeBy: 'none', isHidden: true },
+      ]
+    }
+  ],
+  relationships: [
+    {
+      name: 'SocialPost_Date',
+      fromTable: 'SocialPost',
+      fromColumn: 'Date',
+      toTable: 'DateTable',
+      toColumn: 'Date',
+      crossFilteringBehavior: 'oneDirection',
+      isActive: true
+    }
+  ]
+};
+
+/**
  * Get the schema for a given scenario
  */
 export function getSchemaForScenario(scenario: Scenario): PBISchema {
@@ -409,9 +499,10 @@ export function getSchemaForScenario(scenario: Scenario): PBISchema {
       return logisticsSchema;
     case 'Portfolio':
       return portfolioSchema;
+    case 'Finance':
+      return financeSchema;
     case 'Social':
-      // Social uses Retail schema as base (per templates.ts)
-      return retailSchema;
+      return socialSchema;
     default:
       return retailSchema;
   }
@@ -423,7 +514,6 @@ export function getSchemaForScenario(scenario: Scenario): PBISchema {
 export function getFactTableForScenario(scenario: Scenario): string {
   switch (scenario) {
     case 'Retail':
-    case 'Social':
       return 'Sales';
     case 'SaaS':
       return 'Subscription';
@@ -433,6 +523,10 @@ export function getFactTableForScenario(scenario: Scenario): string {
       return 'Shipment';
     case 'Portfolio':
       return 'ControversyScore';
+    case 'Finance':
+      return 'FinanceRecord';
+    case 'Social':
+      return 'SocialPost';
     default:
       return 'Sales';
   }
@@ -443,40 +537,69 @@ export function getFactTableForScenario(scenario: Scenario): string {
  */
 export function mapFieldToPBIColumn(scenario: Scenario, field: string): { table: string; column: string } {
   const factTable = getFactTableForScenario(scenario);
-  
-  // Dimension mappings
-  const dimensionMappings: Record<string, { table: string; column: string }> = {
-    // Retail
-    'Region': { table: 'Store', column: 'Region' },
-    'Store': { table: 'Store', column: 'StoreName' },
-    'Category': { table: 'Product', column: 'Category' },
-    'Product': { table: 'Product', column: 'ProductName' },
-    // SaaS
-    'Tier': { table: 'Customer', column: 'Tier' },
-    'Customer': { table: 'Customer', column: 'CustomerName' },
-    // HR
-    'Department': { table: 'Employee', column: 'Department' },
-    'Role': { table: 'Employee', column: 'Role' },
-    // Logistics
-    'Carrier': { table: 'Shipment', column: 'Carrier' },
-    'Origin': { table: 'Shipment', column: 'Origin' },
-    'Destination': { table: 'Shipment', column: 'Destination' },
-    'Status': { table: 'Shipment', column: 'Status' },
-    // Portfolio
-    'Sector': { table: 'PortfolioEntity', column: 'Sector' },
-    'Group': { table: 'ControversyScore', column: 'Group' },
-    'EntityName': { table: 'ControversyScore', column: 'EntityName' },
-    // Date
-    'Month': { table: 'DateTable', column: 'Month' },
-    'Year': { table: 'DateTable', column: 'Year' },
-    'Quarter': { table: 'DateTable', column: 'Quarter' },
+
+  const scenarioMappings: Record<string, { table: string; column: string }> = (() => {
+    switch (scenario) {
+      case 'Retail':
+        return {
+          Region: { table: 'Store', column: 'Region' },
+          Store: { table: 'Store', column: 'StoreName' },
+          Category: { table: 'Product', column: 'Category' },
+          Product: { table: 'Product', column: 'ProductName' },
+        };
+      case 'SaaS':
+        return {
+          Region: { table: 'Customer', column: 'Region' },
+          Tier: { table: 'Customer', column: 'Tier' },
+          Customer: { table: 'Customer', column: 'CustomerName' },
+        };
+      case 'HR':
+        return {
+          Department: { table: 'Employee', column: 'Department' },
+          Role: { table: 'Employee', column: 'Role' },
+        };
+      case 'Logistics':
+        return {
+          Carrier: { table: 'Shipment', column: 'Carrier' },
+          Origin: { table: 'Shipment', column: 'Origin' },
+          Destination: { table: 'Shipment', column: 'Destination' },
+          Status: { table: 'Shipment', column: 'Status' },
+        };
+      case 'Portfolio':
+        return {
+          Sector: { table: 'PortfolioEntity', column: 'Sector' },
+          Group: { table: 'ControversyScore', column: 'Group' },
+          EntityName: { table: 'ControversyScore', column: 'EntityName' },
+          Region: { table: 'PortfolioEntity', column: 'Region' },
+        };
+      case 'Finance':
+        return {
+          Account: { table: 'FinanceRecord', column: 'Account' },
+          BusinessUnit: { table: 'FinanceRecord', column: 'BusinessUnit' },
+          Scenario: { table: 'FinanceRecord', column: 'Scenario' },
+          Region: { table: 'FinanceRecord', column: 'Region' },
+        };
+      case 'Social':
+        return {
+          Platform: { table: 'SocialPost', column: 'Platform' },
+          Sentiment: { table: 'SocialPost', column: 'Sentiment' },
+          Location: { table: 'SocialPost', column: 'Location' },
+          User: { table: 'SocialPost', column: 'User' },
+        };
+      default:
+        return {};
+    }
+  })();
+
+  const dateMappings: Record<string, { table: string; column: string }> = {
+    Month: { table: 'DateTable', column: 'Month' },
+    Year: { table: 'DateTable', column: 'Year' },
+    Quarter: { table: 'DateTable', column: 'Quarter' },
   };
 
-  if (dimensionMappings[field]) {
-    return dimensionMappings[field];
-  }
+  if (scenarioMappings[field]) return scenarioMappings[field];
+  if (dateMappings[field]) return dateMappings[field];
 
-  // Metric mappings - capitalize first letter for PBI convention
   const capitalizedField = field.charAt(0).toUpperCase() + field.slice(1);
   return { table: factTable, column: capitalizedField };
 }

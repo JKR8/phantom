@@ -7,9 +7,10 @@ import {
 } from 'recharts';
 import { useFilteredSales } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
+import { formatMetricValue, getMetricValue } from '../utils/chartUtils';
 
 interface GaugeChartProps {
-  metric: 'revenue' | 'profit';
+  metric: string;
   target?: number;
   manualData?: Array<{ label: string; value: number }>;
 }
@@ -22,7 +23,7 @@ export const GaugeChart: React.FC<GaugeChartProps> = ({ metric, target = 2000000
     if (manualData && manualData.length > 0) {
       return manualData[0].value;
     }
-    return filteredSales.reduce((acc, sale) => acc + (sale[metric] || 0), 0);
+    return filteredSales.reduce((acc, sale) => acc + getMetricValue(sale, metric), 0);
   }, [manualData, filteredSales, metric]);
 
   // Gauge logic
@@ -44,7 +45,7 @@ export const GaugeChart: React.FC<GaugeChartProps> = ({ metric, target = 2000000
     // Basic text centered
     return (
        <text x={cx} y={cy - 20} dy={8} textAnchor="middle" fill={color} fontSize={20} fontWeight="bold">
-         {`$${(value / 1000).toFixed(0)}k`}
+         {formatMetricValue(metric, value, true)}
        </text>
     );
   };
@@ -67,7 +68,9 @@ export const GaugeChart: React.FC<GaugeChartProps> = ({ metric, target = 2000000
           <Cell fill="#f3f2f1" />
         </Pie>
         {needle(value, 150, 150, getColor(0))}
-        <text x="50%" y="90%" textAnchor="middle" fontSize={12} fill="#605E5C">Target: ${(target/1000).toFixed(0)}k</text>
+        <text x="50%" y="90%" textAnchor="middle" fontSize={12} fill="#605E5C">
+          Target: {formatMetricValue(metric, target, true)}
+        </text>
       </PieChart>
     </ResponsiveContainer>
   );

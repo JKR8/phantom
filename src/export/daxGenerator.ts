@@ -6,7 +6,7 @@
  */
 
 import { DashboardItem, Scenario } from '../types';
-import { getFactTableForScenario, mapFieldToPBIColumn } from './schemaGenerator';
+import { getFactTableForScenario, getSchemaForScenario, mapFieldToPBIColumn } from './schemaGenerator';
 
 export interface DAXMeasure {
   name: string;
@@ -40,6 +40,18 @@ export function extractMetricBindings(items: DashboardItem[], scenario: Scenario
 }> {
   const bindings = new Map<string, { metric: string; operation: string; table: string; column: string }>();
   const factTable = getFactTableForScenario(scenario);
+  const schema = getSchemaForScenario(scenario);
+  const tableColumns = new Map<string, Set<string>>();
+
+  schema.tables.forEach((table) => {
+    tableColumns.set(
+      table.name,
+      new Set(table.columns.map((col) => col.name.toLowerCase()))
+    );
+  });
+
+  const hasColumn = (table: string, column: string) =>
+    tableColumns.get(table)?.has(column.toLowerCase());
 
   items.forEach(item => {
     const props = item.props || {};
@@ -52,12 +64,14 @@ export function extractMetricBindings(items: DashboardItem[], scenario: Scenario
       const key = `${metric}_${operation}`;
       if (!bindings.has(key)) {
         const mapping = mapFieldToPBIColumn(scenario, metric);
-        bindings.set(key, {
-          metric,
-          operation,
-          table: mapping.table,
-          column: mapping.column,
-        });
+        if (hasColumn(mapping.table, mapping.column)) {
+          bindings.set(key, {
+            metric,
+            operation,
+            table: mapping.table,
+            column: mapping.column,
+          });
+        }
       }
     }
 
@@ -68,20 +82,23 @@ export function extractMetricBindings(items: DashboardItem[], scenario: Scenario
         const plKey = `${metric}PL_${operation}`;
         const pyKey = `${metric}PY_${operation}`;
         
-        if (!bindings.has(plKey)) {
+        const plColumn = `${metric.charAt(0).toUpperCase() + metric.slice(1)}PL`;
+        const pyColumn = `${metric.charAt(0).toUpperCase() + metric.slice(1)}PY`;
+
+        if (!bindings.has(plKey) && hasColumn(factTable, plColumn)) {
           bindings.set(plKey, {
             metric: `${metric}PL`,
             operation,
             table: factTable,
-            column: `${metric.charAt(0).toUpperCase() + metric.slice(1)}PL`,
+            column: plColumn,
           });
         }
-        if (!bindings.has(pyKey)) {
+        if (!bindings.has(pyKey) && hasColumn(factTable, pyColumn)) {
           bindings.set(pyKey, {
             metric: `${metric}PY`,
             operation,
             table: factTable,
-            column: `${metric.charAt(0).toUpperCase() + metric.slice(1)}PY`,
+            column: pyColumn,
           });
         }
       }

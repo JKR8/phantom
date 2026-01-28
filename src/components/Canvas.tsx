@@ -25,6 +25,9 @@ import { GaugeChart } from './GaugeChart';
 import { MultiRowCard } from './MultiRowCard';
 import { Matrix } from './Matrix';
 import { WaterfallChart } from './WaterfallChart';
+import { getRecipeForVisual, generateSmartTitle } from '../store/bindingRecipes';
+import { ScenarioType } from '../store/semanticLayer';
+import { SlotLayouts } from '../store/slotLayouts';
 // Portfolio-specific components
 import {
   ControversyBarChart,
@@ -38,6 +41,7 @@ import {
   JustificationSearch,
   PortfolioKPICards,
 } from './portfolio';
+import { QuickShapeStrip } from './QuickShapeStrip';
 
 const GRID_COLS = 24;
 const ROW_HEIGHT = 40;
@@ -55,11 +59,16 @@ const useStyles = makeStyles({
   },
 });
 
-export const Canvas: React.FC = () => {
+interface CanvasProps {
+  readOnly?: boolean;
+}
+
+export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
   const styles = useStyles();
   const { width, containerRef, mounted } = useContainerWidth();
   const items = useStore((state) => state.items);
   const scenario = useStore((state) => state.scenario);
+  const layoutMode = useStore((state) => state.layoutMode);
   const updateLayout = useStore((state) => state.updateLayout);
   const addItem = useStore((state) => state.addItem);
   const removeItem = useStore((state) => state.removeItem);
@@ -77,16 +86,57 @@ export const Canvas: React.FC = () => {
     if (!visualType) return;
 
     // Get position from drop, default to 0,0 if not provided
-    const x = typeof item?.x === 'number' ? item.x : 0;
-    const y = typeof item?.y === 'number' ? item.y : 0;
+    let x = typeof item?.x === 'number' ? item.x : 0;
+    let y = typeof item?.y === 'number' ? item.y : 0;
+    let w = (typeof item?.w === 'number' && item.w >= 2) ? item.w : 8;
+    let h = (typeof item?.h === 'number' && item.h >= 2) ? item.h : 4;
+
+    // Standard Layout Snap
+    if (layoutMode === 'Standard') {
+        const slots = SlotLayouts['Executive']; // Default to Executive for now
+        // Simple hit test: find slot that contains the dropped x/y
+        // item.x/y are in grid units
+        const hitSlot = slots.find(s => 
+            x >= s.x && x < s.x + s.w &&
+            y >= s.y && y < s.y + s.h
+        );
+        
+        // If not exact hit, find closest center
+        if (hitSlot) {
+            x = hitSlot.x;
+            y = hitSlot.y;
+            w = hitSlot.w;
+            h = hitSlot.h;
+        } else {
+             // Fallback: Find closest slot by distance to center
+             let minDist = Infinity;
+             let closest = slots[0];
+             slots.forEach(s => {
+                 const dx = (x) - (s.x + s.w/2);
+                 const dy = (y) - (s.y + s.h/2);
+                 const dist = dx*dx + dy*dy;
+                 if (dist < minDist) {
+                     minDist = dist;
+                     closest = s;
+                 }
+             });
+             x = closest.x;
+             y = closest.y;
+             w = closest.w;
+             h = closest.h;
+        }
+    }
 
     const id = `visual-${Date.now()}`;
 
     // If a pre-built config was dragged, use it directly
     if (dragState.prebuiltConfig) {
       const cfg = dragState.prebuiltConfig;
-      const w = cfg.w;
-      const h = cfg.h;
+      // In standard mode, we override dimensions, but keep title/props
+      if (layoutMode !== 'Standard') {
+          w = cfg.w;
+          h = cfg.h;
+      }
       setTimeout(() => {
         addItem({
           id,
@@ -99,119 +149,12 @@ export const Canvas: React.FC = () => {
       return;
     }
 
-    const w = (typeof item?.w === 'number' && item.w >= 2) ? item.w : 8;
-    const h = (typeof item?.h === 'number' && item.h >= 2) ? item.h : 4;
+    // Use the binding recipe to get default props based on the scenario
+    const recipe = getRecipeForVisual(visualType, scenario as ScenarioType);
+    const props = { ...recipe };
 
-    let props: any = {};
-    let title = 'New Visual';
-
-    switch (visualType) {
-      case 'bar':
-        props = { dimension: 'Region', metric: 'revenue' };
-        title = 'Clustered Bar Chart';
-        break;
-      case 'column':
-        props = { dimension: 'Region', metric: 'revenue' };
-        title = 'Clustered Column Chart';
-        break;
-      case 'stackedBar':
-        props = { dimension: 'Region', metric: 'revenue' };
-        title = 'Stacked Bar Chart';
-        break;
-      case 'stackedColumn':
-        props = { dimension: 'Region', metric: 'revenue' };
-        title = 'Stacked Column Chart';
-        break;
-      case 'line':
-        props = { metric: 'revenue' };
-        title = 'Line Chart';
-        break;
-      case 'area':
-        props = { metric: 'revenue' };
-        title = 'Area Chart';
-        break;
-      case 'scatter':
-        props = { xMetric: 'revenue', yMetric: 'profit' };
-        title = 'Scatter Chart';
-        break;
-      case 'pie':
-        props = { dimension: 'Category', metric: 'revenue' };
-        title = 'Pie Chart';
-        break;
-      case 'donut':
-        props = { dimension: 'Category', metric: 'revenue' };
-        title = 'Donut Chart';
-        break;
-      case 'funnel':
-        props = { dimension: 'Region', metric: 'revenue' };
-        title = 'Funnel Chart';
-        break;
-      case 'treemap':
-        props = { dimension: 'Category', metric: 'revenue' };
-        title = 'Treemap';
-        break;
-      case 'card':
-        props = { metric: 'revenue', operation: 'sum', label: 'KPI' };
-        title = 'KPI';
-        break;
-      case 'multiRowCard':
-        props = {};
-        title = 'Multi-row Card';
-        break;
-      case 'gauge':
-        props = { metric: 'revenue', target: 2000000 };
-        title = 'Gauge';
-        break;
-      case 'table':
-        props = { maxRows: 100 };
-        title = 'Data Table';
-        break;
-      case 'matrix':
-        props = {};
-        title = 'Matrix';
-        break;
-      case 'waterfall':
-        props = { dimension: 'Region', metric: 'revenue' };
-        title = 'Waterfall Chart';
-        break;
-      case 'slicer':
-        props = { dimension: 'Store' };
-        title = 'Slicer';
-        break;
-      // Portfolio / FFMA visuals
-      case 'controversyBar':
-        props = {};
-        title = 'Controversy Bar Chart';
-        break;
-      case 'entityTable':
-        props = {};
-        title = 'Entity Source Table';
-        break;
-      case 'controversyTable':
-        props = {};
-        title = 'Controversy Detail Table';
-        break;
-      case 'portfolioCard':
-        props = { metric: 'uniqueEntity', label: 'Unique Entity' };
-        title = 'Portfolio KPI';
-        break;
-      case 'portfolioHeaderBar':
-        props = {};
-        title = 'Portfolio Header';
-        break;
-      case 'controversyBottomPanel':
-        props = {};
-        title = 'Controversy Panel';
-        break;
-      case 'justificationSearch':
-        props = {};
-        title = 'Justification Search';
-        break;
-      case 'dateRangePicker':
-        props = {};
-        title = 'Date Range';
-        break;
-    }
+    // Smart title generation from recipe
+    const title = generateSmartTitle(visualType, recipe, scenario as ScenarioType);
 
     // Use setTimeout to let the grid finish its internal state update
     // before adding the new item to prevent the red placeholder issue
@@ -235,9 +178,9 @@ export const Canvas: React.FC = () => {
       h: item.layout.h,
       minW: 1,
       minH: 2,
-      isDraggable: true,
-      isResizable: true,
-      static: false,
+      isDraggable: !readOnly,
+      isResizable: !readOnly,
+      static: !!readOnly,
     }));
   };
 
@@ -317,9 +260,63 @@ export const Canvas: React.FC = () => {
     }
   };
 
+  const renderSlots = () => {
+    if (layoutMode !== 'Standard') return null;
+    const slots = SlotLayouts['Executive'];
+    
+    // Calculate col width (approximate, assuming 12px margin and 24 cols)
+    // Actually, simple % based positioning is easier for overlays
+    // But we need to match react-grid-layout's pixels
+    // Let's rely on CSS grid if possible, or just absolute positioning
+    
+    // Simplified calculation matching GridLayout logic:
+    // width = (colWidth * w) + (margin * (w - 1))
+    // x = (colWidth + margin) * x + margin
+    // But we don't have colWidth easily without calculation.
+    // Let's use the 'width' from useContainerWidth()
+    
+    const margin = 12;
+    const colWidth = (width - (margin * (GRID_COLS + 1))) / GRID_COLS;
+
+    return (
+        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 0 }}>
+            {slots.map(slot => {
+                const left = (slot.x * (colWidth + margin)) + margin;
+                const top = (slot.y * (ROW_HEIGHT + margin)) + margin;
+                const slotWidth = (slot.w * colWidth) + ((slot.w - 1) * margin);
+                const slotHeight = (slot.h * ROW_HEIGHT) + ((slot.h - 1) * margin);
+
+                return (
+                    <div 
+                        key={slot.id}
+                        style={{
+                            position: 'absolute',
+                            left: `${left}px`,
+                            top: `${top}px`,
+                            width: `${slotWidth}px`,
+                            height: `${slotHeight}px`,
+                            border: '2px dashed #0078D4',
+                            backgroundColor: 'rgba(0, 120, 212, 0.05)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: '#0078D4',
+                            fontWeight: '600',
+                            fontSize: '14px'
+                        }}
+                    >
+                        {slot.name}
+                    </div>
+                );
+            })}
+        </div>
+    );
+  };
+
   return (
     <div
       className={styles.canvas}
+      data-testid="canvas-drop-area"
       ref={containerRef as React.RefObject<HTMLDivElement>}
       onClick={handleCanvasClick}
       onDragOver={(e) => {
@@ -329,6 +326,14 @@ export const Canvas: React.FC = () => {
       }}
     >
       {mounted && width > 0 && (
+        <>
+        {renderSlots()}
+        <QuickShapeStrip 
+            containerWidth={width} 
+            rowHeight={ROW_HEIGHT} 
+            cols={GRID_COLS} 
+            margin={[12, 12]} 
+        />
         <GridLayout
           className="layout"
           layout={generateLayout()}
@@ -345,7 +350,7 @@ export const Canvas: React.FC = () => {
             handles: ['se', 'sw', 'ne', 'nw', 'e', 'w', 'n', 's']
           }}
           dropConfig={{
-            enabled: true,
+            enabled: !readOnly,
             defaultItem: { w: 8, h: 4 }
           }}
           onLayoutChange={onLayoutChange}
@@ -375,6 +380,7 @@ export const Canvas: React.FC = () => {
             );
           })}
         </GridLayout>
+        </>
       )}
     </div>
   );

@@ -222,6 +222,7 @@ export const VisualizationsPane: React.FC = () => {
           <Tooltip key={visual.id} content={visual.tooltip} relationship="label">
             <div
               className={styles.visualButton}
+              data-testid={`visual-source-${visual.id}`}
               draggable
               onDragStart={(e) => {
                 dragState.visualType = visual.id;
@@ -247,6 +248,7 @@ export const VisualizationsPane: React.FC = () => {
           <Tooltip key={visual.id} content={visual.tooltip} relationship="label">
             <div
               className={styles.visualButton}
+              data-testid={`visual-source-${visual.id}`}
               draggable
               onDragStart={(e) => {
                 dragState.visualType = visual.id;

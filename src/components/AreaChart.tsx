@@ -12,13 +12,34 @@ import { useFilteredSales } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
 
 interface AreaChartProps {
-  metric: 'revenue' | 'profit';
+  metric: string;
   manualData?: Array<{ label: string; value: number }>;
+  timeGrain?: 'month' | 'quarter' | 'year';
 }
 
-export const AreaChart: React.FC<AreaChartProps> = ({ metric, manualData }) => {
+const QUARTERS = ['Q1', 'Q2', 'Q3', 'Q4'];
+
+function getTimeBucket(date: Date, grain: 'month' | 'quarter' | 'year'): string {
+  if (grain === 'year') return `${date.getFullYear()}`;
+  if (grain === 'quarter') return QUARTERS[Math.floor(date.getMonth() / 3)];
+  // month: return YYYY-MM for sort stability
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
+
+export const AreaChart: React.FC<AreaChartProps> = ({ metric, manualData, timeGrain = 'month' }) => {
   const filteredSales = useFilteredSales();
   const { getColor } = useThemeStore();
+
+  const isCurrencyMetric = (metricName: string) => {
+    const key = metricName.toLowerCase();
+    return ['revenue', 'profit', 'cost', 'salary', 'mrr', 'ltv', 'amount', 'price'].some(k => key.includes(k));
+  };
+
+  const formatValue = (value: number) => {
+    if (isCurrencyMetric(metric)) return `$${Number(value).toLocaleString()}`;
+    if (metric.toLowerCase().includes('score')) return Number(value).toFixed(2);
+    return Number(value).toLocaleString();
+  };
 
   const data = useMemo(() => {
     if (manualData && manualData.length > 0) {
@@ -28,11 +49,11 @@ export const AreaChart: React.FC<AreaChartProps> = ({ metric, manualData }) => {
     const aggregation: Record<string, number> = {};
 
     filteredSales.forEach((sale) => {
-      // Parse ISO date and format as YYYY-MM
       const date = new Date(sale.date);
-      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      
-      aggregation[monthKey] = (aggregation[monthKey] || 0) + sale[metric];
+      const bucket = getTimeBucket(date, timeGrain);
+
+      // @ts-ignore
+      aggregation[bucket] = (aggregation[bucket] || 0) + (sale[metric] || sale[metric.toLowerCase()] || 0);
     });
 
     return Object.entries(aggregation)
@@ -41,11 +62,15 @@ export const AreaChart: React.FC<AreaChartProps> = ({ metric, manualData }) => {
         value: Math.round(value),
       }))
       .sort((a, b) => a.date.localeCompare(b.date));
-  }, [manualData, filteredSales, metric]);
+  }, [manualData, filteredSales, metric, timeGrain]);
 
   const formatDate = (dateStr: any) => {
     if (typeof dateStr !== 'string') return '';
+    // For quarter/year grain, the bucket is already readable
+    if (timeGrain === 'quarter' || timeGrain === 'year') return dateStr;
+    // Month grain: YYYY-MM format
     const [year, month] = dateStr.split('-');
+    if (!year || !month) return dateStr;
     const date = new Date(parseInt(year), parseInt(month) - 1);
     return date.toLocaleDateString(undefined, { month: 'short', year: '2-digit' });
   };
@@ -57,26 +82,26 @@ export const AreaChart: React.FC<AreaChartProps> = ({ metric, manualData }) => {
         margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
       >
         <CartesianGrid strokeDasharray="3 3" vertical={false} />
-        <XAxis 
-          dataKey="date" 
+        <XAxis
+          dataKey="date"
           tickFormatter={formatDate}
           tick={{ fontSize: 10 }}
         />
-        <YAxis 
-          tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+        <YAxis
+          tickFormatter={(value) => formatValue(value)}
           tick={{ fontSize: 10 }}
           width={40}
         />
-        <Tooltip 
-          formatter={(value: any) => [`$${Number(value).toLocaleString()}`, metric === 'revenue' ? 'Revenue' : 'Profit']}
+        <Tooltip
+          formatter={(value: any) => [formatValue(Number(value)), metric]}
           labelFormatter={formatDate}
           contentStyle={{ fontSize: '12px' }}
         />
-        <Area 
-          type="monotone" 
-          dataKey="value" 
-          stroke={getColor(0)} 
-          fill={getColor(0)} 
+        <Area
+          type="monotone"
+          dataKey="value"
+          stroke={getColor(0)}
+          fill={getColor(0)}
           fillOpacity={0.3}
         />
       </ReAreaChart>

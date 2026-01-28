@@ -9,17 +9,22 @@ import {
 } from 'recharts';
 import { useStore, useFilteredSales } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
+import { formatMetricValue, getDimensionValue, getMetricValue } from '../utils/chartUtils';
 
 interface PieChartProps {
-  dimension: 'Region' | 'Category';
-  metric: 'revenue' | 'profit';
+  dimension: string;
+  metric: string;
   manualData?: Array<{ label: string; value: number }>;
+  topN?: string | number;
+  sort?: 'desc' | 'asc' | 'alpha';
+  showOther?: boolean;
 }
 
-export const PieChart: React.FC<PieChartProps> = ({ dimension, metric, manualData }) => {
+export const PieChart: React.FC<PieChartProps> = ({ dimension, metric, manualData, topN, sort = 'desc', showOther }) => {
   const filteredSales = useFilteredSales();
   const stores = useStore((state) => state.stores);
   const products = useStore((state) => state.products);
+  const customers = useStore((state) => state.customers);
   const setFilter = useStore((state) => state.setFilter);
   const activeFilters = useStore((state) => state.filters);
   const { getColor, highlightColor } = useThemeStore();
@@ -32,21 +37,40 @@ export const PieChart: React.FC<PieChartProps> = ({ dimension, metric, manualDat
     const aggregation: Record<string, number> = {};
 
     filteredSales.forEach((sale) => {
-      let key = '';
-      if (dimension === 'Region') {
-        key = stores.find(s => s.id === sale.storeId)?.region || 'Unknown';
-      } else if (dimension === 'Category') {
-        key = products.find(p => p.id === sale.productId)?.category || 'Unknown';
-      }
-
-      aggregation[key] = (aggregation[key] || 0) + sale[metric];
+      const key = getDimensionValue(sale, dimension, { stores, products, customers });
+      aggregation[key] = (aggregation[key] || 0) + getMetricValue(sale, metric);
     });
 
-    return Object.entries(aggregation).map(([name, value]) => ({
+    let result = Object.entries(aggregation).map(([name, value]) => ({
       name,
       value: Math.round(value),
     }));
-  }, [manualData, filteredSales, dimension, metric, stores, products]);
+
+    // Sorting
+    if (sort === 'asc') {
+      result.sort((a, b) => a.value - b.value);
+    } else if (sort === 'alpha') {
+      result.sort((a, b) => a.name.localeCompare(b.name));
+    } else {
+      result.sort((a, b) => b.value - a.value);
+    }
+
+    // Top N + Other (configurable, defaults to top 5 + Other for backward compat)
+    const effectiveTopN = topN !== undefined ? topN : 5;
+    if (effectiveTopN && effectiveTopN !== 'All') {
+      const n = typeof effectiveTopN === 'string' ? parseInt(effectiveTopN) : effectiveTopN;
+      if (!isNaN(n) && result.length > n) {
+        const top = result.slice(0, n);
+        if (showOther !== false) {
+          const other = result.slice(n).reduce((acc, curr) => acc + curr.value, 0);
+          top.push({ name: 'Other', value: other });
+        }
+        result = top;
+      }
+    }
+
+    return result;
+  }, [manualData, filteredSales, dimension, metric, stores, products, topN, sort, showOther]);
 
   const handleClick = (data: any) => {
     if (data && data.name) {
@@ -79,7 +103,7 @@ export const PieChart: React.FC<PieChartProps> = ({ dimension, metric, manualDat
             />
           ))}
         </Pie>
-        <Tooltip formatter={(value: any) => `$${Number(value).toLocaleString()}`} />
+        <Tooltip formatter={(value: any) => formatMetricValue(metric, Number(value))} />
         <Legend verticalAlign="bottom" height={36} wrapperStyle={{ fontSize: '10px' }} />
       </RePieChart>
     </ResponsiveContainer>

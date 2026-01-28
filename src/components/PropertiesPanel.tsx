@@ -10,9 +10,11 @@ import {
   Label,
   Select,
   Divider,
+  Checkbox,
 } from '@fluentui/react-components';
 import { AddRegular, DeleteRegular } from '@fluentui/react-icons';
 import { useStore } from '../store/useStore';
+import { ScenarioFields, ScenarioType, RecommendedDimensions, RecommendedMeasures } from '../store/semanticLayer';
 
 const useStyles = makeStyles({
   panel: {
@@ -75,8 +77,6 @@ const useStyles = makeStyles({
   },
 });
 
-const DIMENSION_OPTIONS = ['Region', 'Category', 'Store', 'Product', 'Tier', 'Department', 'Carrier', 'Status'];
-const METRIC_OPTIONS = ['revenue', 'profit', 'quantity', 'mrr', 'ltv', 'salary', 'rating', 'cost', 'weight'];
 const OPERATION_OPTIONS = ['sum', 'avg', 'count', 'min', 'max'];
 
 const VISUAL_TYPE_LABELS: Record<string, string> = {
@@ -100,12 +100,29 @@ const VISUAL_TYPE_LABELS: Record<string, string> = {
   slicer: 'Slicer',
 };
 
+// Types that support topN/sort/showOther
+const TOP_N_TYPES = ['bar', 'column', 'stackedBar', 'stackedColumn', 'pie', 'donut', 'funnel', 'treemap'];
+// Types that support comparison
+const COMPARISON_TYPES = ['line', 'area'];
+// Types that support timeGrain
+const TIME_GRAIN_TYPES = ['line', 'area'];
+
+function sortByRecommended(items: string[], recommended: string[]): string[] {
+  const order = new Map(recommended.map((name, idx) => [name, idx]));
+  return [...items].sort((a, b) => {
+    const ia = order.get(a) ?? 999;
+    const ib = order.get(b) ?? 999;
+    return ia - ib;
+  });
+}
+
 export const PropertiesPanel: React.FC = () => {
   const styles = useStyles();
   const selectedItemId = useStore((s) => s.selectedItemId);
   const items = useStore((s) => s.items);
   const updateItemProps = useStore((s) => s.updateItemProps);
   const updateItemTitle = useStore((s) => s.updateItemTitle);
+  const scenario = useStore((s) => s.scenario) as ScenarioType;
 
   const item = items.find((i) => i.id === selectedItemId);
 
@@ -168,6 +185,34 @@ export const PropertiesPanel: React.FC = () => {
   const showTarget = type === 'gauge';
   const showMaxRows = type === 'table';
   const showManualData = ['bar', 'column', 'stackedBar', 'stackedColumn', 'line', 'area', 'pie', 'donut', 'treemap', 'funnel', 'waterfall'].includes(type);
+  const showTopN = TOP_N_TYPES.includes(type);
+  const showSort = TOP_N_TYPES.includes(type);
+  const showShowOther = TOP_N_TYPES.includes(type) && props.topN && props.topN !== 'All';
+  const showComparison = COMPARISON_TYPES.includes(type);
+  const showTimeGrain = TIME_GRAIN_TYPES.includes(type);
+
+  const scenarioFields = ScenarioFields[scenario] || [];
+  const recDims = RecommendedDimensions[scenario] || [];
+  const recMeas = RecommendedMeasures[scenario] || [];
+
+  const dimensionOptions = sortByRecommended(
+    scenarioFields
+      .filter((field) => field.role !== 'Measure' && field.role !== 'Identifier')
+      .map((field) => field.name),
+    recDims
+  );
+  const metricOptions = sortByRecommended(
+    scenarioFields
+      .filter((field) => field.role === 'Measure')
+      .map((field) => field.name),
+    recMeas
+  );
+
+  const resolveOptionValue = (options: string[], current: string | undefined) => {
+    if (!current) return '';
+    const matched = options.find((opt) => opt.toLowerCase() === current.toLowerCase());
+    return matched || current;
+  };
 
   return (
     <div className={styles.panel}>
@@ -263,10 +308,10 @@ export const PropertiesPanel: React.FC = () => {
             <Label className={styles.fieldLabel}>Dimension</Label>
             <Select
               size="small"
-              value={props.dimension || ''}
+              value={resolveOptionValue(dimensionOptions, props.dimension)}
               onChange={(_, d) => onPropChange('dimension', d.value)}
             >
-              {DIMENSION_OPTIONS.map((opt) => (
+              {dimensionOptions.map((opt) => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}
             </Select>
@@ -278,10 +323,10 @@ export const PropertiesPanel: React.FC = () => {
             <Label className={styles.fieldLabel}>Metric</Label>
             <Select
               size="small"
-              value={props.metric || ''}
+              value={resolveOptionValue(metricOptions, props.metric)}
               onChange={(_, d) => onPropChange('metric', d.value)}
             >
-              {METRIC_OPTIONS.map((opt) => (
+              {metricOptions.map((opt) => (
                 <option key={opt} value={opt}>{opt}</option>
               ))}
             </Select>
@@ -294,10 +339,10 @@ export const PropertiesPanel: React.FC = () => {
               <Label className={styles.fieldLabel}>X Metric</Label>
               <Select
                 size="small"
-                value={props.xMetric || ''}
+                value={resolveOptionValue(metricOptions, props.xMetric)}
                 onChange={(_, d) => onPropChange('xMetric', d.value)}
               >
-                {METRIC_OPTIONS.map((opt) => (
+                {metricOptions.map((opt) => (
                   <option key={opt} value={opt}>{opt}</option>
                 ))}
               </Select>
@@ -306,15 +351,89 @@ export const PropertiesPanel: React.FC = () => {
               <Label className={styles.fieldLabel}>Y Metric</Label>
               <Select
                 size="small"
-                value={props.yMetric || ''}
+                value={resolveOptionValue(metricOptions, props.yMetric)}
                 onChange={(_, d) => onPropChange('yMetric', d.value)}
               >
-                {METRIC_OPTIONS.map((opt) => (
+                {metricOptions.map((opt) => (
                   <option key={opt} value={opt}>{opt}</option>
                 ))}
               </Select>
             </div>
           </>
+        )}
+
+        {showTopN && (
+          <div className={styles.fieldRow}>
+            <Label className={styles.fieldLabel}>Top N</Label>
+            <Select
+              size="small"
+              value={String(props.topN ?? 'All')}
+              onChange={(_, d) => onPropChange('topN', d.value)}
+            >
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="10">10</option>
+              <option value="All">All</option>
+            </Select>
+          </div>
+        )}
+
+        {showSort && (
+          <div className={styles.fieldRow}>
+            <Label className={styles.fieldLabel}>Sort</Label>
+            <Select
+              size="small"
+              value={props.sort || 'desc'}
+              onChange={(_, d) => onPropChange('sort', d.value)}
+            >
+              <option value="desc">Descending</option>
+              <option value="asc">Ascending</option>
+              <option value="alpha">Alphabetical</option>
+            </Select>
+          </div>
+        )}
+
+        {showShowOther && (
+          <div className={styles.fieldRow}>
+            <Checkbox
+              checked={props.showOther !== false}
+              onChange={(_, d) => onPropChange('showOther', !!d.checked)}
+              label="Show Other bucket"
+            />
+          </div>
+        )}
+
+        {showComparison && (
+          <div className={styles.fieldRow}>
+            <Label className={styles.fieldLabel}>Comparison</Label>
+            <Select
+              size="small"
+              value={props.comparison || 'both'}
+              onChange={(_, d) => onPropChange('comparison', d.value)}
+            >
+              <option value="none">None</option>
+              <option value="pl">Plan</option>
+              <option value="py">Prior Year</option>
+              <option value="both">Both</option>
+            </Select>
+          </div>
+        )}
+
+        {showTimeGrain && (
+          <div className={styles.fieldRow}>
+            <Label className={styles.fieldLabel}>Time Grain</Label>
+            <Select
+              size="small"
+              value={props.timeGrain || 'month'}
+              onChange={(_, d) => onPropChange('timeGrain', d.value)}
+            >
+              <option value="month">Month</option>
+              <option value="quarter">Quarter</option>
+              <option value="year">Year</option>
+            </Select>
+          </div>
         )}
 
         {showOperation && (

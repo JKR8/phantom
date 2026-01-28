@@ -11,10 +11,11 @@ import {
   LabelList
 } from 'recharts';
 import { useStore, useFilteredSales } from '../store/useStore';
+import { formatMetricValue, getDimensionValue, getMetricValue } from '../utils/chartUtils';
 
 interface WaterfallChartProps {
-  dimension: 'Region' | 'Category';
-  metric: 'revenue' | 'profit';
+  dimension: string;
+  metric: string;
   manualData?: Array<{ label: string; value: number }>;
 }
 
@@ -22,6 +23,7 @@ export const WaterfallChart: React.FC<WaterfallChartProps> = ({ dimension, metri
   const filteredSales = useFilteredSales();
   const stores = useStore((state) => state.stores);
   const products = useStore((state) => state.products);
+  const customers = useStore((state) => state.customers);
 
   const data = useMemo(() => {
     if (manualData && manualData.length > 0) {
@@ -57,17 +59,12 @@ export const WaterfallChart: React.FC<WaterfallChartProps> = ({ dimension, metri
     let totalPY = 0;
 
     filteredSales.forEach((sale) => {
-      let key = '';
-      if (dimension === 'Region') {
-        key = stores.find(s => s.id === sale.storeId)?.region || 'Unknown';
-      } else if (dimension === 'Category') {
-        key = products.find(p => p.id === sale.productId)?.category || 'Unknown';
-      }
+      const key = getDimensionValue(sale, dimension, { stores, products, customers });
 
       if (!aggregation[key]) aggregation[key] = { ac: 0, py: 0 };
       
-      const acVal = sale[metric] || 0;
-      const pyVal = sale[`${metric}PY`] || acVal * 0.9;
+      const acVal = getMetricValue(sale, metric);
+      const pyVal = getMetricValue(sale, `${metric}PY`) || acVal * 0.9;
       
       aggregation[key].ac += acVal;
       aggregation[key].py += pyVal;
@@ -113,12 +110,7 @@ export const WaterfallChart: React.FC<WaterfallChartProps> = ({ dimension, metri
     return waterfallData;
   }, [manualData, filteredSales, dimension, metric, stores, products]);
 
-  const formatCurrency = (val: number) => {
-      const absVal = Math.abs(val);
-      if (absVal >= 1000000) return (val / 1000000).toFixed(1) + 'M';
-      if (absVal >= 1000) return (val / 1000).toFixed(1) + 'K';
-      return val.toFixed(0);
-  };
+  const formatValue = (val: number) => formatMetricValue(metric, val, true);
 
   return (
     <div style={{ width: '100%', height: '100%', backgroundColor: 'white' }}>
@@ -132,13 +124,13 @@ export const WaterfallChart: React.FC<WaterfallChartProps> = ({ dimension, metri
                 tickLine={false}
             />
             <YAxis 
-                tickFormatter={(value) => `$${formatCurrency(value)}`}
+                tickFormatter={(value) => formatValue(Number(value))}
                 tick={{ fontSize: 9, fill: '#605E5C' }}
                 axisLine={false}
                 tickLine={false}
             />
             <Tooltip 
-                formatter={(val: any) => [`$${Number(val[1] - val[0]).toLocaleString()}`, 'Change']}
+                formatter={(val: any) => [formatMetricValue(metric, Number(val[1] - val[0])), 'Change']}
                 contentStyle={{ fontSize: '12px', borderRadius: '4px', border: '1px solid #edebe9' }}
             />
             <Bar dataKey="value" radius={[2, 2, 0, 0]}>
@@ -148,7 +140,7 @@ export const WaterfallChart: React.FC<WaterfallChartProps> = ({ dimension, metri
             <LabelList 
                 dataKey="displayValue" 
                 position="top" 
-                formatter={(val: any) => formatCurrency(Number(val))}
+                formatter={(val: any) => formatValue(Number(val))}
                 style={{ fontSize: '10px', fontWeight: 'bold', fill: '#323130' }}
             />
             </Bar>

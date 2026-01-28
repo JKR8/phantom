@@ -5,7 +5,8 @@
  * Power BI uses absolute pixel positions on a configurable canvas (default 1280×720).
  */
 
-import { DashboardItem, VisualType } from '../types';
+import { DashboardItem, Scenario, VisualType } from '../types';
+import { mapFieldToPBIColumn } from './schemaGenerator';
 
 // Power BI canvas dimensions (default 16:9)
 export const PBI_CANVAS_WIDTH = 1280;
@@ -15,7 +16,7 @@ export const PBI_CANVAS_HEIGHT = 720;
 export const PHANTOM_GRID_COLS = 24;
 export const PHANTOM_ROW_HEIGHT = 40; // Approximate row height in pixels
 
-// Power BI visual type identifiers (from reverse-engineering PBIT files)
+// Power BI visual type identifiers (from reverse-engineering Power BI exports)
 export const PBI_VISUAL_TYPES: Record<VisualType, string> = {
   bar: 'clusteredBarChart',
   column: 'clusteredColumnChart',
@@ -99,7 +100,7 @@ export function getPBIVisualType(phantomType: VisualType): string {
 /**
  * Convert all dashboard items to PBI visual configurations
  */
-export function convertLayoutToPBI(items: DashboardItem[]): PBIVisualConfig[] {
+export function convertLayoutToPBI(items: DashboardItem[], scenario: Scenario): PBIVisualConfig[] {
   return items.map((item, index) => ({
     name: `visual_${item.id}`,
     visualType: getPBIVisualType(item.type),
@@ -114,7 +115,7 @@ export function convertLayoutToPBI(items: DashboardItem[]): PBIVisualConfig[] {
  * Generate Power BI layout JSON structure
  * This is a simplified version - full implementation would include all visual config
  */
-export function generatePBILayoutJSON(visuals: PBIVisualConfig[]): object {
+export function generatePBILayoutJSON(visuals: PBIVisualConfig[], scenario: Scenario): object {
   return {
     id: 0,
     reportId: generateReportId(),
@@ -149,8 +150,8 @@ export function generatePBILayoutJSON(visuals: PBIVisualConfig[]): object {
             ],
             singleVisual: {
               visualType: visual.visualType,
-              projections: generateProjections(visual),
-              prototypeQuery: generatePrototypeQuery(visual),
+              projections: generateProjections(visual, scenario),
+              prototypeQuery: generatePrototypeQuery(visual, scenario),
               title: visual.title,
               showTitle: true,
               titleText: visual.title,
@@ -196,9 +197,29 @@ function generateReportId(): string {
 /**
  * Generate projections (field bindings) for a visual
  */
-function generateProjections(visual: PBIVisualConfig): object {
+function generateProjections(visual: PBIVisualConfig, scenario: Scenario): object {
   const projections: Record<string, any[]> = {};
   const props = visual.phantomProps;
+  const metricOperation = (props?.operation || 'sum').toString().toLowerCase();
+
+  const toColumnRef = (field?: string) => {
+    if (!field) return null;
+    const mapping = mapFieldToPBIColumn(scenario, field);
+    return `${mapping.table}[${mapping.column}]`;
+  };
+
+  const toAggregateRef = (field?: string, operation = 'sum') => {
+    if (!field) return null;
+    const mapping = mapFieldToPBIColumn(scenario, field);
+    const columnRef = `${mapping.table}[${mapping.column}]`;
+    const op = operation.toLowerCase();
+    if (op === 'avg' || op === 'average') return `AVERAGE(${columnRef})`;
+    if (op === 'min') return `MIN(${columnRef})`;
+    if (op === 'max') return `MAX(${columnRef})`;
+    if (op === 'count') return `COUNT(${columnRef})`;
+    if (op === 'distinctcount') return `DISTINCTCOUNT(${columnRef})`;
+    return `SUM(${columnRef})`;
+  };
 
   // Handle different visual types
   switch (visual.originalType) {
@@ -209,47 +230,122 @@ function generateProjections(visual: PBIVisualConfig): object {
     case 'line':
     case 'area':
       if (props.dimension) {
-        projections['Category'] = [{ queryRef: `${props.dimension}` }];
+        const dimRef = toColumnRef(props.dimension);
+        if (dimRef) projections['Category'] = [{ queryRef: dimRef }];
       }
       if (props.metric) {
-        projections['Values'] = [{ queryRef: `Sum(${props.metric})` }];
+        const metricRef = toAggregateRef(props.metric);
+        if (metricRef) projections['Values'] = [{ queryRef: metricRef }];
       }
       break;
 
     case 'pie':
     case 'donut':
       if (props.dimension) {
-        projections['Legend'] = [{ queryRef: `${props.dimension}` }];
+        const dimRef = toColumnRef(props.dimension);
+        if (dimRef) projections['Legend'] = [{ queryRef: dimRef }];
       }
       if (props.metric) {
-        projections['Values'] = [{ queryRef: `Sum(${props.metric})` }];
+        const metricRef = toAggregateRef(props.metric);
+        if (metricRef) projections['Values'] = [{ queryRef: metricRef }];
       }
       break;
 
     case 'card':
       if (props.metric) {
-        projections['Values'] = [{ queryRef: `Sum(${props.metric})` }];
+        const metricRef = toAggregateRef(props.metric, metricOperation);
+        if (metricRef) projections['Values'] = [{ queryRef: metricRef }];
       }
       break;
 
     case 'table':
-    case 'matrix':
-      // Tables/matrices need column definitions
       projections['Values'] = [];
+      if (Array.isArray(props.columns)) {
+        props.columns.forEach((col: string) => {
+          const colRef = toColumnRef(col);
+          if (colRef) projections['Values'].push({ queryRef: colRef });
+        });
+      }
+      break;
+
+    case 'matrix':
+      if (props.rows) {
+        const rowRef = toColumnRef(props.rows);
+        if (rowRef) projections['Rows'] = [{ queryRef: rowRef }];
+      }
+      if (props.columns) {
+        const colRef = toColumnRef(props.columns);
+        if (colRef) projections['Columns'] = [{ queryRef: colRef }];
+      }
+      if (props.values) {
+        const valRef = toAggregateRef(props.values, metricOperation);
+        if (valRef) projections['Values'] = [{ queryRef: valRef }];
+      }
       break;
 
     case 'slicer':
       if (props.dimension) {
-        projections['Values'] = [{ queryRef: `${props.dimension}` }];
+        const dimRef = toColumnRef(props.dimension);
+        if (dimRef) projections['Values'] = [{ queryRef: dimRef }];
       }
       break;
 
     case 'waterfall':
       if (props.dimension) {
-        projections['Category'] = [{ queryRef: `${props.dimension}` }];
+        const dimRef = toColumnRef(props.dimension);
+        if (dimRef) projections['Category'] = [{ queryRef: dimRef }];
       }
       if (props.metric) {
-        projections['Values'] = [{ queryRef: `Sum(${props.metric})` }];
+        const metricRef = toAggregateRef(props.metric);
+        if (metricRef) projections['Values'] = [{ queryRef: metricRef }];
+      }
+      break;
+
+    case 'scatter':
+      if (props.dimension) {
+        const dimRef = toColumnRef(props.dimension);
+        if (dimRef) projections['Category'] = [{ queryRef: dimRef }];
+      }
+      if (props.xMetric) {
+        const xRef = toAggregateRef(props.xMetric);
+        if (xRef) projections['X'] = [{ queryRef: xRef }];
+      }
+      if (props.yMetric) {
+        const yRef = toAggregateRef(props.yMetric);
+        if (yRef) projections['Y'] = [{ queryRef: yRef }];
+      }
+      if (props.sizeMetric) {
+        const sizeRef = toAggregateRef(props.sizeMetric);
+        if (sizeRef) projections['Size'] = [{ queryRef: sizeRef }];
+      }
+      break;
+
+    case 'funnel':
+      if (props.dimension) {
+        const dimRef = toColumnRef(props.dimension);
+        if (dimRef) projections['Category'] = [{ queryRef: dimRef }];
+      }
+      if (props.metric) {
+        const metricRef = toAggregateRef(props.metric);
+        if (metricRef) projections['Values'] = [{ queryRef: metricRef }];
+      }
+      break;
+
+    case 'treemap':
+      if (props.dimension) {
+        const dimRef = toColumnRef(props.dimension);
+        if (dimRef) projections['Group'] = [{ queryRef: dimRef }];
+      }
+      if (props.metric) {
+        const metricRef = toAggregateRef(props.metric);
+        if (metricRef) projections['Values'] = [{ queryRef: metricRef }];
+      }
+      break;
+
+    case 'gauge':
+      if (props.metric) {
+        const metricRef = toAggregateRef(props.metric, metricOperation);
+        if (metricRef) projections['Values'] = [{ queryRef: metricRef }];
       }
       break;
   }
@@ -260,11 +356,45 @@ function generateProjections(visual: PBIVisualConfig): object {
 /**
  * Generate prototype query structure for a visual
  */
-function generatePrototypeQuery(visual: PBIVisualConfig): object {
+function generatePrototypeQuery(visual: PBIVisualConfig, scenario: Scenario): object {
+  const projections = generateProjections(visual, scenario);
+  const tableRefs = new Map<string, Set<string>>();
+
+  Object.values(projections).forEach((entries) => {
+    entries.forEach((entry) => {
+      const queryRef: string | undefined = entry?.queryRef;
+      if (!queryRef) return;
+      const match = queryRef.match(/([A-Za-z0-9_]+)\[([^\]]+)\]/);
+      if (!match) return;
+      const table = match[1];
+      const column = match[2];
+      if (!tableRefs.has(table)) {
+        tableRefs.set(table, new Set());
+      }
+      tableRefs.get(table)!.add(column);
+    });
+  });
+
+  const from = Array.from(tableRefs.keys()).map((table) => ({
+    Name: table,
+    Entity: table,
+    Type: 0,
+  }));
+
+  const select = Array.from(tableRefs.entries()).flatMap(([table, columns]) => {
+    return Array.from(columns).map((column) => ({
+      Column: {
+        Expression: { SourceRef: { Source: table } },
+        Property: column,
+      },
+      Name: `${table}.${column}`,
+    }));
+  });
+
   return {
     version: 2,
-    From: [],
-    Select: [],
+    From: from,
+    Select: select,
     OrderBy: [],
   };
 }

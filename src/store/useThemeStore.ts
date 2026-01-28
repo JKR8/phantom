@@ -42,7 +42,21 @@ export const PALETTES: ColorPalette[] = [
     name: 'Portfolio',
     colors: ['#D4A548', '#C08930', '#E5A645', '#EDBE6A', '#F5D79E', '#B87A2B', '#A66B1F', '#8B5A1B'],
   },
+  {
+    name: 'Warm Neutral',
+    colors: ['#8B5E3C', '#D4A574', '#E07B4C', '#2D6A4F', '#264653', '#B5838D', '#E9C46A', '#F4A261'],
+  },
+  {
+    name: 'Industrial',
+    colors: ['#2B4162', '#385F71', '#F5A623', '#D4762C', '#8B9DA5', '#4A6FA5', '#C44536', '#2D936C'],
+  },
+  {
+    name: 'Boardroom',
+    colors: ['#1B3A4B', '#065A60', '#0F9690', '#C8963E', '#A23B72', '#2C514C', '#F18F01', '#587B7F'],
+  },
 ];
+
+export const DEFAULT_PALETTE = PALETTES[0];
 
 interface ThemeState {
   activePalette: ColorPalette;

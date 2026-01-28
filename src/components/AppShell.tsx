@@ -5,6 +5,7 @@ import {
   tokens,
   Button,
   Title2,
+  Input,
   Menu,
   MenuTrigger,
   MenuList,
@@ -16,15 +17,18 @@ import {
   AddRegular,
   DatabaseRegular,
   AppsRegular,
-  ShareRegular,
-  ArrowDownloadRegular,
   DocumentRegular,
   ShieldRegular,
+  GridRegular,
+  ResizeImageRegular,
 } from '@fluentui/react-icons';
 import { FieldsPane } from './FieldsPane';
 import { VisualizationsPane } from './VisualizationsPane';
 import { PropertiesPanel } from './PropertiesPanel';
 import { FFMAPanel } from './FFMAPanel';
+import { UserMenu } from './UserMenu';
+import { SaveDashboardButton } from './SaveDashboardDialog';
+import { ShareButton } from './ShareDialog';
 import { useStore } from '../store/useStore';
 import { Templates } from '../store/templates';
 
@@ -53,6 +57,7 @@ const useStyles = makeStyles({
   topBarRight: {
     display: 'flex',
     gap: '8px',
+    alignItems: 'center',
   },
   mainContent: {
     display: 'flex',
@@ -93,12 +98,16 @@ const useStyles = makeStyles({
     borderLeft: `1px solid ${tokens.colorNeutralStroke2}`,
     flexShrink: 0,
     overflowY: 'auto',
+    height: '100%',
+    boxSizing: 'border-box' as const,
   },
   ffmaPane: {
     width: '180px',
     borderRight: `1px solid ${tokens.colorNeutralStroke2}`,
     flexShrink: 0,
     overflowY: 'auto',
+    height: '100%',
+    boxSizing: 'border-box' as const,
   },
   navButtonActive: {
     backgroundColor: '#D6D6D6',
@@ -109,55 +118,149 @@ const useStyles = makeStyles({
       backgroundColor: '#3b3a39',
       color: 'white',
     }
-  }
+  },
+  titleEditable: {
+    color: 'white',
+    fontSize: '16px',
+    fontWeight: '600' as any,
+    cursor: 'pointer',
+    backgroundColor: 'transparent',
+    border: 'none',
+    ':hover': {
+      textDecorationLine: 'underline',
+    },
+  },
+  titleInput: {
+    maxWidth: '250px',
+  },
 });
 
-export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+interface AppShellProps {
+  children: React.ReactNode;
+  readOnly?: boolean;
+}
+
+export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
   const styles = useStyles();
   const loadTemplate = useStore((state) => state.loadTemplate);
+  const clearCanvas = useStore((state) => state.clearCanvas);
+  const scenario = useStore((state) => state.scenario);
+  const setScenario = useStore((state) => state.setScenario);
   const selectedItemId = useStore((state) => state.selectedItemId);
+  const layoutMode = useStore((state) => state.layoutMode);
+  const setLayoutMode = useStore((state) => state.setLayoutMode);
+  const dashboardName = useStore((state) => state.dashboardName);
+  const setDashboardMeta = useStore((state) => state.setDashboardMeta);
   const [showFFMA, setShowFFMA] = React.useState(false);
+  const [editingTitle, setEditingTitle] = React.useState(false);
+  const [titleDraft, setTitleDraft] = React.useState(dashboardName);
+
+  const scenarios: Array<'Retail' | 'SaaS' | 'HR' | 'Logistics' | 'Finance' | 'Portfolio' | 'Social'> = ['Retail', 'SaaS', 'HR', 'Logistics', 'Finance', 'Portfolio', 'Social'];
+
+  const handleTitleCommit = () => {
+    const trimmed = titleDraft.trim();
+    if (trimmed) {
+      setDashboardMeta({ name: trimmed });
+    }
+    setEditingTitle(false);
+  };
 
   return (
     <div className={styles.container}>
       <header className={styles.topBar}>
         <div className={styles.topBarLeft}>
-          <Title2 style={{ color: 'white', fontSize: '16px' }}>Phantom - Retail Dashboard</Title2>
-          <Menu>
-            <MenuTrigger disableButtonEnhancement>
-              <Button appearance="subtle" className={styles.topButton} size="small" icon={<DocumentRegular />}>Templates</Button>
-            </MenuTrigger>
-            <MenuPopover>
-              <MenuList>
-                {Templates.map(t => (
-                    <MenuItem key={t.name} onClick={() => loadTemplate(t.name)}>{t.name}</MenuItem>
-                ))}
-              </MenuList>
-            </MenuPopover>
-          </Menu>
-          <Button appearance="subtle" className={styles.topButton} size="small">File</Button>
-          <Button appearance="subtle" className={styles.topButton} size="small">Export</Button>
+          {editingTitle && !readOnly ? (
+            <Input
+              className={styles.titleInput}
+              size="small"
+              value={titleDraft}
+              onChange={(_, data) => setTitleDraft(data.value)}
+              onBlur={handleTitleCommit}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleTitleCommit(); }}
+              autoFocus
+            />
+          ) : (
+            <Title2
+              className={styles.titleEditable}
+              style={{ color: 'white', fontSize: '16px' }}
+              onClick={() => {
+                if (!readOnly) {
+                  setTitleDraft(dashboardName);
+                  setEditingTitle(true);
+                }
+              }}
+              title={readOnly ? undefined : 'Click to rename'}
+            >
+              Phantom - {dashboardName}
+            </Title2>
+          )}
+          {!readOnly && (
+            <>
+              <Menu>
+                <MenuTrigger disableButtonEnhancement>
+                  <Button appearance="subtle" className={styles.topButton} size="small" icon={<DocumentRegular />}>Templates</Button>
+                </MenuTrigger>
+                <MenuPopover>
+                  <MenuList>
+                    {Templates.map(t => (
+                        <MenuItem key={t.name} onClick={() => loadTemplate(t.name)}>{t.name}</MenuItem>
+                    ))}
+                  </MenuList>
+                </MenuPopover>
+              </Menu>
+              <Menu>
+                <MenuTrigger disableButtonEnhancement>
+                  <Button appearance="subtle" className={styles.topButton} size="small" icon={<DatabaseRegular />} data-testid="scenario-dropdown">{scenario}</Button>
+                </MenuTrigger>
+                <MenuPopover>
+                  <MenuList>
+                    {scenarios.map(s => (
+                        <MenuItem key={s} onClick={() => setScenario(s)}>{s}</MenuItem>
+                    ))}
+                  </MenuList>
+                </MenuPopover>
+              </Menu>
+              <Button
+                appearance="subtle"
+                className={styles.topButton}
+                size="small"
+                icon={layoutMode === 'Standard' ? <GridRegular /> : <ResizeImageRegular />}
+                onClick={() => setLayoutMode(layoutMode === 'Standard' ? 'Free' : 'Standard')}
+              >
+                {layoutMode} Layout
+              </Button>
+              <Button appearance="subtle" className={styles.topButton} size="small">File</Button>
+              <Button appearance="subtle" className={styles.topButton} size="small">Export</Button>
+            </>
+          )}
         </div>
         <div className={styles.topBarRight}>
-          <Button icon={<ShareRegular />} appearance="subtle" className={styles.topButton}>Share</Button>
-          <Button icon={<ArrowDownloadRegular />} appearance="subtle" className={styles.topButton}>Get Data</Button>
+          {!readOnly && (
+            <>
+              <SaveDashboardButton />
+              <ShareButton />
+            </>
+          )}
+          <UserMenu />
         </div>
       </header>
       <div className={styles.mainContent}>
-        <nav className={styles.leftNav}>
-          <Button icon={<HomeRegular />} appearance="subtle" />
-          <Button icon={<AddRegular />} appearance="subtle" />
-          <Button icon={<DatabaseRegular />} appearance="subtle" />
-          <Button icon={<AppsRegular />} appearance="subtle" />
-          <Button
-            icon={<ShieldRegular />}
-            appearance="subtle"
-            className={showFFMA ? styles.navButtonActive : undefined}
-            onClick={() => setShowFFMA(!showFFMA)}
-            title="FFMA Widgets"
-          />
-        </nav>
-        {showFFMA && (
+        {!readOnly && (
+          <nav className={styles.leftNav}>
+            <Button icon={<HomeRegular />} appearance="subtle" />
+            <Button icon={<AddRegular />} appearance="subtle" onClick={clearCanvas} title="New Screen" />
+            <Button icon={<DatabaseRegular />} appearance="subtle" />
+            <Button icon={<AppsRegular />} appearance="subtle" />
+            <Button
+              icon={<ShieldRegular />}
+              appearance="subtle"
+              className={showFFMA ? styles.navButtonActive : undefined}
+              onClick={() => setShowFFMA(!showFFMA)}
+              title="FFMA Widgets"
+            />
+          </nav>
+        )}
+        {showFFMA && !readOnly && (
           <div className={styles.ffmaPane}>
             <FFMAPanel />
           </div>
@@ -166,13 +269,17 @@ export const AppShell: React.FC<{ children: React.ReactNode }> = ({ children }) 
           <main className={styles.canvasArea}>
             {children}
           </main>
-          <div className={styles.bottomPane}>
-            <VisualizationsPane />
+          {!readOnly && (
+            <div className={styles.bottomPane}>
+              <VisualizationsPane />
+            </div>
+          )}
+        </div>
+        {!readOnly && (
+          <div className={styles.rightPane}>
+            {selectedItemId ? <PropertiesPanel /> : <FieldsPane />}
           </div>
-        </div>
-        <div className={styles.rightPane}>
-          {selectedItemId ? <PropertiesPanel /> : <FieldsPane />}
-        </div>
+        )}
       </div>
     </div>
   );

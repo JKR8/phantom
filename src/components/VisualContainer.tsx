@@ -59,7 +59,7 @@ interface VisualContainerProps {
   itemId?: string;
 }
 
-export const VisualContainer: React.FC<VisualContainerProps> = ({ title, children, onRemove, hideMenu, isSelected, onSelect }) => {
+export const VisualContainer: React.FC<VisualContainerProps> = ({ title, children, onRemove, hideMenu, isSelected, onSelect, itemId }) => {
   const styles = useStyles();
 
   const handleClick = (e: React.MouseEvent) => {
@@ -70,7 +70,11 @@ export const VisualContainer: React.FC<VisualContainerProps> = ({ title, childre
   };
 
   return (
-    <div className={isSelected ? styles.containerSelected : styles.container} onClick={handleClick}>
+    <div 
+      className={isSelected ? styles.containerSelected : styles.container} 
+      onClick={handleClick}
+      data-testid={`visual-container-${itemId}`}
+    >
       <div className={`${styles.header} visual-header`}>
         <Text className={styles.title}>{title}</Text>
         {!hideMenu && (

@@ -12,11 +12,15 @@ import {
   LabelList
 } from 'recharts';
 import { useFilteredSales } from '../store/useStore';
+import { formatMetricValue, getMetricValue } from '../utils/chartUtils';
 
 interface StackedColumnChartProps {
-  dimension: 'Region' | 'Category' | 'Month';
-  metric: 'revenue' | 'profit';
+  dimension: string;
+  metric: string;
   manualData?: Array<{ label: string; value: number }>;
+  topN?: string | number;
+  sort?: 'desc' | 'asc' | 'alpha';
+  showOther?: boolean;
 }
 
 export const StackedColumnChart: React.FC<StackedColumnChartProps> = ({ dimension: _dimension, metric, manualData }) => {
@@ -46,11 +50,13 @@ export const StackedColumnChart: React.FC<StackedColumnChartProps> = ({ dimensio
       const date = new Date(sale.date);
       const month = months[date.getMonth()];
 
-      const acVal = sale[metric] || 0;
-      const plVal = sale[`${metric}PL`] || acVal * 0.95;
+      const acVal = getMetricValue(sale, metric);
+      const plVal = getMetricValue(sale, `${metric}PL`) || acVal * 0.95;
 
-      monthlyData[month].ac += acVal;
-      monthlyData[month].pl += plVal;
+      if (monthlyData[month]) {
+        monthlyData[month].ac += acVal;
+        monthlyData[month].pl += plVal;
+      }
     });
 
     return months.map(month => {
@@ -69,11 +75,7 @@ export const StackedColumnChart: React.FC<StackedColumnChartProps> = ({ dimensio
     });
   }, [manualData, filteredSales, metric]);
 
-  const formatValue = (value: number) => {
-    if (Math.abs(value) >= 1000000) return `${(value / 1000000).toFixed(0)}M`;
-    if (Math.abs(value) >= 1000) return `${(value / 1000).toFixed(0)}K`;
-    return value.toString();
-  };
+  const formatValue = (value: number) => formatMetricValue(metric, value, true);
 
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -92,7 +94,10 @@ export const StackedColumnChart: React.FC<StackedColumnChartProps> = ({ dimensio
           tickLine={false}
         />
         <Tooltip
-          formatter={(value: any, name: any) => [`$${Number(value).toLocaleString()}`, name === 'ac' ? 'Actual' : 'Plan']}
+          formatter={(value: any, name: any) => [
+            formatMetricValue(metric, Number(value)),
+            name === 'ac' ? 'Actual' : 'Plan'
+          ]}
           contentStyle={{ fontSize: '11px', borderRadius: '4px', border: '1px solid #edebe9' }}
         />
         <Legend
