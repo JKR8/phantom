@@ -11,12 +11,13 @@ const useStyles = makeStyles({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'white',
-    ...shorthands.padding('4px', '8px'),
-    ...shorthands.borderRadius('4px'),
-    boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+    ...shorthands.padding('6px', '12px'),
+    ...shorthands.borderRadius('8px'),
+    boxShadow: '0 4px 16px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.08)',
+    ...shorthands.border('1px', 'solid', '#E1DFDD'),
     position: 'absolute',
     zIndex: 1000,
-    gap: '8px',
+    gap: '10px',
   },
   divider: {
     width: '1px',
@@ -112,7 +113,9 @@ export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth
   // Calculate position
   const colWidth = (containerWidth - (margin[0] * (cols + 1))) / cols;
   const left = Math.round((selectedItem.layout.x * (colWidth + margin[0])) + margin[0]);
-  const top = Math.round((selectedItem.layout.y * (rowHeight + margin[1])) - 40); // 40px above
+  // Position 40px above the element, but ensure minimum of 8px from canvas top
+  const rawTop = (selectedItem.layout.y * (rowHeight + margin[1])) - 40;
+  const top = Math.max(8, Math.round(rawTop));
 
   const renderBarControls = () => (
     <>

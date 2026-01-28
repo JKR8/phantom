@@ -8,7 +8,6 @@ import {
   TableHeaderCell,
   TableBody,
   TableCell,
-  TableCellLayout,
 } from '@fluentui/react-components';
 import { useStore, useFilteredSales } from '../store/useStore';
 import { ScenarioFields, ScenarioType } from '../store/semanticLayer';
@@ -61,19 +60,22 @@ export const DataTable: React.FC<DataTableProps> = ({ maxRows = 50, columns }) =
 
   const tableData = useMemo(() => {
     return filteredSales.slice(0, maxRows).map((sale) => {
-      // Existing enrich logic (keep as fallback or base)
+      // Existing enrich logic for Retail scenario (lookup from stores/products)
       const store = stores.find((s) => s.id === sale.storeId);
       const product = products.find((p) => p.id === sale.productId);
-      
+
       const row: any = {
         id: sale.id,
-        ...sale, // Spread raw data
-        store: store?.name || 'Unknown',
-        region: store?.region || 'Unknown',
-        product: product?.name || 'Unknown',
-        category: product?.category || 'Unknown',
-        date: new Date(sale.date).toLocaleDateString(),
+        ...sale, // Spread raw data first
       };
+
+      // Only overwrite with lookups if the value exists
+      if (store?.name) row.store = store.name;
+      if (store?.region && !sale.region) row.region = store.region;
+      if (product?.name) row.product = product.name;
+      if (product?.category) row.category = product.category;
+      if (sale.date) row.date = new Date(sale.date).toLocaleDateString();
+
       return row;
     });
   }, [filteredSales, stores, products, maxRows]);
@@ -95,65 +97,44 @@ export const DataTable: React.FC<DataTableProps> = ({ maxRows = 50, columns }) =
     return getDimensionValue(row, column, { stores, products, customers });
   };
 
-  // If dynamic columns are provided, use them
-  if (columns && columns.length > 0) {
-      return (
-        <div className={styles.container}>
-          <Table size="extra-small" className={styles.table}>
-            <TableHeader>
-              <TableRow>
-                {columns.map(col => (
-                    <TableHeaderCell key={col} className={styles.headerCell}>{col}</TableHeaderCell>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tableData.map((row) => (
-                <TableRow key={row.id}>
-                  {columns.map(col => {
-                      const val = resolveCellValue(row, col);
-                      const isNum = typeof val === 'number' && Number.isFinite(val);
-                      return (
-                        <TableCell key={col} className={`${styles.cell} ${isNum ? styles.numberCell : ''}`}>
-                            {isNum ? formatMetricValue(col, val, false) : val}
-                        </TableCell>
-                      );
-                  })}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      );
-  }
+  // Use scenario-appropriate default columns
+  const defaultColumns = useMemo(() => {
+    const defaultsByScenario: Record<ScenarioType, string[]> = {
+      Retail: ['Date', 'Region', 'Category', 'Product', 'Quantity', 'Revenue', 'Profit'],
+      SaaS: ['Date', 'Customer', 'Region', 'Tier', 'MRR', 'ARR', 'Churn'],
+      HR: ['Date', 'Employee', 'Department', 'Role', 'Salary', 'Rating', 'Tenure'],
+      Logistics: ['Date', 'Carrier', 'Origin', 'Destination', 'Status', 'Cost', 'Weight'],
+      Finance: ['Date', 'Account', 'Region', 'BusinessUnit', 'Scenario', 'Amount', 'Variance'],
+      Portfolio: ['Date', 'Entity', 'Sector', 'Region', 'MarketValue', 'Score'],
+      Social: ['Date', 'Platform', 'Location', 'Sentiment', 'Engagements', 'Mentions'],
+    };
+    return defaultsByScenario[scenario] || defaultsByScenario.Retail;
+  }, [scenario]);
 
-  // Fallback to original hardcoded view
+  const effectiveColumns = columns && columns.length > 0 ? columns : defaultColumns;
+
   return (
     <div className={styles.container}>
       <Table size="extra-small" className={styles.table}>
         <TableHeader>
           <TableRow>
-            <TableHeaderCell className={styles.headerCell}>Date</TableHeaderCell>
-            <TableHeaderCell className={styles.headerCell}>Region</TableHeaderCell>
-            <TableHeaderCell className={styles.headerCell}>Category</TableHeaderCell>
-            <TableHeaderCell className={styles.headerCell}>Product</TableHeaderCell>
-            <TableHeaderCell className={styles.headerCell}>Qty</TableHeaderCell>
-            <TableHeaderCell className={styles.headerCell}>Revenue</TableHeaderCell>
-            <TableHeaderCell className={styles.headerCell}>Profit</TableHeaderCell>
+            {effectiveColumns.map(col => (
+              <TableHeaderCell key={col} className={styles.headerCell}>{col}</TableHeaderCell>
+            ))}
           </TableRow>
         </TableHeader>
         <TableBody>
           {tableData.map((row) => (
             <TableRow key={row.id}>
-              <TableCell className={styles.cell}>{row.date}</TableCell>
-              <TableCell className={styles.cell}>{row.region}</TableCell>
-              <TableCell className={styles.cell}>{row.category}</TableCell>
-              <TableCell className={styles.cell}>
-                <TableCellLayout truncate>{row.product}</TableCellLayout>
-              </TableCell>
-              <TableCell className={`${styles.cell} ${styles.numberCell}`}>{row.quantity}</TableCell>
-              <TableCell className={`${styles.cell} ${styles.numberCell}`}>{formatMetricValue('Revenue', row.revenue, false)}</TableCell>
-              <TableCell className={`${styles.cell} ${styles.numberCell}`}>{formatMetricValue('Profit', row.profit, false)}</TableCell>
+              {effectiveColumns.map(col => {
+                const val = resolveCellValue(row, col);
+                const isNum = typeof val === 'number' && Number.isFinite(val);
+                return (
+                  <TableCell key={col} className={`${styles.cell} ${isNum ? styles.numberCell : ''}`}>
+                    {isNum ? formatMetricValue(col, val, false) : val}
+                  </TableCell>
+                );
+              })}
             </TableRow>
           ))}
         </TableBody>
