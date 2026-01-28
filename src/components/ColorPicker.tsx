@@ -22,15 +22,21 @@ const useStyles = makeStyles({
   },
   swatches: {
     display: 'flex',
-    gap: '4px',
+    gap: '6px',
     marginTop: '8px',
     flexWrap: 'wrap',
   },
   swatch: {
-    width: '20px',
-    height: '20px',
-    ...shorthands.borderRadius('2px'),
+    width: '24px',
+    height: '24px',
+    ...shorthands.borderRadius('4px'),
     ...shorthands.border('1px', 'solid', 'rgba(0,0,0,0.1)'),
+    transitionProperty: 'transform, box-shadow',
+    transitionDuration: '0.15s',
+    ':hover': {
+      transform: 'scale(1.15)',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+    },
   },
   dropdown: {
     width: '100%',

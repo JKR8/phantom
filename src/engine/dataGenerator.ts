@@ -164,10 +164,16 @@ export const generateHRData = () => {
     const band = salaryBands[department] || { mu: 11.2, sigma: 0.3 };
     const salary = Math.round(Math.exp(band.mu + band.sigma * boxMuller(rand)));
     const tenure = Math.round(clamp(tenureValues[i], 0, 20) * 10) / 10;
+    const rating = clamp(Math.round(2.5 + rand() * 3 - 0.5), 1, 5);
 
     // Attrition: exponential decay - 38% Year 1, much lower after
     const attritionProb = tenure < 1 ? 0.38 : tenure < 2 ? 0.18 : tenure < 3 ? 0.10 : 0.05;
     const attrition = rand() < attritionProb ? 1 : 0;
+
+    // Generate hire date based on tenure (approximate)
+    const hireDate = new Date();
+    hireDate.setFullYear(hireDate.getFullYear() - Math.floor(tenure));
+    hireDate.setMonth(hireDate.getMonth() - Math.floor((tenure % 1) * 12));
 
     return {
       id: faker.string.uuid(),
@@ -175,8 +181,13 @@ export const generateHRData = () => {
       department,
       role: faker.person.jobTitle(),
       office,
+      hireDate: hireDate.toISOString(),
       salary,
-      rating: clamp(Math.round(2.5 + rand() * 3 - 0.5), 1, 5),
+      salaryPL: Math.round(salary * (1 + (rand() - 0.5) * 0.1)),  // ±5% variance from plan
+      salaryPY: Math.round(salary * (0.92 + rand() * 0.08)),       // 92-100% of current (raises)
+      rating,
+      ratingPL: Math.round((clamp(rating + (rand() > 0.5 ? 0.2 : -0.2), 1, 5)) * 10) / 10,
+      ratingPY: Math.round((clamp(rating - 0.3 + rand() * 0.6, 1, 5)) * 10) / 10,
       attrition,
       tenure,
     };
@@ -186,21 +197,40 @@ export const generateHRData = () => {
 };
 
 export const generateLogisticsData = () => {
+  const rand = createSeededRandom(2028);
   const carriers = ['FedEx', 'UPS', 'DHL', 'USPS'];
   const cities = ['New York', 'Los Angeles', 'Chicago', 'Houston', 'Phoenix', 'London', 'Berlin', 'Tokyo'];
   const statuses: ('Delivered' | 'In Transit' | 'Delayed')[] = ['Delivered', 'In Transit', 'Delayed'];
+  const statusWeights = [70, 20, 10]; // 70% Delivered, 20% In Transit, 10% Delayed
 
-  const shipments: Shipment[] = Array.from({ length: 500 }).map(() => ({
-    id: faker.string.uuid(),
-    origin: faker.helpers.arrayElement(cities),
-    destination: faker.helpers.arrayElement(cities),
-    carrier: faker.helpers.arrayElement(carriers),
-    cost: faker.number.float({ min: 10, max: 500 }),
-    weight: faker.number.float({ min: 1, max: 100 }),
-    status: faker.helpers.arrayElement(statuses),
-    date: faker.date.recent({ days: 90 }).toISOString(),
-    onTime: faker.number.float() < 0.85 ? 1 : 0
-  }));
+  // Log-normal cost distribution (median ~$150)
+  const costValues = logNormalSample(500, 5.0, 0.8, 600);
+
+  const shipments: Shipment[] = Array.from({ length: 500 }).map((_, i) => {
+    const cost = Math.round(costValues[i] * 100) / 100;
+    const weight = Math.round((5 + rand() * 95) * 100) / 100; // 5-100 kg
+    const status = weightedChoice(statuses, statusWeights, rand);
+
+    // Generate date within last 90 days
+    const date = new Date();
+    date.setDate(date.getDate() - Math.floor(rand() * 90));
+
+    return {
+      id: faker.string.uuid(),
+      origin: cities[Math.floor(rand() * cities.length)],
+      destination: cities[Math.floor(rand() * cities.length)],
+      carrier: carriers[Math.floor(rand() * carriers.length)],
+      cost,
+      costPL: Math.round(cost * (1 + (rand() - 0.5) * 0.15) * 100) / 100,  // ±7.5% variance
+      costPY: Math.round(cost * (1.05 + rand() * 0.1) * 100) / 100,         // 5-15% higher (cost increases)
+      weight,
+      weightPL: weight,  // Weight planned same as actual
+      weightPY: weight,  // Weight doesn't change YoY
+      status,
+      date: date.toISOString(),
+      onTime: rand() < 0.85 ? 1 : 0  // 85% on-time delivery rate
+    };
+  });
 
   return { shipments };
 };
@@ -305,27 +335,40 @@ export const generatePortfolioData = () => {
 };
 
 export const generateSocialData = () => {
+  const rand = createSeededRandom(2029);
   const platforms = ['X', 'LinkedIn', 'Instagram', 'TikTok', 'Reddit', 'YouTube'];
   const locations = ['New York', 'London', 'Berlin', 'Toronto', 'Sydney', 'Singapore', 'Dubai', 'Sao Paulo'];
   const sentiments: Array<'Positive' | 'Neutral' | 'Negative'> = ['Positive', 'Neutral', 'Negative'];
+  const sentimentWeights = [40, 35, 25]; // 40% Positive, 35% Neutral, 25% Negative
 
   const socialPosts: SocialPost[] = Array.from({ length: 1200 }).map(() => {
-    const sentiment = faker.helpers.arrayElement(sentiments);
+    const sentiment = weightedChoice(sentiments, sentimentWeights, rand);
     const baseScore = sentiment === 'Positive'
-      ? faker.number.float({ min: 0.2, max: 1 })
+      ? 0.2 + rand() * 0.8
       : sentiment === 'Negative'
-        ? faker.number.float({ min: -1, max: -0.2 })
-        : faker.number.float({ min: -0.2, max: 0.2 });
+        ? -1 + rand() * 0.8
+        : -0.2 + rand() * 0.4;
+
+    const engagements = Math.round(10 + rand() * 4990);
+    const mentions = Math.round(1 + rand() * 249);
+
+    // Generate date within last 180 days
+    const date = new Date();
+    date.setDate(date.getDate() - Math.floor(rand() * 180));
 
     return {
       id: faker.string.uuid(),
-      date: faker.date.recent({ days: 180 }).toISOString(),
+      date: date.toISOString(),
       user: faker.internet.username(),
-      location: faker.helpers.arrayElement(locations),
-      platform: faker.helpers.arrayElement(platforms),
+      location: locations[Math.floor(rand() * locations.length)],
+      platform: platforms[Math.floor(rand() * platforms.length)],
       sentiment,
-      engagements: faker.number.int({ min: 10, max: 5000 }),
-      mentions: faker.number.int({ min: 1, max: 250 }),
+      engagements,
+      engagementsPL: Math.round(engagements * (1 + (rand() - 0.5) * 0.2)),  // ±10% variance
+      engagementsPY: Math.round(engagements * (0.7 + rand() * 0.4)),         // Growth trend (70-110% of current)
+      mentions,
+      mentionsPL: Math.round(mentions * (1 + (rand() - 0.5) * 0.15)),        // ±7.5% variance
+      mentionsPY: Math.round(mentions * (0.8 + rand() * 0.3)),               // Growth trend (80-110% of current)
       sentimentScore: parseFloat(baseScore.toFixed(2)),
     };
   });

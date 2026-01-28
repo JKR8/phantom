@@ -20,21 +20,21 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
-    ...shorthands.padding('8px', '12px'),
+    ...shorthands.padding('6px', '10px'),
   },
   header: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    marginBottom: '8px',
+    marginBottom: '4px',
   },
   label: {
-    fontSize: '11px',
+    fontSize: '12px',
     color: '#605E5C',
     fontWeight: '500',
   },
   value: {
-    fontSize: '32px',
+    fontSize: '28px',
     fontWeight: 'bold',
     color: '#252423',
     marginTop: '2px',
@@ -42,7 +42,9 @@ const useStyles = makeStyles({
   footer: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '4px',
+    gap: '2px',
+    borderTop: '1px solid #F0F0F0',
+    paddingTop: '3px',
   },
   varianceRow: {
     display: 'flex',
@@ -65,10 +67,11 @@ const useStyles = makeStyles({
   variancePercent: {
     fontWeight: '600',
     minWidth: '45px',
+    fontSize: '12px',
   },
   varianceAbsolute: {
     color: '#605E5C',
-    fontSize: '10px',
+    fontSize: '11px',
   },
   positive: {
     color: '#107C10',

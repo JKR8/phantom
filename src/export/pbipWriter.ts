@@ -372,8 +372,13 @@ const buildScenarioTables = (scenario: Scenario, data: ExportData, schema: PBISc
       Department: emp.department,
       Role: emp.role,
       Office: emp.office,
+      HireDate: emp.hireDate,
       Salary: emp.salary,
+      SalaryPL: emp.salaryPL,
+      SalaryPY: emp.salaryPY,
       Rating: emp.rating,
+      RatingPL: emp.ratingPL,
+      RatingPY: emp.ratingPY,
       Attrition: emp.attrition,
       Tenure: emp.tenure,
     }));
@@ -381,6 +386,7 @@ const buildScenarioTables = (scenario: Scenario, data: ExportData, schema: PBISc
       Department: dept,
       DepartmentGroup: 'General',
     }));
+    tableRows.DateTable = buildDateTable(data.employees.map((e) => e.hireDate), false, true);
   } else if (scenario === 'Logistics') {
     tableRows.Shipment = data.shipments.map((ship) => ({
       ShipmentID: ship.id,
@@ -388,7 +394,11 @@ const buildScenarioTables = (scenario: Scenario, data: ExportData, schema: PBISc
       Destination: ship.destination,
       Carrier: ship.carrier,
       Cost: ship.cost,
+      CostPL: ship.costPL,
+      CostPY: ship.costPY,
       Weight: ship.weight,
+      WeightPL: ship.weightPL,
+      WeightPY: ship.weightPY,
       Status: ship.status,
       Date: ship.date,
       OnTime: ship.onTime,
@@ -445,7 +455,11 @@ const buildScenarioTables = (scenario: Scenario, data: ExportData, schema: PBISc
       Platform: post.platform,
       Sentiment: post.sentiment,
       Engagements: post.engagements,
+      EngagementsPL: post.engagementsPL,
+      EngagementsPY: post.engagementsPY,
       Mentions: post.mentions,
+      MentionsPL: post.mentionsPL,
+      MentionsPY: post.mentionsPY,
       SentimentScore: post.sentimentScore,
     }));
     tableRows.DateTable = buildDateTable(data.socialPosts.map((p) => p.date), true, true);
@@ -707,6 +721,62 @@ const buildQueryState = (item: DashboardItem, scenario: Scenario, measures: DAXM
       if (dim) queryState.Values = { projections: [buildQueryProjection(dim.table, dim.column, false)] };
       break;
     }
+    // Card-like visuals - use same pattern as 'card'
+    case 'multiRowCard':
+    case 'portfolioCard':
+    case 'portfolioKPICards': {
+      // Multi-row cards show category + multiple measures
+      const dimField = props.dimension || defaultCategory;
+      const dim = resolveColumn(dimField);
+      const metric = resolveMeasure(props.metric);
+      const projections: any[] = [];
+      if (dim) projections.push(buildQueryProjection(dim.table, dim.column, false));
+      if (metric) projections.push(buildQueryProjection(metric.table, metric.measure, true));
+      if (projections.length > 0) queryState.Values = { projections };
+      break;
+    }
+    // Table-like visuals - use same pattern as 'table'
+    case 'entityTable':
+    case 'controversyTable':
+    case 'controversyBottomPanel': {
+      const columns = (props.columns && props.columns.length > 0)
+        ? props.columns
+        : getDefaultTableColumns(scenario as ScenarioType);
+      const projections: any[] = [];
+      columns.forEach((col: string) => {
+        const dimension = resolveColumn(col);
+        if (dimension) {
+          projections.push(buildQueryProjection(dimension.table, dimension.column, false));
+          return;
+        }
+        const measure = resolveMeasure(col);
+        if (measure) projections.push(buildQueryProjection(measure.table, measure.measure, true));
+      });
+      if (projections.length > 0) queryState.Values = { projections };
+      break;
+    }
+    // Bar chart visuals - use same pattern as 'bar'
+    case 'controversyBar': {
+      const dimField = props.dimension || defaultCategory;
+      const dim = resolveColumn(dimField);
+      const metric = resolveMeasure(props.metric);
+      if (dim) queryState.Category = { projections: [buildQueryProjection(dim.table, dim.column, false)] };
+      if (metric) queryState.Y = { projections: [buildQueryProjection(metric.table, metric.measure, true)] };
+      break;
+    }
+    // Slicer-like visuals
+    case 'dateRangePicker':
+    case 'justificationSearch': {
+      const dim = resolveColumn(props.dimension || 'Date');
+      if (dim) queryState.Values = { projections: [buildQueryProjection(dim.table, dim.column, false)] };
+      break;
+    }
+    // Text visuals - return empty queryState (content handled in buildVisualObjects)
+    case 'portfolioHeader':
+    case 'portfolioHeaderBar': {
+      // No query state needed for text boxes
+      break;
+    }
   }
 
   return queryState;
@@ -715,8 +785,35 @@ const buildQueryState = (item: DashboardItem, scenario: Scenario, measures: DAXM
 const makeLiteral = (value: string) => ({ expr: { Literal: { Value: value } } });
 const makeSolidColor = (color: string) => ({ solid: { color: makeLiteral(`'${color}'`) } });
 
-const buildVisualObjects = (item: DashboardItem): Record<string, any> => {
+const buildVisualObjects = (item: DashboardItem, pbiType: string): Record<string, any> => {
   const objects: Record<string, any> = {};
+
+  // Special handling for textbox visuals
+  if (pbiType === 'textbox') {
+    const textContent = item.title || item.props?.title || item.props?.text || '';
+    objects.general = [{
+      properties: {
+        paragraphs: {
+          expr: {
+            Literal: {
+              Value: JSON.stringify([{
+                textRuns: [{
+                  value: textContent,
+                  textStyle: {
+                    fontFamily: 'Segoe UI',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                  }
+                }],
+                horizontalTextAlignment: 'left',
+              }])
+            }
+          }
+        }
+      }
+    }];
+    return objects;
+  }
 
   // Title formatting
   objects.title = [{
@@ -729,7 +826,7 @@ const buildVisualObjects = (item: DashboardItem): Record<string, any> => {
   }];
 
   // Category axis formatting (for chart types that have axes)
-  const axisTypes = ['bar', 'column', 'stackedBar', 'stackedColumn', 'line', 'area', 'waterfall', 'scatter'];
+  const axisTypes = ['bar', 'column', 'stackedBar', 'stackedColumn', 'line', 'area', 'waterfall', 'scatter', 'controversyBar'];
   if (axisTypes.includes(item.type)) {
     objects.categoryAxis = [{
       properties: {
@@ -765,6 +862,7 @@ const buildVisualObjects = (item: DashboardItem): Record<string, any> => {
 const buildVisualJson = (item: DashboardItem, index: number, scenario: Scenario, measures: DAXMeasure[]) => {
   const position = gridToPixels(item.layout);
   const queryState = buildQueryState(item, scenario, measures);
+  const pbiType = getPBIVisualType(item.type);
 
   return {
     $schema: 'https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json',
@@ -778,11 +876,11 @@ const buildVisualJson = (item: DashboardItem, index: number, scenario: Scenario,
       tabOrder: index,
     },
     visual: {
-      visualType: getPBIVisualType(item.type),
+      visualType: pbiType,
       query: {
         queryState,
       },
-      objects: buildVisualObjects(item),
+      objects: buildVisualObjects(item, pbiType),
       drillFilterOtherVisuals: true,
     },
   };

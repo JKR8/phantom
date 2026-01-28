@@ -18,14 +18,25 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     backgroundColor: 'white',
+    ...shorthands.borderRadius('8px'),
+    boxShadow: '0 1px 2px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)',
+    transitionProperty: 'box-shadow, border-color',
+    transitionDuration: '0.2s',
+    transitionTimingFunction: 'ease',
+    ':hover': {
+      boxShadow: '0 2px 6px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06)',
+    },
   },
   containerSelected: {
     height: '100%',
     display: 'flex',
     flexDirection: 'column',
     backgroundColor: 'white',
-    ...shorthands.border('2px', 'solid', '#0078D4'),
-    ...shorthands.borderRadius('2px'),
+    ...shorthands.borderRadius('8px'),
+    boxShadow: '0 0 0 1px rgba(0,120,212,0.3), 0 2px 6px rgba(0,0,0,0.10)',
+    transitionProperty: 'box-shadow, border-color',
+    transitionDuration: '0.2s',
+    transitionTimingFunction: 'ease',
   },
   header: {
     display: 'flex',
@@ -33,6 +44,7 @@ const useStyles = makeStyles({
     alignItems: 'center',
     ...shorthands.padding('4px', '8px'),
     cursor: 'grab',
+    borderBottom: '1px solid #F0F0F0',
     ':active': {
       cursor: 'grabbing',
     }

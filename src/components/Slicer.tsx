@@ -11,8 +11,8 @@ const useStyles = makeStyles({
   container: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '2px',
-    ...shorthands.padding('4px', '6px'),
+    gap: '4px',
+    ...shorthands.padding('6px', '8px'),
     height: '100%',
     width: '100%',
     justifyContent: 'center',
@@ -20,9 +20,9 @@ const useStyles = makeStyles({
     boxSizing: 'border-box',
   },
   label: {
-    fontSize: '10px',
+    fontSize: '11px',
     fontWeight: 600,
-    color: '#605E5C',
+    color: '#323130',
     lineHeight: '1.2',
     ...shorthands.overflow('hidden'),
     textOverflow: 'ellipsis',

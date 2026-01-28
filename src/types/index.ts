@@ -54,8 +54,13 @@ export interface Employee {
   department: string;
   role: string;
   office: string;
+  hireDate: string;
   salary: number;
+  salaryPL: number; // Plan
+  salaryPY: number; // Prior Year
   rating: number; // 1-5
+  ratingPL: number;
+  ratingPY: number;
   attrition: number; // 0 or 1
   tenure: number; // years
 }
@@ -66,7 +71,11 @@ export interface Shipment {
   destination: string;
   carrier: string;
   cost: number;
+  costPL: number; // Plan
+  costPY: number; // Prior Year
   weight: number;
+  weightPL: number;
+  weightPY: number;
   status: 'Delivered' | 'In Transit' | 'Delayed';
   date: string;
   onTime: number; // 0 or 1
@@ -121,7 +130,11 @@ export interface SocialPost {
   platform: string;
   sentiment: 'Positive' | 'Neutral' | 'Negative';
   engagements: number;
+  engagementsPL: number; // Plan
+  engagementsPY: number; // Prior Year
   mentions: number;
+  mentionsPL: number;
+  mentionsPY: number;
   sentimentScore: number; // -1 to 1
 }
 

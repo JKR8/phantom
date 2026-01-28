@@ -71,6 +71,10 @@ export const getDimensionValue = (item: any, dimension: string, context: Dimensi
     return customers.find((c) => c.id === item.customerId)?.industry || 'Unknown';
   }
 
+  if (dimension === 'Tier' && item?.customerId) {
+    return (customers.find((c) => c.id === item.customerId) as any)?.tier || 'Unknown';
+  }
+
   if (dimension === 'Office' && item?.office) {
     return item.office;
   }

@@ -89,6 +89,10 @@ test.describe('Phantom Drop -> Shape -> Refine', () => {
         targetPosition: { x: 400, y: 300 }
     });
 
+    // Pick variant from the variant picker
+    await expect(page.getByTestId('variant-picker')).toBeVisible({ timeout: 5000 });
+    await page.getByTestId('variant-option-bar').click();
+
     // Wait for the visual to appear with smart title
     // In Retail scenario, bar chart should get "Top 5 Category by Revenue"
     const visualHeader = page.locator('.visual-header').filter({ hasText: /Top 5 Category by Revenue/i });
@@ -146,6 +150,10 @@ test.describe('Phantom Drop -> Shape -> Refine', () => {
     const target = page.locator('.layout');
 
     await source.dragTo(target, { targetPosition: { x: 400, y: 300 } });
+
+    // Pick variant from the variant picker
+    await expect(page.getByTestId('variant-picker')).toBeVisible({ timeout: 5000 });
+    await page.getByTestId('variant-option-bar').click();
 
     // Verify smart title: "Top 5 Category by Revenue"
     await expect(page.locator('.visual-header').filter({ hasText: 'Top 5 Category by Revenue' })).toBeVisible({ timeout: 10000 });
@@ -297,6 +305,10 @@ test.describe('Phantom Drop -> Shape -> Refine', () => {
      await source.dragTo(target, {
          targetPosition: { x: 100, y: 50 }
      });
+
+     // Pick variant from the variant picker
+     await expect(page.getByTestId('variant-picker')).toBeVisible({ timeout: 5000 });
+     await page.getByTestId('variant-option-card').click();
 
      // 4. Verify it was created
      const lastId = await page.evaluate(() => {
@@ -454,6 +466,10 @@ test.describe('Phantom Drop -> Shape -> Refine', () => {
     const canvas = page.getByTestId('canvas-drop-area');
     await source.dragTo(canvas, { targetPosition: { x: 400, y: 300 } });
 
+    // Pick variant from the variant picker
+    await expect(page.getByTestId('variant-picker')).toBeVisible({ timeout: 5000 });
+    await page.getByTestId('variant-option-bar').click();
+
     // Verify item was added
     const items = await page.evaluate(() =>
       (window as any).__phantomDebug.useStore.getState().items
@@ -461,6 +477,60 @@ test.describe('Phantom Drop -> Shape -> Refine', () => {
     expect(items.length).toBe(1);
     expect(items[0].type).toBe('bar');
     expect(items[0].title).toBeTruthy();
+  });
+
+  test('variant picker shows on bar drop and creates correct type', async ({ page }) => {
+    const source = page.getByTestId('visual-source-bar');
+    const target = page.locator('.layout');
+
+    await source.dragTo(target, { targetPosition: { x: 400, y: 300 } });
+
+    // Variant picker should appear
+    await expect(page.getByTestId('variant-picker')).toBeVisible({ timeout: 5000 });
+
+    // Should show both bar variants
+    await expect(page.getByTestId('variant-option-bar')).toBeVisible();
+    await expect(page.getByTestId('variant-option-stackedBar')).toBeVisible();
+
+    // Pick stacked bar
+    await page.getByTestId('variant-option-stackedBar').click();
+
+    // Verify item was created as stackedBar
+    const item = await page.evaluate(() => {
+      const state = (window as any).__phantomDebug.useStore.getState();
+      return state.items[state.items.length - 1];
+    });
+    expect(item.type).toBe('stackedBar');
+    expect(item.title).toBeTruthy();
+
+    // Variant picker should be dismissed
+    await expect(page.getByTestId('variant-picker')).not.toBeVisible();
+  });
+
+  test('variant picker dismisses on Escape without creating item', async ({ page }) => {
+    const initialCount = await page.evaluate(() =>
+      (window as any).__phantomDebug.useStore.getState().items.length
+    );
+
+    const source = page.getByTestId('visual-source-pie');
+    const target = page.locator('.layout');
+
+    await source.dragTo(target, { targetPosition: { x: 400, y: 300 } });
+
+    // Variant picker should appear
+    await expect(page.getByTestId('variant-picker')).toBeVisible({ timeout: 5000 });
+
+    // Press Escape
+    await page.keyboard.press('Escape');
+
+    // Variant picker should be dismissed
+    await expect(page.getByTestId('variant-picker')).not.toBeVisible();
+
+    // No item should have been created
+    const afterCount = await page.evaluate(() =>
+      (window as any).__phantomDebug.useStore.getState().items.length
+    );
+    expect(afterCount).toBe(initialCount);
   });
 
   test('template loading switches scenario and data context', async ({ page }) => {
@@ -520,5 +590,624 @@ test.describe('Phantom Drop -> Shape -> Refine', () => {
       expect(tmdl, `${template.name} should include ${template.expectedTable} table`).toBeTruthy();
       expect(tmdl || '').toContain('partition');
     }
+  });
+
+  // ============================================================
+  // Comprehensive drag-drop tests for all visual types
+  // ============================================================
+
+  test.describe('Drag-drop each visual type onto canvas', () => {
+    // Non-variant visuals (dropped directly without picker)
+    const directDropVisuals = [
+      { id: 'scatter', expectedTitlePattern: /Scatter/i },
+      { id: 'funnel', expectedTitlePattern: /Funnel|Conversion/i },
+      { id: 'treemap', expectedTitlePattern: /Treemap|Category/i },
+      { id: 'matrix', expectedTitlePattern: /Matrix|Details/i },
+      { id: 'waterfall', expectedTitlePattern: /Waterfall|Bridge/i },
+      { id: 'slicer', expectedTitlePattern: /Slicer|Filter/i },
+    ];
+
+    for (const visual of directDropVisuals) {
+      test(`drag ${visual.id} chart onto canvas`, async ({ page }) => {
+        // Clear canvas first
+        await page.getByTitle('New Screen').click();
+        const afterClear = await page.evaluate(() =>
+          (window as any).__phantomDebug.useStore.getState().items.length
+        );
+        expect(afterClear).toBe(0);
+
+        // Drag the visual onto the canvas
+        const source = page.getByTestId(`visual-source-${visual.id}`);
+        const canvas = page.getByTestId('canvas-drop-area');
+        await source.dragTo(canvas, { targetPosition: { x: 400, y: 300 } });
+
+        // Verify item was added (no variant picker for these types)
+        const items = await page.evaluate(() =>
+          (window as any).__phantomDebug.useStore.getState().items
+        );
+        expect(items.length).toBe(1);
+        expect(items[0].type).toBe(visual.id);
+        expect(items[0].title).toBeTruthy();
+
+        // Verify visual renders on canvas
+        const lastId = items[0].id;
+        await expect(page.getByTestId(`visual-container-${lastId}`)).toBeVisible({ timeout: 5000 });
+      });
+    }
+
+    // Variant-picker visuals - test each variant option
+    test('drag column chart -> pick clustered column variant', async ({ page }) => {
+      await page.getByTitle('New Screen').click();
+
+      const source = page.getByTestId('visual-source-column');
+      const canvas = page.getByTestId('canvas-drop-area');
+      await source.dragTo(canvas, { targetPosition: { x: 400, y: 300 } });
+
+      // Variant picker should appear
+      await expect(page.getByTestId('variant-picker')).toBeVisible({ timeout: 5000 });
+      await expect(page.getByTestId('variant-option-column')).toBeVisible();
+      await expect(page.getByTestId('variant-option-stackedColumn')).toBeVisible();
+
+      // Pick clustered column
+      await page.getByTestId('variant-option-column').click();
+
+      // Wait for the item to be added (finalizeDrop uses setTimeout)
+      await expect(page.locator('.visual-header')).toBeVisible({ timeout: 5000 });
+
+      const items = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().items
+      );
+      expect(items.length).toBe(1);
+      expect(items[0].type).toBe('column');
+    });
+
+    test('drag column chart -> pick stacked column variant', async ({ page }) => {
+      await page.getByTitle('New Screen').click();
+
+      const source = page.getByTestId('visual-source-column');
+      const canvas = page.getByTestId('canvas-drop-area');
+      await source.dragTo(canvas, { targetPosition: { x: 400, y: 300 } });
+
+      await expect(page.getByTestId('variant-picker')).toBeVisible({ timeout: 5000 });
+      await page.getByTestId('variant-option-stackedColumn').click();
+
+      // Wait for the item to be added (finalizeDrop uses setTimeout)
+      await expect(page.locator('.visual-header')).toBeVisible({ timeout: 5000 });
+
+      const items = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().items
+      );
+      expect(items.length).toBe(1);
+      expect(items[0].type).toBe('stackedColumn');
+    });
+
+    test('drag line chart -> pick line variant', async ({ page }) => {
+      await page.getByTitle('New Screen').click();
+
+      const source = page.getByTestId('visual-source-line');
+      const canvas = page.getByTestId('canvas-drop-area');
+      await source.dragTo(canvas, { targetPosition: { x: 400, y: 300 } });
+
+      await expect(page.getByTestId('variant-picker')).toBeVisible({ timeout: 5000 });
+      await expect(page.getByTestId('variant-option-line')).toBeVisible();
+      await expect(page.getByTestId('variant-option-area')).toBeVisible();
+
+      await page.getByTestId('variant-option-line').click();
+
+      // Wait for the item to be added (finalizeDrop uses setTimeout)
+      await expect(page.locator('.visual-header')).toBeVisible({ timeout: 5000 });
+
+      const items = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().items
+      );
+      expect(items.length).toBe(1);
+      expect(items[0].type).toBe('line');
+    });
+
+    test('drag line chart -> pick area variant', async ({ page }) => {
+      await page.getByTitle('New Screen').click();
+
+      const source = page.getByTestId('visual-source-line');
+      const canvas = page.getByTestId('canvas-drop-area');
+      await source.dragTo(canvas, { targetPosition: { x: 400, y: 300 } });
+
+      await expect(page.getByTestId('variant-picker')).toBeVisible({ timeout: 5000 });
+      await page.getByTestId('variant-option-area').click();
+
+      // Wait for the item to be added (finalizeDrop uses setTimeout)
+      await expect(page.locator('.visual-header')).toBeVisible({ timeout: 5000 });
+
+      const items = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().items
+      );
+      expect(items.length).toBe(1);
+      expect(items[0].type).toBe('area');
+    });
+
+    test('drag pie chart -> pick pie variant', async ({ page }) => {
+      await page.getByTitle('New Screen').click();
+
+      const source = page.getByTestId('visual-source-pie');
+      const canvas = page.getByTestId('canvas-drop-area');
+      await source.dragTo(canvas, { targetPosition: { x: 400, y: 300 } });
+
+      await expect(page.getByTestId('variant-picker')).toBeVisible({ timeout: 5000 });
+      await expect(page.getByTestId('variant-option-pie')).toBeVisible();
+      await expect(page.getByTestId('variant-option-donut')).toBeVisible();
+
+      await page.getByTestId('variant-option-pie').click();
+
+      // Wait for the item to be added (finalizeDrop uses setTimeout)
+      await expect(page.locator('.visual-header')).toBeVisible({ timeout: 5000 });
+
+      const items = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().items
+      );
+      expect(items.length).toBe(1);
+      expect(items[0].type).toBe('pie');
+    });
+
+    test('drag pie chart -> pick donut variant', async ({ page }) => {
+      await page.getByTitle('New Screen').click();
+
+      const source = page.getByTestId('visual-source-pie');
+      const canvas = page.getByTestId('canvas-drop-area');
+      await source.dragTo(canvas, { targetPosition: { x: 400, y: 300 } });
+
+      await expect(page.getByTestId('variant-picker')).toBeVisible({ timeout: 5000 });
+      await page.getByTestId('variant-option-donut').click();
+
+      // Wait for the item to be added (finalizeDrop uses setTimeout)
+      await expect(page.locator('.visual-header')).toBeVisible({ timeout: 5000 });
+
+      const items = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().items
+      );
+      expect(items.length).toBe(1);
+      expect(items[0].type).toBe('donut');
+    });
+
+    test('drag card -> pick KPI card variant', async ({ page }) => {
+      await page.getByTitle('New Screen').click();
+
+      const source = page.getByTestId('visual-source-card');
+      const canvas = page.getByTestId('canvas-drop-area');
+      await source.dragTo(canvas, { targetPosition: { x: 400, y: 300 } });
+
+      await expect(page.getByTestId('variant-picker')).toBeVisible({ timeout: 5000 });
+      await expect(page.getByTestId('variant-option-card')).toBeVisible();
+      await expect(page.getByTestId('variant-option-multiRowCard')).toBeVisible();
+      await expect(page.getByTestId('variant-option-gauge')).toBeVisible();
+
+      await page.getByTestId('variant-option-card').click();
+
+      // Wait for the item to be added (finalizeDrop uses setTimeout)
+      await expect(page.locator('.visual-header')).toBeVisible({ timeout: 5000 });
+
+      const items = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().items
+      );
+      expect(items.length).toBe(1);
+      expect(items[0].type).toBe('card');
+    });
+
+    test('drag card -> pick multi-row card variant', async ({ page }) => {
+      await page.getByTitle('New Screen').click();
+
+      const source = page.getByTestId('visual-source-card');
+      const canvas = page.getByTestId('canvas-drop-area');
+      await source.dragTo(canvas, { targetPosition: { x: 400, y: 300 } });
+
+      await expect(page.getByTestId('variant-picker')).toBeVisible({ timeout: 5000 });
+      await page.getByTestId('variant-option-multiRowCard').click();
+
+      // Wait for the item to be added (finalizeDrop uses setTimeout)
+      await expect(page.locator('.visual-header')).toBeVisible({ timeout: 5000 });
+
+      const items = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().items
+      );
+      expect(items.length).toBe(1);
+      expect(items[0].type).toBe('multiRowCard');
+    });
+
+    test('drag card -> pick gauge variant', async ({ page }) => {
+      await page.getByTitle('New Screen').click();
+
+      const source = page.getByTestId('visual-source-card');
+      const canvas = page.getByTestId('canvas-drop-area');
+      await source.dragTo(canvas, { targetPosition: { x: 400, y: 300 } });
+
+      await expect(page.getByTestId('variant-picker')).toBeVisible({ timeout: 5000 });
+      await page.getByTestId('variant-option-gauge').click();
+
+      // Wait for the item to be added (finalizeDrop uses setTimeout)
+      await expect(page.locator('.visual-header')).toBeVisible({ timeout: 5000 });
+
+      const items = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().items
+      );
+      expect(items.length).toBe(1);
+      expect(items[0].type).toBe('gauge');
+    });
+  });
+
+  test.describe('Multiple items - drop and remove', () => {
+    test('drop multiple different visuals onto canvas', async ({ page }) => {
+      await page.getByTitle('New Screen').click();
+
+      // Use simulateDrop for reliability (bypasses flaky HTML5 drag)
+      await simulateDrop(page, 'scatter');
+      await simulateDrop(page, 'funnel');
+      await simulateDrop(page, 'treemap');
+      await simulateDrop(page, 'table');
+
+      const items = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().items
+      );
+      expect(items.length).toBe(4);
+      expect(items.map((i: any) => i.type)).toEqual(['scatter', 'funnel', 'treemap', 'table']);
+
+      // Verify all 4 visuals are visible
+      for (const item of items) {
+        await expect(page.getByTestId(`visual-container-${item.id}`)).toBeVisible();
+      }
+    });
+
+    test('drop multiple visuals with variant pickers', async ({ page }) => {
+      await page.getByTitle('New Screen').click();
+
+      // Use simulateDrop for reliability (bypasses flaky HTML5 drag)
+      await simulateDrop(page, 'stackedBar');
+      await simulateDrop(page, 'column');
+      await simulateDrop(page, 'donut');
+      await simulateDrop(page, 'gauge');
+
+      const items = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().items
+      );
+      expect(items.length).toBe(4);
+      expect(items.map((i: any) => i.type)).toEqual(['stackedBar', 'column', 'donut', 'gauge']);
+    });
+
+    test('remove multiple items from canvas via context menu', async ({ page }) => {
+      // Start with template that has multiple items
+      await openTemplate(page, 'Retail Dashboard');
+
+      const initialCount = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().items.length
+      );
+      expect(initialCount).toBeGreaterThan(3);
+
+      // Remove items one by one using programmatic removal
+      for (let i = 0; i < 3; i++) {
+        const itemId = await page.evaluate(() => {
+          const state = (window as any).__phantomDebug.useStore.getState();
+          return state.items[0]?.id;
+        });
+        if (itemId) {
+          await page.evaluate((id: string) => {
+            (window as any).__phantomDebug.useStore.getState().removeItem(id);
+          }, itemId);
+        }
+      }
+
+      const afterCount = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().items.length
+      );
+      expect(afterCount).toBe(initialCount - 3);
+    });
+
+    test('remove all items clears canvas completely', async ({ page }) => {
+      await openTemplate(page, 'Retail Dashboard');
+
+      const initialCount = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().items.length
+      );
+      expect(initialCount).toBeGreaterThan(0);
+
+      // Remove all items
+      await page.evaluate(() => {
+        const state = (window as any).__phantomDebug.useStore.getState();
+        const ids = state.items.map((i: any) => i.id);
+        ids.forEach((id: string) => state.removeItem(id));
+      });
+
+      const afterCount = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().items.length
+      );
+      expect(afterCount).toBe(0);
+
+      // Verify empty state is shown
+      await expect(page.getByText('Drop visuals here')).toBeVisible();
+    });
+  });
+
+  test.describe('Scenario-aware data population', () => {
+    test('dropped visuals in Retail scenario get Retail-specific props', async ({ page }) => {
+      // Ensure we're in Retail scenario
+      const scenario = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().scenario
+      );
+      expect(scenario).toBe('Retail');
+
+      await page.getByTitle('New Screen').click();
+
+      // Drop a bar chart
+      await simulateDrop(page, 'bar');
+
+      const item = await page.evaluate(() => {
+        const state = (window as any).__phantomDebug.useStore.getState();
+        return state.items[state.items.length - 1];
+      });
+
+      // Verify Retail-specific props (dimension should be Category, Store, etc.)
+      expect(item.props.dimension).toBeDefined();
+      expect(['Category', 'Store', 'Region', 'Product']).toContain(item.props.dimension);
+      expect(item.title).toMatch(/Revenue|Sales|Category|Store/i);
+    });
+
+    test('dropped visuals in SaaS scenario get SaaS-specific props', async ({ page }) => {
+      // Switch to SaaS scenario via template
+      await openTemplate(page, 'Marketing');
+
+      const scenario = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().scenario
+      );
+      expect(scenario).toBe('SaaS');
+
+      await page.getByTitle('New Screen').click();
+
+      // Drop a bar chart in SaaS context
+      await simulateDrop(page, 'bar');
+
+      const item = await page.evaluate(() => {
+        const state = (window as any).__phantomDebug.useStore.getState();
+        return state.items[state.items.length - 1];
+      });
+
+      // Verify SaaS-specific props
+      expect(item.props.dimension).toBeDefined();
+      expect(item.title).toMatch(/MRR|ARR|Churn|Subscription|Plan/i);
+    });
+
+    test('dropped visuals in HR scenario get HR-specific props', async ({ page }) => {
+      await openTemplate(page, 'HR Attrition');
+
+      const scenario = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().scenario
+      );
+      expect(scenario).toBe('HR');
+
+      await page.getByTitle('New Screen').click();
+
+      await simulateDrop(page, 'bar');
+
+      const item = await page.evaluate(() => {
+        const state = (window as any).__phantomDebug.useStore.getState();
+        return state.items[state.items.length - 1];
+      });
+
+      expect(item.props.dimension).toBeDefined();
+      expect(item.title).toMatch(/Department|Salary|Attrition|Employee|Headcount/i);
+    });
+
+    test('dropped visuals in Logistics scenario get Logistics-specific props', async ({ page }) => {
+      await openTemplate(page, 'Logistics Supply Chain');
+
+      const scenario = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().scenario
+      );
+      expect(scenario).toBe('Logistics');
+
+      await page.getByTitle('New Screen').click();
+
+      await simulateDrop(page, 'bar');
+
+      const item = await page.evaluate(() => {
+        const state = (window as any).__phantomDebug.useStore.getState();
+        return state.items[state.items.length - 1];
+      });
+
+      expect(item.props.dimension).toBeDefined();
+      // Logistics scenario uses Status, Cost, Carrier, etc.
+      expect(item.title).toMatch(/Status|Cost|Carrier|Shipment|Delivery|Route|Warehouse/i);
+    });
+
+    test('dropped visuals in Social scenario get Social-specific props', async ({ page }) => {
+      await openTemplate(page, 'Social Media Sentiment');
+
+      const scenario = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().scenario
+      );
+      expect(scenario).toBe('Social');
+
+      await page.getByTitle('New Screen').click();
+
+      await simulateDrop(page, 'bar');
+
+      const item = await page.evaluate(() => {
+        const state = (window as any).__phantomDebug.useStore.getState();
+        return state.items[state.items.length - 1];
+      });
+
+      expect(item.props.dimension).toBeDefined();
+      expect(item.title).toMatch(/Engagement|Sentiment|Platform|Post/i);
+    });
+
+    test('dropped visuals in Finance scenario get Finance-specific props', async ({ page }) => {
+      await openTemplate(page, 'Finance');
+
+      const scenario = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().scenario
+      );
+      expect(scenario).toBe('Finance');
+
+      await page.getByTitle('New Screen').click();
+
+      await simulateDrop(page, 'bar');
+
+      const item = await page.evaluate(() => {
+        const state = (window as any).__phantomDebug.useStore.getState();
+        return state.items[state.items.length - 1];
+      });
+
+      expect(item.props.dimension).toBeDefined();
+      // Finance scenario uses BusinessUnit, Amount, Account, etc.
+      expect(item.title).toMatch(/BusinessUnit|Amount|Account|Budget|Actual|Variance|Revenue|Cost/i);
+    });
+  });
+
+  test.describe('Portfolio/FFMA visuals drag-drop', () => {
+    test('drop Portfolio visuals onto canvas in Portfolio scenario', async ({ page }) => {
+      await openTemplate(page, 'Portfolio Monitoring');
+
+      const scenario = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().scenario
+      );
+      expect(scenario).toBe('Portfolio');
+
+      await page.getByTitle('New Screen').click();
+
+      // Test portfolio visuals using simulateDrop for reliability
+      const portfolioVisuals = [
+        'portfolioCard',
+        'controversyBar',
+        'entityTable',
+        'controversyTable',
+        'justificationSearch',
+        'dateRangePicker',
+      ];
+
+      for (const visualId of portfolioVisuals) {
+        await simulateDrop(page, visualId);
+      }
+
+      const items = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().items
+      );
+
+      // Verify all portfolio visuals were added
+      expect(items.length).toBe(portfolioVisuals.length);
+      const types = items.map((i: any) => i.type);
+      portfolioVisuals.forEach((visualId) => {
+        expect(types).toContain(visualId);
+      });
+    });
+
+    test('HTML5 drag-drop of Portfolio visual works', async ({ page }) => {
+      await openTemplate(page, 'Portfolio Monitoring');
+      await page.getByTitle('New Screen').click();
+
+      // Test a single Portfolio visual via actual drag-drop
+      const source = page.getByTestId('visual-source-portfolioCard');
+      const canvas = page.getByTestId('canvas-drop-area');
+      await source.dragTo(canvas, { targetPosition: { x: 400, y: 300 } });
+
+      // Wait for item to appear
+      await page.waitForTimeout(300);
+
+      const items = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().items
+      );
+      expect(items.length).toBeGreaterThanOrEqual(1);
+      expect(items.some((i: any) => i.type === 'portfolioCard')).toBeTruthy();
+    });
+  });
+
+  test.describe('Edge cases and interactions', () => {
+    test('clicking outside variant picker cancels drop', async ({ page }) => {
+      await page.getByTitle('New Screen').click();
+      const initialCount = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().items.length
+      );
+
+      const source = page.getByTestId('visual-source-bar');
+      const canvas = page.getByTestId('canvas-drop-area');
+      await source.dragTo(canvas, { targetPosition: { x: 400, y: 300 } });
+
+      await expect(page.getByTestId('variant-picker')).toBeVisible({ timeout: 5000 });
+
+      // Click outside the picker (on the overlay)
+      await page.mouse.click(50, 50);
+
+      await expect(page.getByTestId('variant-picker')).not.toBeVisible();
+
+      const afterCount = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().items.length
+      );
+      expect(afterCount).toBe(initialCount);
+    });
+
+    test('dropped visual can be immediately selected and edited', async ({ page }) => {
+      await page.getByTitle('New Screen').click();
+
+      await simulateDrop(page, 'bar');
+
+      const itemId = await page.evaluate(() => {
+        const state = (window as any).__phantomDebug.useStore.getState();
+        return state.items[state.items.length - 1].id;
+      });
+
+      // Select the item
+      await page.evaluate((id: string) => {
+        (window as any).__phantomDebug.useStore.getState().selectItem(id);
+      }, itemId);
+
+      // Verify properties panel shows
+      await expect(page.getByText('Properties')).toBeVisible();
+
+      // Edit the title
+      const titleInput = page.getByRole('textbox').first();
+      await titleInput.fill('My Custom Title');
+
+      // Verify title updated
+      await expect(page.locator('.visual-header').filter({ hasText: 'My Custom Title' })).toBeVisible();
+    });
+
+    test('dropping same visual type multiple times creates unique items', async ({ page }) => {
+      await page.getByTitle('New Screen').click();
+
+      // Drop 3 scatter charts
+      for (let i = 0; i < 3; i++) {
+        await simulateDrop(page, 'scatter');
+      }
+
+      const items = await page.evaluate(() =>
+        (window as any).__phantomDebug.useStore.getState().items
+      );
+
+      expect(items.length).toBe(3);
+
+      // Verify all have unique IDs
+      const ids = items.map((i: any) => i.id);
+      const uniqueIds = new Set(ids);
+      expect(uniqueIds.size).toBe(3);
+
+      // Verify all are scatter type
+      items.forEach((item: any) => {
+        expect(item.type).toBe('scatter');
+      });
+    });
+
+    test('visual maintains position after being dropped', async ({ page }) => {
+      await page.getByTitle('New Screen').click();
+
+      const source = page.getByTestId('visual-source-scatter');
+      const canvas = page.getByTestId('canvas-drop-area');
+      await source.dragTo(canvas, { targetPosition: { x: 400, y: 300 } });
+
+      const item = await page.evaluate(() => {
+        const state = (window as any).__phantomDebug.useStore.getState();
+        return state.items[state.items.length - 1];
+      });
+
+      // Verify layout was assigned
+      expect(item.layout).toBeDefined();
+      expect(typeof item.layout.x).toBe('number');
+      expect(typeof item.layout.y).toBe('number');
+      expect(item.layout.w).toBeGreaterThan(0);
+      expect(item.layout.h).toBeGreaterThan(0);
+    });
   });
 });

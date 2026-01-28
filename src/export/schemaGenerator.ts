@@ -205,15 +205,20 @@ const hrSchema: PBISchema = {
   tables: [
     {
       name: 'Employee',
-      description: 'Employee table - headcount, salary, rating, and attrition data',
+      description: 'Employee table - headcount, salary, rating, and attrition data with plan/prior year',
       columns: [
         { name: 'EmployeeID', dataType: 'string', summarizeBy: 'none' },
         { name: 'EmployeeName', dataType: 'string', summarizeBy: 'none' },
         { name: 'Department', dataType: 'string', summarizeBy: 'none' },
         { name: 'Role', dataType: 'string', summarizeBy: 'none' },
         { name: 'Office', dataType: 'string', summarizeBy: 'none' },
+        { name: 'HireDate', dataType: 'dateTime', summarizeBy: 'none' },
         { name: 'Salary', dataType: 'double', summarizeBy: 'sum' },
+        { name: 'SalaryPL', dataType: 'double', summarizeBy: 'sum' },
+        { name: 'SalaryPY', dataType: 'double', summarizeBy: 'sum' },
         { name: 'Rating', dataType: 'int64', summarizeBy: 'average' },
+        { name: 'RatingPL', dataType: 'double', summarizeBy: 'average' },
+        { name: 'RatingPY', dataType: 'double', summarizeBy: 'average' },
         { name: 'Attrition', dataType: 'int64', summarizeBy: 'sum' },
         { name: 'Tenure', dataType: 'int64', summarizeBy: 'average' },
       ]
@@ -225,6 +230,16 @@ const hrSchema: PBISchema = {
         { name: 'Department', dataType: 'string', summarizeBy: 'none' },
         { name: 'DepartmentGroup', dataType: 'string', summarizeBy: 'none' },
       ]
+    },
+    {
+      name: 'DateTable',
+      description: 'Date dimension - for time intelligence on hire dates',
+      columns: [
+        { name: 'Date', dataType: 'dateTime', summarizeBy: 'none' },
+        { name: 'Year', dataType: 'int64', summarizeBy: 'none' },
+        { name: 'Month', dataType: 'string', summarizeBy: 'none' },
+        { name: 'MonthNum', dataType: 'int64', summarizeBy: 'none', isHidden: true },
+      ]
     }
   ],
   relationships: [
@@ -234,6 +249,15 @@ const hrSchema: PBISchema = {
       fromColumn: 'Department',
       toTable: 'Department',
       toColumn: 'Department',
+      crossFilteringBehavior: 'oneDirection',
+      isActive: true
+    },
+    {
+      name: 'Employee_Date',
+      fromTable: 'Employee',
+      fromColumn: 'HireDate',
+      toTable: 'DateTable',
+      toColumn: 'Date',
       crossFilteringBehavior: 'oneDirection',
       isActive: true
     }
@@ -248,14 +272,18 @@ const logisticsSchema: PBISchema = {
   tables: [
     {
       name: 'Shipment',
-      description: 'Shipment fact table - cost, weight, status, and on-time delivery',
+      description: 'Shipment fact table - cost, weight, status, and on-time delivery with plan/prior year',
       columns: [
         { name: 'ShipmentID', dataType: 'string', summarizeBy: 'none' },
         { name: 'Origin', dataType: 'string', summarizeBy: 'none' },
         { name: 'Destination', dataType: 'string', summarizeBy: 'none' },
         { name: 'Carrier', dataType: 'string', summarizeBy: 'none' },
         { name: 'Cost', dataType: 'double', summarizeBy: 'sum' },
+        { name: 'CostPL', dataType: 'double', summarizeBy: 'sum' },
+        { name: 'CostPY', dataType: 'double', summarizeBy: 'sum' },
         { name: 'Weight', dataType: 'double', summarizeBy: 'sum' },
+        { name: 'WeightPL', dataType: 'double', summarizeBy: 'sum' },
+        { name: 'WeightPY', dataType: 'double', summarizeBy: 'sum' },
         { name: 'Status', dataType: 'string', summarizeBy: 'none' },
         { name: 'Date', dataType: 'dateTime', summarizeBy: 'none' },
         { name: 'OnTime', dataType: 'int64', summarizeBy: 'sum' },
@@ -285,6 +313,7 @@ const logisticsSchema: PBISchema = {
         { name: 'Date', dataType: 'dateTime', summarizeBy: 'none' },
         { name: 'Year', dataType: 'int64', summarizeBy: 'none' },
         { name: 'Month', dataType: 'string', summarizeBy: 'none' },
+        { name: 'MonthNum', dataType: 'int64', summarizeBy: 'none', isHidden: true },
       ]
     }
   ],
@@ -306,6 +335,24 @@ const logisticsSchema: PBISchema = {
       toColumn: 'Date',
       crossFilteringBehavior: 'oneDirection',
       isActive: true
+    },
+    {
+      name: 'Shipment_Origin',
+      fromTable: 'Shipment',
+      fromColumn: 'Origin',
+      toTable: 'Location',
+      toColumn: 'City',
+      crossFilteringBehavior: 'oneDirection',
+      isActive: true
+    },
+    {
+      name: 'Shipment_Destination',
+      fromTable: 'Shipment',
+      fromColumn: 'Destination',
+      toTable: 'Location',
+      toColumn: 'City',
+      crossFilteringBehavior: 'oneDirection',
+      isActive: false  // Inactive to avoid ambiguous relationships
     }
   ]
 };
@@ -451,7 +498,7 @@ const socialSchema: PBISchema = {
   tables: [
     {
       name: 'SocialPost',
-      description: 'Social post fact table - platform, sentiment, and engagement metrics',
+      description: 'Social post fact table - platform, sentiment, and engagement metrics with plan/prior year',
       columns: [
         { name: 'PostID', dataType: 'string', summarizeBy: 'none', isHidden: true },
         { name: 'Date', dataType: 'dateTime', summarizeBy: 'none' },
@@ -460,7 +507,11 @@ const socialSchema: PBISchema = {
         { name: 'Platform', dataType: 'string', summarizeBy: 'none' },
         { name: 'Sentiment', dataType: 'string', summarizeBy: 'none' },
         { name: 'Engagements', dataType: 'int64', summarizeBy: 'sum' },
+        { name: 'EngagementsPL', dataType: 'int64', summarizeBy: 'sum' },
+        { name: 'EngagementsPY', dataType: 'int64', summarizeBy: 'sum' },
         { name: 'Mentions', dataType: 'int64', summarizeBy: 'sum' },
+        { name: 'MentionsPL', dataType: 'int64', summarizeBy: 'sum' },
+        { name: 'MentionsPY', dataType: 'int64', summarizeBy: 'sum' },
         { name: 'SentimentScore', dataType: 'double', summarizeBy: 'average' },
       ]
     },

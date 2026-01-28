@@ -1,6 +1,6 @@
 /**
  * Export Button Component
- * 
+ *
  * Provides a dropdown menu with export options including Power BI Project (PBIP) export.
  */
 
@@ -29,6 +29,7 @@ import {
   CodeRegular,
   CheckmarkCircleRegular,
 } from '@fluentui/react-icons';
+import html2canvas from 'html2canvas';
 import { useStore } from '../store/useStore';
 import { downloadPBIPPackage, generateAllMeasures, getSchemaForScenario } from '../export';
 
@@ -36,18 +37,18 @@ const useStyles = makeStyles({
   dialogContent: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '16px',
+    gap: '14px',
   },
   successIcon: {
     color: '#107C10',
     fontSize: '48px',
     textAlign: 'center',
-    marginBottom: '8px',
+    marginBottom: '4px',
   },
   summaryList: {
     ...shorthands.margin(0),
     ...shorthands.padding('0', '0', '0', '20px'),
-    lineHeight: '1.6',
+    lineHeight: '1.8',
   },
   topButton: {
     color: 'white',
@@ -99,9 +100,43 @@ export const ExportButton: React.FC = () => {
     }
   };
 
-  const handlePNGExport = () => {
-    // TODO: Implement PNG screenshot export
-    alert('PNG export coming soon!');
+  const handlePNGExport = async () => {
+    setIsExporting(true);
+    try {
+      // Find the canvas container element
+      const canvasElement = document.querySelector('.canvas-container') as HTMLElement;
+      if (!canvasElement) {
+        alert('Canvas not found. Please ensure a dashboard is loaded.');
+        return;
+      }
+
+      // Use html2canvas to capture the canvas
+      const canvas = await html2canvas(canvasElement, {
+        backgroundColor: '#f3f2f1', // Power BI-like background
+        scale: 2, // Higher resolution for better quality
+        useCORS: true,
+        logging: false,
+        // Ignore react-grid-layout resize handles and other UI chrome
+        ignoreElements: (element: Element) => {
+          return element.classList.contains('react-resizable-handle') ||
+                 element.classList.contains('react-grid-placeholder');
+        },
+      });
+
+      // Convert to data URL and trigger download
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `${scenario}_Dashboard_${new Date().toISOString().split('T')[0]}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('PNG export failed:', error);
+      alert('PNG export failed. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleJSONExport = () => {

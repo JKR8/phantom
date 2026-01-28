@@ -102,11 +102,11 @@ export const RecommendedDimensions: Record<ScenarioType, string[]> = {
 
 /** Ordered measure lists per scenario (primary first) — powers sorted dropdowns */
 export const RecommendedMeasures: Record<ScenarioType, string[]> = {
-  Retail: ['Revenue', 'Profit', 'Quantity', 'Discount'],
-  SaaS: ['MRR', 'ARR', 'Churn', 'LTV', 'CAC'],
-  HR: ['Salary', 'Rating', 'Tenure', 'Attrition'],
-  Logistics: ['Cost', 'Weight', 'OnTime'],
+  Retail: ['Revenue', 'RevenuePL', 'RevenuePY', 'Profit', 'ProfitPL', 'ProfitPY', 'Quantity', 'Discount'],
+  SaaS: ['MRR', 'MRRPL', 'MRRPY', 'ARR', 'Churn', 'LTV', 'CAC'],
+  HR: ['Salary', 'SalaryPL', 'SalaryPY', 'Rating', 'RatingPL', 'RatingPY', 'Tenure', 'Attrition'],
+  Logistics: ['Cost', 'CostPL', 'CostPY', 'Weight', 'WeightPL', 'WeightPY', 'OnTime'],
   Finance: ['Amount', 'Variance'],
   Portfolio: ['MarketValue', 'ControversyScore', 'Score'],
-  Social: ['Engagements', 'Mentions', 'SentimentScore'],
+  Social: ['Engagements', 'EngagementsPL', 'EngagementsPY', 'Mentions', 'MentionsPL', 'MentionsPY', 'SentimentScore'],
 };
