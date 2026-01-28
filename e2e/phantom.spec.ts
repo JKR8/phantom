@@ -73,7 +73,7 @@ test.describe('Phantom Drop -> Shape -> Refine', () => {
     });
     // Set viewport to a consistent size
     await page.setViewportSize({ width: 1280, height: 800 });
-    await page.goto('/');
+    await page.goto('/editor');
     // Wait for canvas to load
     await page.waitForLoadState('domcontentloaded');
     await expect(page.locator('.layout')).toBeVisible({ timeout: 15000 });

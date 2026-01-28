@@ -136,6 +136,7 @@ export const useStore = create<DashboardState>((set, get) => ({
     dashboardName: meta.name !== undefined ? meta.name : state.dashboardName,
     isPublic: meta.isPublic !== undefined ? meta.isPublic : state.isPublic,
     shareId: meta.shareId !== undefined ? meta.shareId : state.shareId,
+    isDirty: meta.name !== undefined ? true : state.isDirty,
   })),
   markDirty: () => set({ isDirty: true }),
   markClean: () => set({ isDirty: false }),

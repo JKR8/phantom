@@ -27,7 +27,16 @@ export const EditorPage: React.FC = () => {
   const loadFromDb = useStore((s) => s.loadDashboardFromDb);
 
   useEffect(() => {
-    if (!id || !isSupabaseConfigured) {
+    if (!id) {
+      // Read directly from the store to avoid stale closures and avoid
+      // triggering this effect when dashboardId changes (e.g., during save).
+      if (useStore.getState().dashboardId) {
+        useStore.getState().resetToNew();
+      }
+      setLoading(false);
+      return;
+    }
+    if (!isSupabaseConfigured) {
       setLoading(false);
       return;
     }

@@ -29,6 +29,7 @@ import { FFMAPanel } from './FFMAPanel';
 import { UserMenu } from './UserMenu';
 import { SaveDashboardButton } from './SaveDashboardDialog';
 import { ShareButton } from './ShareDialog';
+import { ExportButton } from './ExportButton';
 import { useStore } from '../store/useStore';
 import { Templates } from '../store/templates';
 
@@ -230,7 +231,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
                 {layoutMode} Layout
               </Button>
               <Button appearance="subtle" className={styles.topButton} size="small">File</Button>
-              <Button appearance="subtle" className={styles.topButton} size="small">Export</Button>
+              <ExportButton />
             </>
           )}
         </div>

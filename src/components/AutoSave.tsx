@@ -21,6 +21,7 @@ export const AutoSave: React.FC = () => {
         useStore.setState({ lastSavedAt: new Date().toISOString() });
       } catch (err) {
         console.error('Auto-save failed:', err);
+        useStore.getState().markDirty();
       }
     }, 5000);
 
