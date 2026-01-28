@@ -74,7 +74,7 @@ export const BarChart: React.FC<BarChartProps> = ({ dimension, metric, manualDat
     return result;
   }, [manualData, filteredSales, dimension, metric, stores, products, topN, sort, showOther]);
 
-  const handleClick = (data: any, e?: React.MouseEvent) => {
+  const handleBarClick = (data: any, _index: number, e: React.MouseEvent) => {
     if (data && data.name) {
       setHighlight(dimension, data.name, e?.ctrlKey || e?.metaKey);
     }
@@ -82,11 +82,7 @@ export const BarChart: React.FC<BarChartProps> = ({ dimension, metric, manualDat
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <ReBarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }} onClick={(e: any, event?: any) => {
-        if (e && e.activePayload) {
-          handleClick(e.activePayload[0].payload, event);
-        }
-      }}>
+      <ReBarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#F3F2F1" />
         <XAxis type="number" hide />
         <YAxis
@@ -99,7 +95,7 @@ export const BarChart: React.FC<BarChartProps> = ({ dimension, metric, manualDat
           formatter={(value: any) => formatMetricValue(metric, Number(value))}
           contentStyle={{ fontSize: '12px' }}
         />
-        <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+        <Bar dataKey="value" radius={[0, 4, 4, 0]} onClick={handleBarClick} style={{ cursor: 'pointer' }}>
           {data.map((entry, index) => {
             const isHighlightActive = highlight && highlight.dimension === dimension;
             const isHighlighted = isHighlightActive && highlight.values.has(entry.name);
