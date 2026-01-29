@@ -14,16 +14,8 @@ const useStyles = makeStyles({
     flexDirection: 'column',
     justifyContent: 'center',
     backgroundColor: 'white',
-    ...shorthands.padding('5px', '8px'),
+    ...shorthands.padding('8px', '12px'),
     ...shorthands.borderRadius('4px'),
-  },
-  title: {
-    fontSize: '12px',
-    fontWeight: '600',
-    color: '#342BC2', // Purple from mokkup
-    fontFamily: "'Segoe UI Semibold', 'Segoe UI', sans-serif",
-    marginBottom: '2px',
-    textAlign: 'left',
   },
   indicator: {
     fontSize: '18px',
@@ -58,7 +50,6 @@ const useStyles = makeStyles({
 });
 
 interface KPIProps {
-  title: string;
   metric?: string;
   operation?: 'sum' | 'avg' | 'count';
   goalText?: string; // e.g., "vs prev" or "10,000"
@@ -67,7 +58,6 @@ interface KPIProps {
 }
 
 export const KPI: React.FC<KPIProps> = ({
-  title,
   metric,
   operation = 'sum',
   goalText = 'vs prev',
@@ -124,7 +114,6 @@ export const KPI: React.FC<KPIProps> = ({
   if (!stats) {
     return (
       <div className={styles.container}>
-        <div className={styles.title}>{title}</div>
         <div className={styles.indicator}>--</div>
       </div>
     );
@@ -134,7 +123,6 @@ export const KPI: React.FC<KPIProps> = ({
 
   return (
     <div className={styles.container}>
-      <div className={styles.title}>{title}</div>
       <div className={styles.indicator}>{formatValue(stats.current)}</div>
       {stats.hasGoal && (
         <div className={styles.goalRow}>

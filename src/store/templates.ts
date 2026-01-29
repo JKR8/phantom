@@ -96,11 +96,6 @@ export const EmailTemplate: Template = {
     { id: 'email-scatter1', type: 'scatter', title: 'Email Opened vs Conversion Rate', layout: { x: 13, y: 14, w: 19, h: 10 }, props: { xMetric: 'quantity', yMetric: 'profit', sizeMetric: 'revenue', dimension: 'Category' } },
     // Matrix: CTOR by Day and Email Type (Heatmap) - mokkup pivotTable at x=836, w=437
     { id: 'email-matrix1', type: 'matrix', title: 'CTOR by Day & Email Type', layout: { x: 32, y: 14, w: 16, h: 10 }, props: { rows: 'Region', columns: 'Store', values: 'Revenue' } },
-
-    // ═══ Additional Slicers (from mokkup slicer visuals) ═══
-    { id: 'email-slicer1', type: 'slicer', title: 'Campaign', layout: { x: 0, y: 24, w: 8, h: 2 }, props: { dimension: 'Store' } },
-    { id: 'email-slicer2', type: 'slicer', title: 'Segment', layout: { x: 8, y: 24, w: 8, h: 2 }, props: { dimension: 'Region' } },
-    { id: 'email-slicer3', type: 'slicer', title: 'Date Range', layout: { x: 16, y: 24, w: 8, h: 2 }, props: { dimension: 'Product' } },
   ],
 };
 
