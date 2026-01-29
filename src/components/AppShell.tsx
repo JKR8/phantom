@@ -18,7 +18,6 @@ import {
   AddRegular,
   DatabaseRegular,
   DocumentRegular,
-  ShieldRegular,
   GridRegular,
   ResizeImageRegular,
   MathFormulaRegular,
@@ -27,7 +26,6 @@ import { FieldsPane } from './FieldsPane';
 import { VisualizationsPane } from './VisualizationsPane';
 import { PropertiesPanel } from './PropertiesPanel';
 import { DataModelPanel } from './DataModelPanel';
-import { FFMAPanel } from './FFMAPanel';
 import { StatisticalPane } from './StatisticalPane';
 import { UserMenu } from './UserMenu';
 import { SaveDashboardButton } from './SaveDashboardDialog';
@@ -204,7 +202,6 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
   const setArchetype = useStore((state) => state.setArchetype);
   const dashboardName = useStore((state) => state.dashboardName);
   const setDashboardMeta = useStore((state) => state.setDashboardMeta);
-  const [showFFMA, setShowFFMA] = React.useState(false);
   const [showDataModel, setShowDataModel] = React.useState(false);
   const [showStatistical, setShowStatistical] = React.useState(false);
   const [editingTitle, setEditingTitle] = React.useState(false);
@@ -332,13 +329,6 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
               title="Data Model"
             />
             <Button
-              icon={<ShieldRegular />}
-              appearance="subtle"
-              style={showFFMA ? navBtnActiveStyle : navBtnStyle}
-              onClick={() => setShowFFMA(!showFFMA)}
-              title="FFMA Widgets"
-            />
-            <Button
               icon={<MathFormulaRegular />}
               appearance="subtle"
               style={showStatistical ? navBtnActiveStyle : navBtnStyle}
@@ -346,11 +336,6 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
               title="Statistical Visuals"
             />
           </nav>
-        )}
-        {showFFMA && !readOnly && !showDataModel && (
-          <div className={styles.ffmaPane}>
-            <FFMAPanel />
-          </div>
         )}
         {showStatistical && !readOnly && !showDataModel && (
           <div className={styles.ffmaPane}>

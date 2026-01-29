@@ -119,13 +119,12 @@ export const StatisticalPane: React.FC = () => {
               draggable
               onDragStart={(e) => {
                 dragState.visualType = visual.id;
-                dragState.prebuiltConfig = null;
                 e.dataTransfer.setData('visualType', visual.id);
                 e.dataTransfer.setData('text/plain', visual.id);
                 e.dataTransfer.effectAllowed = 'copy';
               }}
               onDragEnd={() => {
-                setTimeout(() => { dragState.visualType = null; dragState.prebuiltConfig = null; }, 100);
+                setTimeout(() => { dragState.visualType = null; }, 100);
               }}
               unselectable="on"
             >
