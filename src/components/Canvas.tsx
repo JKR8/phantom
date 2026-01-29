@@ -96,7 +96,7 @@ interface CanvasProps {
   readOnly?: boolean;
 }
 
-export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
+export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
   const styles = useStyles();
   const { width, containerRef, mounted } = useContainerWidth();
   const items = useStore((state) => state.items);
@@ -182,87 +182,6 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
     });
     console.log('[findSlotForPosition] Closest slot:', closest.name);
     return closest;
-  };
-
-  const handleDrop = (_layout: any, item: any, e: any) => {
-    console.log('[handleDrop] Called with item:', item);
-
-    // Guard against double handling (both handleDrop and handleCanvasDrop firing)
-    if (dropHandledRef.current) {
-      console.log('[handleDrop] Skipping - already handled');
-      dropHandledRef.current = false;
-      return;
-    }
-
-    // Use the global dragged type since dataTransfer may not be accessible
-    const event = e?.nativeEvent || e;
-    const visualType = dragState.visualType ||
-                       event?.dataTransfer?.getData?.('visualType') ||
-                       event?.dataTransfer?.getData?.('text/plain');
-
-    if (!visualType) return;
-
-    dropHandledRef.current = true;
-    setTimeout(() => { dropHandledRef.current = false; }, 100); // Reset after short delay
-
-    // Get position from drop, default to 0,0 if not provided
-    let x = typeof item?.x === 'number' ? item.x : 0;
-    let y = typeof item?.y === 'number' ? item.y : 0;
-    console.log('[handleDrop] Grid position from RGL:', { x, y });
-    let w = (typeof item?.w === 'number' && item.w >= 2) ? item.w : 8;
-    let h = (typeof item?.h === 'number' && item.h >= 2) ? item.h : 4;
-
-    // Standard Layout Snap - snap to slot position and size
-    if (layoutMode === 'Standard') {
-      const slot = findSlotForPosition(x, y);
-      x = slot.x;
-      y = slot.y;
-      w = slot.w;
-      h = slot.h;
-    }
-
-    // If a pre-built config was dragged, use it directly (no variant picker)
-    if (dragState.prebuiltConfig) {
-      const cfg = dragState.prebuiltConfig;
-      if (layoutMode !== 'Standard') {
-        w = cfg.w;
-        h = cfg.h;
-      }
-      finalizeDrop(cfg.type, x, y, w, h, cfg);
-      return;
-    }
-
-    // Variant parent types: show picker instead of direct drop
-    if (VARIANT_PARENT_TYPES.has(visualType)) {
-      // Calculate pixel position for the popover
-      const nativeEvent = e?.nativeEvent || e;
-      const pixelX = nativeEvent?.clientX ?? 300;
-      const pixelY = nativeEvent?.clientY ?? 300;
-      setPendingDrop({ parentType: visualType, x, y, w, h, pixelX, pixelY });
-      return;
-    }
-
-    // Non-variant types: drop directly
-    finalizeDrop(visualType, x, y, w, h);
-  };
-
-  const generateLayout = () => {
-    const layout = items.map((item) => ({
-      i: item.id,
-      x: item.layout.x,
-      y: item.layout.y,
-      w: item.layout.w,
-      h: item.layout.h,
-      minW: 1,
-      minH: 2,
-      isDraggable: !readOnly,
-      isResizable: !readOnly,
-      static: !!readOnly,
-    }));
-    if (layout.some(l => l.y > 0)) {
-      console.log('[generateLayout] Layout with y>0:', JSON.stringify(layout.map(l => ({ i: l.i, x: l.x, y: l.y }))));
-    }
-    return layout;
   };
 
   const renderVisual = (item: any) => {

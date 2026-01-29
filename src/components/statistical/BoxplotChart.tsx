@@ -39,17 +39,28 @@ export const BoxplotChart: React.FC<BoxplotChartProps> = ({
   const [size, setSize] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
     const updateSize = () => {
-      if (containerRef.current) {
-        setSize({
-          width: containerRef.current.offsetWidth,
-          height: containerRef.current.offsetHeight,
-        });
-      }
+      setSize({
+        width: container.offsetWidth,
+        height: container.offsetHeight,
+      });
     };
+
+    // Initial size
     updateSize();
-    window.addEventListener('resize', updateSize);
-    return () => window.removeEventListener('resize', updateSize);
+
+    // Use ResizeObserver to detect container size changes (from grid layout resize)
+    const resizeObserver = new ResizeObserver(() => {
+      updateSize();
+    });
+    resizeObserver.observe(container);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
   }, []);
 
   const filteredSales = useFilteredSales(dimension);

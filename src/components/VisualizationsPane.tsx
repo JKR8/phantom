@@ -70,9 +70,14 @@ const useStyles = makeStyles({
     color: '#0078D4',
   },
   visualLabel: {
-    fontSize: '10px',
+    fontSize: '9px',
     color: '#605E5C',
     marginTop: '2px',
+    maxWidth: '48px',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    textAlign: 'center',
   },
   sectionHeader: {
     ...shorthands.padding('4px', '12px'),
@@ -102,10 +107,10 @@ const visuals = [
 ];
 
 const statisticalVisuals = [
-  { id: 'boxplot', icon: DataAreaRegular, label: 'Boxplot', tooltip: 'Box and Whisker Plot' },
-  { id: 'histogram', icon: DataHistogramRegular, label: 'Histogram', tooltip: 'Histogram with density curve' },
+  { id: 'boxplot', icon: DataAreaRegular, label: 'Box', tooltip: 'Box and Whisker Plot' },
+  { id: 'histogram', icon: DataHistogramRegular, label: 'Hist.', tooltip: 'Histogram with density curve' },
   { id: 'violin', icon: DataAreaRegular, label: 'Violin', tooltip: 'Violin Plot with KDE' },
-  { id: 'regressionScatter', icon: MathFormulaRegular, label: 'Regress.', tooltip: 'Scatter with Regression Line' },
+  { id: 'regressionScatter', icon: MathFormulaRegular, label: 'Regr.', tooltip: 'Scatter with Regression Line' },
 ];
 
 const portfolioVisuals = [
@@ -209,6 +214,29 @@ export const ffmaPrebuilt: Array<{
 export const dragState = {
   visualType: null as string | null,
   prebuiltConfig: null as PrebuiltVisualConfig | null,
+  _clearTimeout: null as ReturnType<typeof setTimeout> | null,
+};
+
+// Helper to safely clear drag state
+const clearDragState = () => {
+  if (dragState._clearTimeout) {
+    clearTimeout(dragState._clearTimeout);
+    dragState._clearTimeout = null;
+  }
+  dragState.visualType = null;
+  dragState.prebuiltConfig = null;
+};
+
+// Helper to schedule delayed clear (for onDragEnd)
+const scheduleClearDragState = () => {
+  if (dragState._clearTimeout) {
+    clearTimeout(dragState._clearTimeout);
+  }
+  dragState._clearTimeout = setTimeout(() => {
+    dragState.visualType = null;
+    dragState.prebuiltConfig = null;
+    dragState._clearTimeout = null;
+  }, 100);
 };
 
 export const VisualizationsPane: React.FC = () => {
@@ -225,6 +253,7 @@ export const VisualizationsPane: React.FC = () => {
               data-testid={`visual-source-${visual.id}`}
               draggable
               onDragStart={(e) => {
+                clearDragState(); // Clear any pending timeout
                 dragState.visualType = visual.id;
                 dragState.prebuiltConfig = null;
                 e.dataTransfer.setData('visualType', visual.id);
@@ -232,7 +261,7 @@ export const VisualizationsPane: React.FC = () => {
                 e.dataTransfer.effectAllowed = 'copy';
               }}
               onDragEnd={() => {
-                setTimeout(() => { dragState.visualType = null; dragState.prebuiltConfig = null; }, 100);
+                scheduleClearDragState();
               }}
               unselectable="on"
             >
@@ -251,6 +280,7 @@ export const VisualizationsPane: React.FC = () => {
               data-testid={`visual-source-${visual.id}`}
               draggable
               onDragStart={(e) => {
+                clearDragState(); // Clear any pending timeout
                 dragState.visualType = visual.id;
                 dragState.prebuiltConfig = null;
                 e.dataTransfer.setData('visualType', visual.id);
@@ -258,7 +288,7 @@ export const VisualizationsPane: React.FC = () => {
                 e.dataTransfer.effectAllowed = 'copy';
               }}
               onDragEnd={() => {
-                setTimeout(() => { dragState.visualType = null; dragState.prebuiltConfig = null; }, 100);
+                scheduleClearDragState();
               }}
               unselectable="on"
             >
@@ -277,6 +307,7 @@ export const VisualizationsPane: React.FC = () => {
               data-testid={`visual-source-${visual.id}`}
               draggable
               onDragStart={(e) => {
+                clearDragState(); // Clear any pending timeout
                 dragState.visualType = visual.id;
                 dragState.prebuiltConfig = null;
                 e.dataTransfer.setData('visualType', visual.id);
@@ -284,7 +315,7 @@ export const VisualizationsPane: React.FC = () => {
                 e.dataTransfer.effectAllowed = 'copy';
               }}
               onDragEnd={() => {
-                setTimeout(() => { dragState.visualType = null; dragState.prebuiltConfig = null; }, 100);
+                scheduleClearDragState();
               }}
               unselectable="on"
             >

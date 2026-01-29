@@ -42,21 +42,45 @@ button, input, select, textarea, [role="button"] {
   color: inherit;
 }
 
-/* Hide edge resize handles (n/s/e/w) — keep corner grips only (se/sw/ne/nw) */
+/* Hide most edge resize handles — keep only SE corner for simplicity */
 .react-resizable-handle-n,
 .react-resizable-handle-s,
 .react-resizable-handle-e,
-.react-resizable-handle-w {
+.react-resizable-handle-w,
+.react-resizable-handle-sw,
+.react-resizable-handle-ne,
+.react-resizable-handle-nw {
   display: none;
 }
 
-/* Make corner resize handles subtle */
+/* Make SE corner resize handle more visible */
 .react-resizable-handle {
   opacity: 0;
   transition: opacity 150ms ease;
 }
+.react-resizable-handle-se {
+  width: 16px !important;
+  height: 16px !important;
+  bottom: 2px !important;
+  right: 2px !important;
+  cursor: se-resize !important;
+  background: transparent;
+}
+.react-resizable-handle-se::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #0078D4;
+  border-bottom: 2px solid #0078D4;
+}
 .react-grid-item:hover .react-resizable-handle {
-  opacity: 0.5;
+  opacity: 0.6;
+}
+.react-grid-item:hover .react-resizable-handle-se {
+  opacity: 1;
 }
 
 /* Text truncation utility */

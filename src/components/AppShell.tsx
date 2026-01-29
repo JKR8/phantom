@@ -21,12 +21,14 @@ import {
   ShieldRegular,
   GridRegular,
   ResizeImageRegular,
+  MathFormulaRegular,
 } from '@fluentui/react-icons';
 import { FieldsPane } from './FieldsPane';
 import { VisualizationsPane } from './VisualizationsPane';
 import { PropertiesPanel } from './PropertiesPanel';
 import { DataModelPanel } from './DataModelPanel';
 import { FFMAPanel } from './FFMAPanel';
+import { StatisticalPane } from './StatisticalPane';
 import { UserMenu } from './UserMenu';
 import { SaveDashboardButton } from './SaveDashboardDialog';
 import { ShareButton } from './ShareDialog';
@@ -204,6 +206,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
   const setDashboardMeta = useStore((state) => state.setDashboardMeta);
   const [showFFMA, setShowFFMA] = React.useState(false);
   const [showDataModel, setShowDataModel] = React.useState(false);
+  const [showStatistical, setShowStatistical] = React.useState(false);
   const [editingTitle, setEditingTitle] = React.useState(false);
   const [titleDraft, setTitleDraft] = React.useState(dashboardName);
 
@@ -335,11 +338,23 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
               onClick={() => setShowFFMA(!showFFMA)}
               title="FFMA Widgets"
             />
+            <Button
+              icon={<MathFormulaRegular />}
+              appearance="subtle"
+              style={showStatistical ? navBtnActiveStyle : navBtnStyle}
+              onClick={() => setShowStatistical(!showStatistical)}
+              title="Statistical Visuals"
+            />
           </nav>
         )}
         {showFFMA && !readOnly && !showDataModel && (
           <div className={styles.ffmaPane}>
             <FFMAPanel />
+          </div>
+        )}
+        {showStatistical && !readOnly && !showDataModel && (
+          <div className={styles.ffmaPane}>
+            <StatisticalPane />
           </div>
         )}
         {showDataModel && !readOnly ? (
