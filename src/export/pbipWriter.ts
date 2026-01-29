@@ -20,7 +20,7 @@ import {
 } from '../types';
 import { PBISchema, getSchemaForScenario, getFactTableForScenario, mapFieldToPBIColumn } from './schemaGenerator';
 import { DAXMeasure, generateAllMeasures } from './daxGenerator';
-import { gridToPixels, getPBIVisualType } from './layoutConverter';
+import { calculateOptimalCanvas, gridToPixels, getPBIVisualType } from './layoutConverter';
 import { ScenarioFields, ScenarioType } from '../store/semanticLayer';
 
 export interface ExportData {
@@ -37,33 +37,29 @@ export interface ExportData {
   financeRecords?: Array<Record<string, any>>;
 }
 
-const BASE_THEME_JSON = `{
-  "version": "5.50",
-  "name": "CY25SU12",
-  "textClasses": {
-    "label": {
-      "fontFace": "Segoe UI",
-      "fontSize": 12
-    },
-    "title": {
-      "fontFace": "Segoe UI Semibold",
-      "fontSize": 16
-    }
+const DEFAULT_THEME_COLORS = [
+  '#118DFF',
+  '#12239E',
+  '#E66C37',
+  '#6B007B',
+  '#E044A7',
+  '#744EC2',
+  '#D9B300',
+  '#D64550',
+  '#197278',
+  '#6F9FB0',
+];
+
+const buildBaseThemeJson = (colors?: string[]) => JSON.stringify({
+  version: '5.50',
+  name: 'CY25SU12',
+  textClasses: {
+    label: { fontFace: 'Segoe UI', fontSize: 12 },
+    title: { fontFace: 'Segoe UI Semibold', fontSize: 16 },
   },
-  "dataColors": [
-    "#118DFF",
-    "#12239E",
-    "#E66C37",
-    "#6B007B",
-    "#E044A7",
-    "#744EC2",
-    "#D9B300",
-    "#D64550",
-    "#197278",
-    "#6F9FB0"
-  ],
-  "visualStyles": {}
-}`;
+  dataColors: (colors && colors.length > 0) ? colors : DEFAULT_THEME_COLORS,
+  visualStyles: {},
+}, null, 2);
 
 const REPORT_JSON = {
   $schema: 'https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/3.1.0/schema.json',
@@ -179,11 +175,10 @@ const MODEL_PLATFORM_TEMPLATE = (displayName: string, logicalId: string) => ({
   config: { version: '2.0', logicalId },
 });
 
-const PBIP_MANIFEST = (reportPath: string, modelPath: string) => ({
+const PBIP_MANIFEST = (reportPath: string) => ({
   version: '1.0',
   artifacts: [
     { report: { path: reportPath } },
-    { semanticModel: { path: modelPath } },
   ],
   settings: { enableAutoRecovery: true },
 });
@@ -494,8 +489,9 @@ const buildTableTMDL = (tableName: string, columns: PBISchema['tables'][0]['colu
   lines.push(`\tlineageTag: ${makeUuid()}`);
 
   measures.forEach((measure) => {
+    const expression = measure.expression.trim().replace(/\s*\n\s*/g, ' ').replace(/\s{2,}/g, ' ');
     lines.push('');
-    lines.push(`\tmeasure '${measure.name}' = ${measure.expression.trim()}`);
+    lines.push(`\tmeasure '${measure.name}' = ${expression}`);
     if (measure.formatString) {
       lines.push(`\t\tformatString: ${measure.formatString}`);
     }
@@ -634,7 +630,56 @@ const buildQueryState = (item: DashboardItem, scenario: Scenario, measures: DAXM
     return { table: factTable, measure: name };
   };
 
+  const resolveNamedMeasure = (name?: string) => {
+    if (!name) return null;
+    if (!measures.some((m) => m.name === name)) return null;
+    return { table: factTable, measure: name };
+  };
+
+  const addRetailKpiMeasures = (metric?: string, op?: string) => {
+    if (!metric) return [] as any[];
+    const operation = (op || 'sum').toString().toLowerCase();
+    const metricLabel = metric.charAt(0).toUpperCase() + metric.slice(1);
+    const candidates = [
+      getMeasureName(`${metric}PY`, operation),
+      getMeasureName(`${metric}PL`, operation),
+      `${metricLabel} ΔPY%`,
+      `${metricLabel} ΔPL%`,
+    ];
+    return candidates
+      .map((name) => resolveNamedMeasure(name))
+      .filter(Boolean)
+      .map((m) => buildQueryProjection(m!.table, m!.measure, true));
+  };
+
   const queryState: Record<string, any> = {};
+
+  // Retail cards use new cardVisual with reference labels for variance display
+  // Structure: Values[0] = main callout, Values[1..n] = reference labels (variances)
+  if (item.type === 'card' && scenario === 'Retail') {
+    const metric = resolveMeasure(props.metric);
+    if (metric) {
+      const projections = [buildQueryProjection(metric.table, metric.measure, true)];
+
+      // Add variance measures as reference labels
+      const metricLabel = (props.metric || '').charAt(0).toUpperCase() + (props.metric || '').slice(1);
+
+      // ΔPY% (Prior Year variance percentage)
+      const pyPctMeasure = resolveNamedMeasure(`${metricLabel} ΔPY%`);
+      if (pyPctMeasure) {
+        projections.push(buildQueryProjection(pyPctMeasure.table, pyPctMeasure.measure, true));
+      }
+
+      // ΔPL% (Plan variance percentage)
+      const plPctMeasure = resolveNamedMeasure(`${metricLabel} ΔPL%`);
+      if (plPctMeasure) {
+        projections.push(buildQueryProjection(plPctMeasure.table, plPctMeasure.measure, true));
+      }
+
+      queryState.Values = { projections };
+    }
+    return queryState;
+  }
 
   switch (item.type) {
     case 'bar':
@@ -672,7 +717,13 @@ const buildQueryState = (item: DashboardItem, scenario: Scenario, measures: DAXM
     case 'card':
     case 'gauge': {
       const metric = resolveMeasure(props.metric);
-      if (metric) queryState.Values = { projections: [buildQueryProjection(metric.table, metric.measure, true)] };
+      if (metric) {
+        const projections = [buildQueryProjection(metric.table, metric.measure, true)];
+        if (scenario === 'Retail') {
+          projections.push(...addRetailKpiMeasures(props.metric, operation));
+        }
+        queryState.Values = { projections };
+      }
       break;
     }
     case 'scatter': {
@@ -732,6 +783,9 @@ const buildQueryState = (item: DashboardItem, scenario: Scenario, measures: DAXM
       const projections: any[] = [];
       if (dim) projections.push(buildQueryProjection(dim.table, dim.column, false));
       if (metric) projections.push(buildQueryProjection(metric.table, metric.measure, true));
+      if (scenario === 'Retail') {
+        projections.push(...addRetailKpiMeasures(props.metric, operation));
+      }
       if (projections.length > 0) queryState.Values = { projections };
       break;
     }
@@ -785,8 +839,9 @@ const buildQueryState = (item: DashboardItem, scenario: Scenario, measures: DAXM
 const makeLiteral = (value: string) => ({ expr: { Literal: { Value: value } } });
 const makeSolidColor = (color: string) => ({ solid: { color: makeLiteral(`'${color}'`) } });
 
-const buildVisualObjects = (item: DashboardItem, pbiType: string): Record<string, any> => {
+const buildVisualObjects = (item: DashboardItem, pbiType: string, scenario: Scenario, themeColors?: string[]): Record<string, any> => {
   const objects: Record<string, any> = {};
+  const primaryColor = (themeColors && themeColors.length > 0) ? themeColors[0] : '#118DFF';
 
   // Special handling for textbox visuals
   if (pbiType === 'textbox') {
@@ -815,7 +870,389 @@ const buildVisualObjects = (item: DashboardItem, pbiType: string): Record<string
     return objects;
   }
 
-  // Title formatting
+  // Retail: apply Mokkup-style visual formatting
+  if (scenario === 'Retail') {
+    // New cardVisual styling (GA November 2025) - matches web UI KPICard design
+    // Features: callout value + reference labels for ΔPY/ΔPL variance indicators
+    if (pbiType === 'cardVisual' && item.type === 'card') {
+      // Callout area styling - large bold value
+      objects.calloutArea = [{
+        properties: {
+          size: makeLiteral('60D'), // Callout takes 60% of card height
+        }
+      }];
+
+      // Callout value - main KPI number (matches web UI 28px bold)
+      objects.calloutValue = [{
+        properties: {
+          fontFamily: makeLiteral("'''Segoe UI Bold'', wf_segoe-ui_bold, helvetica, arial, sans-serif'"),
+          fontSize: makeLiteral('28D'),
+          fontColor: makeSolidColor('#252423'),
+          horizontalAlignment: makeLiteral("'center'"),
+          labelDisplayUnits: makeLiteral('1D'), // Auto display units (K, M)
+        }
+      }];
+
+      // Callout label - title/label (matches web UI 12px gray)
+      objects.calloutLabel = [{
+        properties: {
+          fontFamily: makeLiteral("'''Segoe UI'', wf_segoe-ui_normal, helvetica, arial, sans-serif'"),
+          fontSize: makeLiteral('12D'),
+          fontColor: makeSolidColor('#605E5C'),
+          position: makeLiteral("'aboveValue'"),
+          show: makeLiteral('true'),
+        }
+      }];
+
+      // Reference labels layout - vertical stacking (matches web UI variance rows)
+      objects.referenceLabelsLayout = [{
+        properties: {
+          position: makeLiteral("'below'"), // Reference labels below callout
+          layout: makeLiteral("'vertical'"), // Stack vertically
+          spacing: makeLiteral('4D'), // Gap between rows
+        }
+      }];
+
+      // Reference labels divider - separator line (matches web UI border-top)
+      objects.divider = [{
+        properties: {
+          show: makeLiteral('true'),
+          color: makeSolidColor('#F0F0F0'),
+          width: makeLiteral('1D'),
+        }
+      }];
+
+      // Reference label value styling - percentage variance
+      objects.referenceLabelValue = [{
+        properties: {
+          fontFamily: makeLiteral("'''Segoe UI Semibold'', wf_segoe-ui_semibold, helvetica, arial, sans-serif'"),
+          fontSize: makeLiteral('12D'),
+          // Color is applied via conditional formatting rules per-label
+          labelDisplayUnits: makeLiteral('0D'), // Show percentage as-is
+        }
+      }];
+
+      // Reference label title styling - ΔPY, ΔPL labels
+      objects.referenceLabelTitle = [{
+        properties: {
+          fontFamily: makeLiteral("'''Segoe UI'', wf_segoe-ui_normal, helvetica, arial, sans-serif'"),
+          fontSize: makeLiteral('11D'),
+          fontColor: makeSolidColor('#605E5C'),
+          show: makeLiteral('true'),
+        }
+      }];
+
+      // Reference label detail - absolute variance value
+      objects.referenceLabelDetail = [{
+        properties: {
+          fontFamily: makeLiteral("'''Segoe UI'', wf_segoe-ui_normal, helvetica, arial, sans-serif'"),
+          fontSize: makeLiteral('11D'),
+          fontColor: makeSolidColor('#605E5C'),
+          show: makeLiteral('true'),
+        }
+      }];
+
+      // Reference labels background
+      objects.referenceLabelsBackground = [{
+        properties: {
+          show: makeLiteral('false'),
+        }
+      }];
+
+      // Card styling - accent bar effect via border
+      objects.cardBackground = [{
+        properties: {
+          color: makeSolidColor('#FFFFFF'),
+          show: makeLiteral('true'),
+        }
+      }];
+
+      // Layout padding
+      objects.padding = [{
+        properties: {
+          top: makeLiteral('6D'),
+          bottom: makeLiteral('6D'),
+          left: makeLiteral('10D'),
+          right: makeLiteral('10D'),
+        }
+      }];
+
+      return objects;
+    }
+
+    // Legacy KPI visual styling (kept for backward compatibility)
+    if (pbiType === 'kpi') {
+      objects.goals = [{
+        properties: {
+          goalText: makeLiteral(`'PY'`),
+          fontSize: makeLiteral('10D'),
+          goalFontFamily: makeLiteral("'''Segoe UI'', wf_segoe-ui_normal, helvetica, arial, sans-serif'"),
+          goalFontColor: makeSolidColor('#808080'),
+          showGoal: makeLiteral('true'),
+          direction: makeLiteral("'High is good'"),
+          distanceLabel: makeLiteral("'Percent'"),
+          distanceFontColor: makeSolidColor('#107C10'),
+          distanceFontFamily: makeLiteral("'''Segoe UI Semibold'', wf_segoe-ui_semibold, helvetica, arial, sans-serif'"),
+          showDistance: makeLiteral('true'),
+          titleFontSize: makeLiteral('10D'),
+          titleBold: makeLiteral('false'),
+          titleItalic: makeLiteral('false'),
+          titleUnderline: makeLiteral('false'),
+          underline: makeLiteral('false'),
+          italic: makeLiteral('false'),
+          bold: makeLiteral('false'),
+        }
+      }];
+      objects.indicator = [{
+        properties: {
+          horizontalAlignment: makeLiteral("'left'"),
+          verticalAlignment: makeLiteral("'middle'"),
+          fontFamily: makeLiteral("'''Segoe UI Bold'', wf_segoe-ui_bold, helvetica, arial, sans-serif'"),
+          fontSize: makeLiteral('18D'),
+          indicatorDisplayUnits: makeLiteral('1D'),
+          showIcon: makeLiteral('false'),
+          bold: makeLiteral('false'),
+          italic: makeLiteral('false'),
+          underline: makeLiteral('false'),
+        }
+      }];
+      objects.trendline = [{
+        properties: {
+          transparency: makeLiteral('20D'),
+          show: makeLiteral('false'),
+        }
+      }];
+      objects.status = [{
+        properties: {
+          direction: makeLiteral("'High is good'"),
+          goodColor: makeSolidColor('#107C10'),
+          neutralColor: makeSolidColor('#605E5C'),
+          badColor: makeSolidColor('#A4262C'),
+        }
+      }];
+      objects.lastDate = [{
+        properties: { show: makeLiteral('false') }
+      }];
+      return objects;
+    }
+
+    // Slicer styling (dropdown)
+    if (pbiType === 'slicer') {
+      objects.data = [{
+        properties: {
+          mode: makeLiteral("'Dropdown'"),
+        }
+      }];
+      objects.header = [{
+        properties: { show: makeLiteral('false') }
+      }];
+      objects.selection = [{
+        properties: { strictSingleSelect: makeLiteral('true') }
+      }];
+      objects.items = [{
+        properties: {
+          background: makeSolidColor('#FFFFFF'),
+        }
+      }];
+      return objects;
+    }
+
+    // Bar chart styling
+    if (item.type === 'bar' || item.type === 'column') {
+      objects.categoryAxis = [{
+        properties: {
+          show: makeLiteral('true'),
+          showAxisTitle: makeLiteral('false'),
+          innerPadding: makeLiteral('62.5L'),
+          preferredCategoryWidth: makeLiteral('20D'),
+        }
+      }];
+      objects.valueAxis = [{
+        properties: {
+          show: makeLiteral('false'),
+          showAxisTitle: makeLiteral('false'),
+          invertAxis: makeLiteral('false'),
+          gridlineShow: makeLiteral('true'),
+        }
+      }];
+      objects.legend = [{
+        properties: {
+          show: makeLiteral('false'),
+          showGradientLegend: makeLiteral('false'),
+          position: makeLiteral("'Top'"),
+        }
+      }];
+      objects.labels = [{
+        properties: {
+          show: makeLiteral('true'),
+          labelPosition: makeLiteral("'InsideEnd'"),
+          enableTitleDataLabel: makeLiteral('false'),
+          fontSize: makeLiteral('8D'),
+        }
+      }];
+      objects.dataPoint = [{
+        properties: {
+          fill: makeSolidColor(primaryColor),
+          fillTransparency: makeLiteral('0D'),
+        }
+      }];
+      objects.title = [{
+        properties: {
+          show: makeLiteral('true'),
+          text: makeLiteral(`'${(item.title || '').replace(/'/g, "''")}'`),
+          fontColor: makeSolidColor('#252423'),
+          fontSize: makeLiteral('12L'),
+        }
+      }];
+      return objects;
+    }
+
+    // Line chart styling
+    if (item.type === 'line' || item.type === 'area') {
+      objects.categoryAxis = [{
+        properties: {
+          show: makeLiteral('true'),
+          showAxisTitle: makeLiteral('false'),
+          innerPadding: makeLiteral('62.5L'),
+        }
+      }];
+      objects.valueAxis = [{
+        properties: {
+          show: makeLiteral('true'),
+          showAxisTitle: makeLiteral('false'),
+          invertAxis: makeLiteral('false'),
+          gridlineShow: makeLiteral('false'),
+          gridlineStyle: makeLiteral("'solid'"),
+        }
+      }];
+      objects.legend = [{
+        properties: {
+          show: makeLiteral('false'),
+        }
+      }];
+      objects.labels = [{
+        properties: {
+          show: makeLiteral('false'),
+          labelPosition: makeLiteral("'Under'"),
+          enableTitleDataLabel: makeLiteral('false'),
+          fontSize: makeLiteral('8D'),
+        }
+      }];
+      objects.lineStyles = [{
+        properties: {
+          lineStyle: makeLiteral("'solid'"),
+          lineChartType: makeLiteral("'smooth'"),
+          strokeWidth: makeLiteral('1L'),
+          showMarker: makeLiteral('true'),
+          markerSize: makeLiteral('4D'),
+        }
+      }];
+      objects.dataPoint = [{
+        properties: {
+          fill: makeSolidColor(primaryColor),
+        }
+      }];
+      objects.title = [{
+        properties: {
+          show: makeLiteral('true'),
+          text: makeLiteral(`'${(item.title || '').replace(/'/g, "''")}'`),
+          fontColor: makeSolidColor('#252423'),
+          fontSize: makeLiteral('12L'),
+        }
+      }];
+      return objects;
+    }
+
+    // Combo chart styling
+    if (item.type === 'combo') {
+      const secondaryColor = (themeColors && themeColors.length > 1) ? themeColors[1] : '#44B0AB';
+      objects.categoryAxis = [{
+        properties: {
+          show: makeLiteral('true'),
+          showAxisTitle: makeLiteral('false'),
+          innerPadding: makeLiteral('62.5L'),
+        }
+      }];
+      objects.valueAxis = [{
+        properties: {
+          show: makeLiteral('true'),
+          showAxisTitle: makeLiteral('false'),
+          invertAxis: makeLiteral('false'),
+          gridlineShow: makeLiteral('false'),
+          gridlineStyle: makeLiteral("'solid'"),
+          secShow: makeLiteral('true'),
+          secShowAxisTitle: makeLiteral('false'),
+        }
+      }];
+      objects.legend = [{
+        properties: {
+          show: makeLiteral('true'),
+          position: makeLiteral("'Top'"),
+        }
+      }];
+      objects.labels = [{
+        properties: {
+          show: makeLiteral('false'),
+          labelPosition: makeLiteral("'Under'"),
+          enableTitleDataLabel: makeLiteral('false'),
+          fontSize: makeLiteral('8D'),
+        }
+      }];
+      objects.lineStyles = [{
+        properties: {
+          lineStyle: makeLiteral("'solid'"),
+          lineChartType: makeLiteral("'smooth'"),
+          strokeWidth: makeLiteral('1L'),
+          showMarker: makeLiteral('true'),
+          markerSize: makeLiteral('4D'),
+        }
+      }];
+      objects.dataPoint = [
+        {
+          properties: { fill: makeSolidColor(secondaryColor) },
+          selector: { metadata: `Sum(${getFactTableForScenario(scenario)}.${(item.props?.lineMetric || '').charAt(0).toUpperCase() + (item.props?.lineMetric || '').slice(1)})` }
+        },
+        {
+          properties: { fill: makeSolidColor(primaryColor) },
+        }
+      ];
+      objects.title = [{
+        properties: {
+          show: makeLiteral('true'),
+          text: makeLiteral(`'${(item.title || '').replace(/'/g, "''")}'`),
+          fontColor: makeSolidColor('#252423'),
+          fontSize: makeLiteral('12L'),
+        }
+      }];
+      return objects;
+    }
+
+    // Pie/donut cleanup
+    if (item.type === 'pie' || item.type === 'donut') {
+      objects.legend = [{
+        properties: {
+          show: makeLiteral('true'),
+          position: makeLiteral("'Top'"),
+        }
+      }];
+      objects.dataLabels = [{
+        properties: {
+          show: makeLiteral('false'),
+        }
+      }];
+      objects.title = [{
+        properties: {
+          show: makeLiteral('true'),
+          text: makeLiteral(`'${(item.title || '').replace(/'/g, "''")}'`),
+          fontColor: makeSolidColor('#252423'),
+          fontSize: makeLiteral('12L'),
+        }
+      }];
+      return objects;
+    }
+  }
+
+  // Title formatting (default)
   objects.title = [{
     properties: {
       show: makeLiteral('true'),
@@ -824,6 +1261,26 @@ const buildVisualObjects = (item: DashboardItem, pbiType: string): Record<string
       fontSize: makeLiteral('12L'),
     }
   }];
+
+  // Retail KPI cards: make sure category labels show for multi-row cards
+  if (pbiType === 'multiRowCard') {
+    objects.categoryLabels = [{
+      properties: {
+        show: makeLiteral('true'),
+        fontSize: makeLiteral('10L'),
+        fontColor: makeSolidColor('#605E5C'),
+      }
+    }];
+  }
+
+  // Slicer styling (best-effort dropdown)
+  if (pbiType === 'slicer') {
+    objects.slicer = [{
+      properties: {
+        slicerType: makeLiteral("'Dropdown'"),
+      }
+    }];
+  }
 
   // Category axis formatting (for chart types that have axes)
   const axisTypes = ['bar', 'column', 'stackedBar', 'stackedColumn', 'line', 'area', 'waterfall', 'scatter', 'controversyBar'];
@@ -856,13 +1313,121 @@ const buildVisualObjects = (item: DashboardItem, pbiType: string): Record<string
     }];
   }
 
+  // Pie/donut: reduce clutter by hiding labels (legend only)
+  if (item.type === 'pie' || item.type === 'donut') {
+    objects.dataLabels = [{
+      properties: {
+        show: makeLiteral('false'),
+      }
+    }];
+  }
+
   return objects;
 };
 
-const buildVisualJson = (item: DashboardItem, index: number, scenario: Scenario, measures: DAXMeasure[]) => {
+const buildVisualJson = (item: DashboardItem, index: number, scenario: Scenario, measures: DAXMeasure[], themeColors?: string[]) => {
   const position = gridToPixels(item.layout);
   const queryState = buildQueryState(item, scenario, measures);
-  const pbiType = getPBIVisualType(item.type);
+  // Use new cardVisual for Retail cards (supports reference labels for ΔPY/ΔPL variance)
+  // Use kpi visual only for explicit 'kpi' type
+  const isRetailCard = scenario === 'Retail' && item.type === 'card';
+  const isRetailKpi = scenario === 'Retail' && item.type === 'kpi';
+  const isEmailCombo = scenario === 'Retail' && item.type === 'combo' && item.id.startsWith('email-');
+  const pbiType = isRetailCard
+    ? 'cardVisual'
+    : isRetailKpi
+      ? 'kpi'
+      : (isEmailCombo ? 'lineClusteredColumnComboChart' : getPBIVisualType(item.type));
+  const primaryColor = (themeColors && themeColors.length > 0) ? themeColors[0] : '#118DFF';
+  let visualContainerObjects: Record<string, any> | undefined;
+
+  if (scenario === 'Retail') {
+    // New cardVisual styling with accent bar effect via border
+    if (pbiType === 'cardVisual' && item.type === 'card') {
+      const colorIndex = item.props?.colorIndex ?? 0;
+      const accentColor = (themeColors && themeColors.length > colorIndex) ? themeColors[colorIndex] : primaryColor;
+      visualContainerObjects = {
+        title: [{
+          properties: {
+            show: makeLiteral('false'), // Title is shown via calloutLabel
+          }
+        }],
+        // Accent bar effect using left border (mimics web UI 4px colored bar)
+        border: [{
+          properties: {
+            show: makeLiteral('true'),
+            color: makeSolidColor(accentColor),
+            radius: makeLiteral('2D'),
+            width: makeLiteral('4D'),
+            // Apply border only on left side
+            topWidth: makeLiteral('0D'),
+            rightWidth: makeLiteral('0D'),
+            bottomWidth: makeLiteral('0D'),
+            leftWidth: makeLiteral('4D'),
+          }
+        }],
+        background: [{
+          properties: {
+            show: makeLiteral('true'),
+            color: makeSolidColor('#FFFFFF'),
+            transparency: makeLiteral('0D'),
+          }
+        }],
+        visualHeader: [{
+          properties: {
+            show: makeLiteral('false'),
+          }
+        }],
+      };
+    } else if (pbiType === 'kpi') {
+      visualContainerObjects = {
+        title: [{
+          properties: {
+            show: makeLiteral('true'),
+            text: makeLiteral(`'${(item.title || '').replace(/'/g, "''")}'`),
+            fontFamily: makeLiteral("'''Segoe UI Semibold'', wf_segoe-ui_semibold, helvetica, arial, sans-serif'"),
+            fontSize: makeLiteral('12D'),
+            fontColor: makeSolidColor(primaryColor),
+            alignment: makeLiteral("'left'"),
+            background: { solid: { color: makeLiteral("'None'") } },
+          }
+        }],
+        padding: [{
+          properties: {
+            top: makeLiteral('5D'),
+            bottom: makeLiteral('5D'),
+            left: makeLiteral('5D'),
+          }
+        }],
+        background: [{
+          properties: { show: makeLiteral('false') }
+        }],
+      };
+    } else if (pbiType === 'slicer') {
+      visualContainerObjects = {
+        padding: [{
+          properties: {
+            top: makeLiteral('0D'),
+            bottom: makeLiteral('0D'),
+            right: makeLiteral('0D'),
+            left: makeLiteral('0D'),
+          }
+        }],
+        background: [{
+          properties: {
+            color: makeSolidColor('#FFFFFF'),
+          }
+        }],
+      };
+    } else if (item.type === 'bar' || item.type === 'column' || item.type === 'line' || item.type === 'area') {
+      visualContainerObjects = {
+        visualHeader: [{ properties: { show: makeLiteral('false') } }],
+        visualTooltip: [{ properties: { show: makeLiteral('true') } }],
+        border: [{ properties: { show: makeLiteral('false') } }],
+        background: [{ properties: { show: makeLiteral('false') } }],
+      };
+    }
+  }
 
   return {
     $schema: 'https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json',
@@ -880,7 +1445,8 @@ const buildVisualJson = (item: DashboardItem, index: number, scenario: Scenario,
       query: {
         queryState,
       },
-      objects: buildVisualObjects(item, pbiType),
+      objects: buildVisualObjects(item, pbiType, scenario, themeColors),
+      ...(visualContainerObjects ? { visualContainerObjects } : {}),
       drillFilterOtherVisuals: true,
     },
   };
@@ -913,9 +1479,23 @@ const generateDocumentation = (schema: PBISchema, measures: DAXMeasure[], scenar
   return doc;
 };
 
-export async function createPBIPPackage(items: DashboardItem[], scenario: Scenario, data: ExportData, filename?: string) {
+export async function createPBIPPackage(
+  items: DashboardItem[],
+  scenario: Scenario,
+  data: ExportData,
+  filename?: string,
+  themeColors?: string[],
+) {
   const schema = getSchemaForScenario(scenario);
-  const measures = generateAllMeasures(items, scenario);
+  const exportItems = scenario === 'Retail'
+    ? items.map((item) => {
+        if (item.type === 'card') {
+          return { ...item, props: { ...item.props, showVariance: true } };
+        }
+        return item;
+      })
+    : items;
+  const measures = generateAllMeasures(exportItems, scenario);
 
   const projectName = `Phantom${scenario}`;
   const exportFilename = filename || `${projectName}_${new Date().toISOString().split('T')[0]}.pbip.zip`;
@@ -926,7 +1506,7 @@ export async function createPBIPPackage(items: DashboardItem[], scenario: Scenar
   const zip = new JSZip();
 
   // PBIP manifest
-  writeFile(zip, `${projectName}.pbip`, PBIP_MANIFEST(`${projectName}.Report`, `${projectName}.SemanticModel`));
+  writeFile(zip, `${projectName}.pbip`, PBIP_MANIFEST(`${projectName}.Report`));
 
   // Report artifact
   writeFile(zip, `${projectName}.Report/.platform`, REPORT_PLATFORM_TEMPLATE(projectName, reportLogicalId));
@@ -935,12 +1515,13 @@ export async function createPBIPPackage(items: DashboardItem[], scenario: Scenar
   writeFile(zip, `${projectName}.Report/definition/report.json`, REPORT_JSON);
   writeFile(zip, `${projectName}.Report/definition/version.json`, REPORT_VERSION_JSON);
   writeFile(zip, `${projectName}.Report/definition/pages/pages.json`, REPORT_PAGES_JSON);
-  writeFile(zip, `${projectName}.Report/definition/pages/page1/page.json`, makePageJson(`${scenario} Dashboard`, 1280, 720));
-  writeFile(zip, `${projectName}.Report/StaticResources/SharedResources/BaseThemes/CY25SU12.json`, BASE_THEME_JSON);
+  const canvas = calculateOptimalCanvas(exportItems);
+  writeFile(zip, `${projectName}.Report/definition/pages/page1/page.json`, makePageJson(`${scenario} Dashboard`, canvas.width, canvas.height));
+  writeFile(zip, `${projectName}.Report/StaticResources/SharedResources/BaseThemes/CY25SU12.json`, buildBaseThemeJson(themeColors));
 
   // Visuals
-  items.forEach((item, index) => {
-    const visualJson = buildVisualJson(item, index, scenario, measures);
+  exportItems.forEach((item, index) => {
+    const visualJson = buildVisualJson(item, index, scenario, measures, themeColors);
     writeFile(zip, `${projectName}.Report/definition/pages/page1/visuals/${item.id}/visual.json`, visualJson);
   });
 
@@ -973,8 +1554,14 @@ export async function createPBIPPackage(items: DashboardItem[], scenario: Scenar
   return { blob, documentation, filename: exportFilename };
 }
 
-export async function downloadPBIPPackage(items: DashboardItem[], scenario: Scenario, data: ExportData, filename?: string) {
-  const { blob, filename: exportFilename } = await createPBIPPackage(items, scenario, data, filename);
+export async function downloadPBIPPackage(
+  items: DashboardItem[],
+  scenario: Scenario,
+  data: ExportData,
+  filename?: string,
+  themeColors?: string[],
+) {
+  const { blob, filename: exportFilename } = await createPBIPPackage(items, scenario, data, filename, themeColors);
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;

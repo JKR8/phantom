@@ -1,0 +1,92 @@
+table Fact
+	lineageTag: 191v1ww4-8cbh-ykgp-ucer-sqtl4xnvl6zc
+
+	column 'Email to conversion _ pipeline_funnel_id'
+		dataType: int64
+		formatString: 0
+		lineageTag: 5qo9yi0p-x91m-w3at-ac7d-r4frjn78p7xk
+		summarizeBy: sum
+		sourceColumn: Email to conversion _ pipeline_funnel_id
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column funnel_fact
+		dataType: int64
+		formatString: 0
+		lineageTag: 89nsjwf7-a8ah-vppj-hcv8-4wwv70sf1ri2
+		summarizeBy: sum
+		sourceColumn: funnel_fact
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column column_id_1
+		dataType: int64
+		formatString: 0
+		lineageTag: t08a8nbs-9iaj-mx4c-nyje-ib3054pzpkmx
+		summarizeBy: sum
+		sourceColumn: column_id_1
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column dataset_1
+		dataType: int64
+		formatString: 0
+		lineageTag: dyh4j9y9-55na-87mv-drk2-rl0w5hv9e4ho
+		summarizeBy: sum
+		sourceColumn: dataset_1
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column combochart_id
+		dataType: int64
+		formatString: 0
+		lineageTag: ve9e59fa-unns-1x0p-q9d1-c8a3jrvkzrjk
+		summarizeBy: sum
+		sourceColumn: combochart_id
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column combochart
+		dataType: int64
+		formatString: 0
+		lineageTag: 37nkwy78-ttu0-o525-uj1n-u7oxscuhp380
+		summarizeBy: sum
+		sourceColumn: combochart
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column combochart_0
+		dataType: int64
+		formatString: 0
+		lineageTag: h1da1h0q-96wj-snjd-3799-6qohs9ep2xpi
+		summarizeBy: sum
+		sourceColumn: combochart_0
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	partition Fact = m
+		mode: import
+		source =
+				let
+				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("fZDLDQQhDEN7yXkOCSF8akHTfxuLzeyK5TASUh6xEyzGEJNLuoXXWcFV9SEHhMp9DUkTm6feZgUXukCZEHQ5BqzT5dT0IYtlhSuj13JFJdOVuRXXtQsDqRS2wKZf4ouxXJN+p2BC15pTq0fSXWtHvl3rR6pdM30JY/aSxv4+7v4A", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [Email to conversion _ pipeline_funnel_id = _t , funnel_fact = _t , #"column_id_1" = _t , #"dataset_1" = _t , #"combochart_id" = _t , #"combochart" = _t , #"combochart_0" = _t]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Email to conversion _ pipeline_funnel_id", Int64.Type}, {"funnel_fact", Int64.Type}, {"column_id_1", Int64.Type}, {"dataset_1", Int64.Type}, {"combochart_id", Int64.Type}, {"combochart", Int64.Type}, {"combochart_0", Int64.Type}}),
+				    #"Added Index" = Table.AddIndexColumn(#"Changed Type", "Index", 1, 1, Int64.Type)
+				in
+				    #"Changed Type"
+
+	annotation PBI_ResultType = Table
+

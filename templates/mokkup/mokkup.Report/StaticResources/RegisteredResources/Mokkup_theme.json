@@ -1,0 +1,27 @@
+{
+  "name": "Mokkup",
+  "dataColors": [
+    "#0D076A",
+    "#342BC2",
+    "#6F67F1",
+    "#9993FF",
+    "#417ED9",
+    "#2565C3",
+    "#1897BF",
+    "#2DB7E2",
+    "#7CDBF9",
+    "#D0ACED",
+    "#AB81CD",
+    "#654597",
+    "#7BEEE9",
+    "#57DAD4",
+    "#22BDB6"
+  ],
+  "good": "#1AAB40",
+  "neutral": "#D9B300",
+  "bad": "#D64554",
+  "maximum": "#118DFF",
+  "center": "#D9B300",
+  "minimum": "#DEEFFF",
+  "null": "#FF7F48"
+}

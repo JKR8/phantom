@@ -17,6 +17,7 @@ export const PHANTOM_GRID_COLS = 48;
 export const PHANTOM_ROW_HEIGHT = 20;
 
 // Power BI visual type identifiers (from reverse-engineering Power BI exports)
+// Note: 'cardVisual' is the new card visual (GA November 2025) with reference labels support
 export const PBI_VISUAL_TYPES: Record<VisualType, string> = {
   bar: 'clusteredBarChart',
   column: 'clusteredColumnChart',
@@ -24,14 +25,18 @@ export const PBI_VISUAL_TYPES: Record<VisualType, string> = {
   stackedColumn: 'stackedColumnChart',
   line: 'lineChart',
   area: 'areaChart',
+  stackedArea: 'areaChart', // Stacked area maps to area chart
+  combo: 'comboChart', // Line + Column combo chart
+  map: 'filledMap', // Filled map / choropleth
   scatter: 'scatterChart',
   pie: 'pieChart',
   donut: 'donutChart',
   funnel: 'funnel',
   treemap: 'treemap',
   gauge: 'gauge',
-  card: 'card',
-  multiRowCard: 'multiRowCard',
+  card: 'cardVisual', // New card visual with reference labels (GA Nov 2025)
+  kpi: 'kpi', // Legacy KPI visual (still used for some scenarios)
+  multiRowCard: 'cardVisual', // New cardVisual supports multiple values
   table: 'tableEx',
   matrix: 'pivotTable',
   waterfall: 'waterfallChart',
@@ -81,9 +86,8 @@ export function gridToPixels(layout: { x: number; y: number; w: number; h: numbe
   const x = Math.round(layout.x * colWidth);
   const width = Math.round(layout.w * colWidth);
   
-  // Calculate vertical position and height
-  // Use a scaling factor to fit content appropriately
-  const rowHeight = PBI_CANVAS_HEIGHT / 18; // Assuming ~18 rows fill the canvas
+  // Calculate vertical position and height based on Phantom's grid
+  const rowHeight = PHANTOM_ROW_HEIGHT;
   const y = Math.round(layout.y * rowHeight);
   const height = Math.round(layout.h * rowHeight);
   
@@ -235,9 +239,36 @@ function generateProjections(visual: PBIVisualConfig, scenario: Scenario): objec
     case 'stackedColumn':
     case 'line':
     case 'area':
+    case 'stackedArea':
       if (props.dimension) {
         const dimRef = toColumnRef(props.dimension);
         if (dimRef) projections['Category'] = [{ queryRef: dimRef }];
+      }
+      if (props.metric) {
+        const metricRef = toAggregateRef(props.metric);
+        if (metricRef) projections['Values'] = [{ queryRef: metricRef }];
+      }
+      break;
+
+    case 'combo':
+      if (props.dimension) {
+        const dimRef = toColumnRef(props.dimension);
+        if (dimRef) projections['Category'] = [{ queryRef: dimRef }];
+      }
+      if (props.barMetric) {
+        const barRef = toAggregateRef(props.barMetric);
+        if (barRef) projections['ColumnValues'] = [{ queryRef: barRef }];
+      }
+      if (props.lineMetric) {
+        const lineRef = toAggregateRef(props.lineMetric);
+        if (lineRef) projections['LineValues'] = [{ queryRef: lineRef }];
+      }
+      break;
+
+    case 'map':
+      if (props.geoDimension) {
+        const geoRef = toColumnRef(props.geoDimension);
+        if (geoRef) projections['Location'] = [{ queryRef: geoRef }];
       }
       if (props.metric) {
         const metricRef = toAggregateRef(props.metric);
@@ -454,12 +485,11 @@ export function calculateOptimalCanvas(items: DashboardItem[]): { width: number;
     maxY = Math.max(maxY, bottomEdge);
   });
 
-  // Scale to fit within reasonable bounds while maintaining aspect ratio
   const baseWidth = PBI_CANVAS_WIDTH;
-  const contentHeight = (maxY / 18) * PBI_CANVAS_HEIGHT;
-  
+  const contentHeight = Math.ceil(maxY * PHANTOM_ROW_HEIGHT);
+
   return {
     width: baseWidth,
-    height: Math.max(PBI_CANVAS_HEIGHT, Math.ceil(contentHeight)),
+    height: Math.max(PBI_CANVAS_HEIGHT, contentHeight),
   };
 }

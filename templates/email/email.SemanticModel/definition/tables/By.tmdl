@@ -1,0 +1,24 @@
+table By
+	lineageTag: zlw85lvr-zg2u-ku4z-rbif-5tgvs2wmu358
+
+	column by
+		dataType: string
+		lineageTag: vnzbi44o-z179-27s5-5xtq-mhe8uh6pwekj
+		summarizeBy: none
+		sourceColumn: by
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	partition By = m
+		mode: import
+		source =
+				let
+				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i45Wcg7xD1KK1YlWCi5NKk4uykxKLSoG811zEzNzihX8C1LzUlOQRYJT80rA/NC8YpgeiBbn/LwyoPbM/Dww1ym/NC85VSEosSRVKTYWAA==", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [#"by" = _t]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"by", type text}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_ResultType = Table
+

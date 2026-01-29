@@ -1,0 +1,24 @@
+table 'Choose 1st metric'
+	lineageTag: zei8p64f-ug8f-exo2-j6gx-midl7ttwy4g2
+
+	column choose_1st_metric
+		dataType: string
+		lineageTag: jgmm6rg8-9c7v-32gr-3jqa-w5p45hlpya2d
+		summarizeBy: none
+		sourceColumn: choose_1st_metric
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	partition 'Choose 1st metric' = m
+		mode: import
+		source =
+				let
+				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i45Wcs7PK0stKs7Mz1MISixJVYrViVZyzU3MzClWCE7NK0Hm+xek5qWmgEWcQ/yDwIzQvOLSpOLkosyk1GKl2FgA", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [#"choose_1st_metric" = _t]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"choose_1st_metric", type text}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_ResultType = Table
+

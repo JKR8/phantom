@@ -13,6 +13,7 @@ import { dragState } from './VisualizationsPane';
 import { BarChart } from './BarChart';
 import { DonutChart } from './DonutChart';
 import { KPICard } from './KPICard';
+import { KPI } from './KPI';
 import { DataTable } from './DataTable';
 import { Slicer } from './Slicer';
 import { LineChart } from './LineChart';
@@ -20,6 +21,9 @@ import { StackedBarChart } from './StackedBarChart';
 import { StackedColumnChart } from './StackedColumnChart';
 import { ClusteredColumnChart } from './ClusteredColumnChart';
 import { AreaChart } from './AreaChart';
+import { StackedAreaChart } from './StackedAreaChart';
+import { ComboChart } from './ComboChart';
+import { MapChart } from './MapChart';
 import { ScatterChart } from './ScatterChart';
 import { PieChart } from './PieChart';
 import { FunnelChart } from './FunnelChart';
@@ -117,24 +121,12 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
     h: number;
     pixelX: number;
     pixelY: number;
-    prebuiltConfig?: any;
   } | null>(null);
   const dropHandledRef = useRef(false); // Guard against double-handling drops
 
-  const finalizeDrop = (visualType: string, gridX: number, gridY: number, w: number, h: number, prebuiltConfig?: any) => {
+  const finalizeDrop = (visualType: string, gridX: number, gridY: number, w: number, h: number) => {
     const id = `visual-${Date.now()}`;
     console.log('[finalizeDrop] Adding item:', { visualType, gridX, gridY, w, h });
-
-    if (prebuiltConfig) {
-      addItem({
-        id,
-        type: prebuiltConfig.type as any,
-        title: prebuiltConfig.title,
-        layout: { x: gridX, y: gridY, w, h },
-        props: { ...prebuiltConfig.props },
-      });
-      return;
-    }
 
     const recipe = getRecipeForVisual(visualType, scenario as ScenarioType);
     const props = { ...recipe };
@@ -198,6 +190,12 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
         return <LineChart {...item.props} />;
       case 'area':
         return <AreaChart {...item.props} />;
+      case 'stackedArea':
+        return <StackedAreaChart {...item.props} />;
+      case 'combo':
+        return <ComboChart {...item.props} />;
+      case 'map':
+        return <MapChart {...item.props} />;
       case 'scatter':
         return <ScatterChart {...item.props} />;
       case 'pie':
@@ -212,6 +210,8 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
         return <GaugeChart {...item.props} />;
       case 'card':
         return <KPICard {...item.props} />;
+      case 'kpi':
+        return <KPI title={item.title} {...item.props} />;
       case 'multiRowCard':
         return <MultiRowCard {...item.props} />;
       case 'table':
@@ -331,14 +331,6 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
       } catch (err) {
         console.error('[handleCanvasDrop] Error during snap:', err);
       }
-    }
-
-    if (dragState.prebuiltConfig) {
-      const cfg = dragState.prebuiltConfig;
-      const w = layoutMode === 'Standard' ? finalW : cfg.w;
-      const h = layoutMode === 'Standard' ? finalH : cfg.h;
-      finalizeDrop(cfg.type, gridX, gridY, w, h, cfg);
-      return;
     }
 
     // Variant parent types: show picker

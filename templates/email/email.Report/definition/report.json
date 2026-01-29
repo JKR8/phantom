@@ -1,0 +1,83 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/3.1.0/schema.json",
+  "themeCollection": {
+    "baseTheme": {
+      "name": "CY23SU08",
+      "reportVersionAtImport": {
+        "visual": "1.8.85",
+        "report": "2.0.85",
+        "page": "1.3.85"
+      },
+      "type": "SharedResources"
+    },
+    "customTheme": {
+      "name": "Mokkup_theme.json",
+      "reportVersionAtImport": {
+        "visual": "1.8.85",
+        "report": "2.0.85",
+        "page": "1.3.85"
+      },
+      "type": "RegisteredResources"
+    }
+  },
+  "objects": {
+    "section": [
+      {
+        "properties": {
+          "verticalAlignment": {
+            "expr": {
+              "Literal": {
+                "Value": "'Top'"
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "publicCustomVisuals": [
+    "sankey02300D1BE6F5427989F3DE31CCA9E0F32020"
+  ],
+  "resourcePackages": [
+    {
+      "name": "SharedResources",
+      "type": "SharedResources",
+      "items": [
+        {
+          "name": "CY23SU08",
+          "path": "BaseThemes/CY23SU08.json",
+          "type": "BaseTheme"
+        }
+      ]
+    },
+    {
+      "name": "RegisteredResources",
+      "type": "RegisteredResources",
+      "items": [
+        {
+          "name": "Mokkup_theme.json",
+          "path": "Mokkup_theme.json",
+          "type": "CustomTheme"
+        },
+        {
+          "name": "mokkup_logo.png",
+          "path": "mokkup_logo.png",
+          "type": "Image"
+        },
+        {
+          "name": "mokkup_logo.png_d6c8a1db90bf641311ad",
+          "path": "mokkup_logo.png_d6c8a1db90bf641311ad",
+          "type": "Image"
+        }
+      ]
+    }
+  ],
+  "settings": {
+    "useStylableVisualContainerHeader": true,
+    "exportDataMode": "AllowSummarized",
+    "defaultDrillFilterOtherVisuals": true,
+    "allowChangeFilterTypes": true,
+    "useEnhancedTooltips": false,
+    "useDefaultAggregateDisplayName": true
+  }
+}

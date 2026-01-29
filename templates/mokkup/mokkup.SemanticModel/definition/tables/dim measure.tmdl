@@ -1,0 +1,86 @@
+table 'dim measure'
+	lineageTag: b9b9a6fc-aa40-4937-a0cc-6f078e6486ac
+
+	measure 'highest subscribers current' = 2
+		formatString: Saturday | 0 PM
+		displayFolder: Email Summary
+		lineageTag: ml8fyr7n-or4j-q4q7-so6o-skqikje4yxrx
+
+		annotation PBI_FormatHint = {"isCustom":true}
+
+	measure 'highest subscribers 1,000'
+		formatString: Subscribers
+		displayFolder: Email Summary
+		lineageTag: e3wjbp4n-seuh-5qsw-lpcn-dyaeuhygrr1q
+
+		annotation PBI_FormatHint = {"isCustom":true}
+
+	measure 'highest clicks current' = 11
+		formatString: Sunday | 00 am
+		displayFolder: Email Summary
+		lineageTag: 4c61srt6-me5u-o6l8-5ogm-vfn0m8u8e9lu
+
+		annotation PBI_FormatHint = {"isCustom":true}
+
+	measure 'highest clicks 10,000'
+		formatString: clicks
+		displayFolder: Email Summary
+		lineageTag: rp3uv84y-6hw1-2h7y-7sjf-86o0ee09x1y6
+
+		annotation PBI_FormatHint = {"isCustom":true}
+
+	measure 'click-to-open rate current' = 20
+		formatString: 00"%"
+		displayFolder: Email Summary
+		lineageTag: xs9uei93-egsj-ayf6-nem1-ngdx79zcr4fa
+
+		annotation PBI_FormatHint = {"isCustom":true}
+
+	measure 'click-to-open rate vs prev' = 15
+		formatString: 00"%"
+		displayFolder: Email Summary
+		lineageTag: wv0v1bhe-xtaj-vy1m-hi44-yorgrtrx2mdb
+
+		annotation PBI_FormatHint = {"isCustom":true}
+
+	measure 'conversions current' = 39
+		formatString: 00K
+		displayFolder: Email Summary
+		lineageTag: 4iv8h1bu-wa7n-h2mw-hemd-2a96r4dv5i8s
+
+		annotation PBI_FormatHint = {"isCustom":true}
+
+	measure 'conversions vs prev' = 30
+		formatString: 00K
+		displayFolder: Email Summary
+		lineageTag: 8l9zam8j-xtd0-24iv-naeg-lcoe7njx39um
+
+		annotation PBI_FormatHint = {"isCustom":true}
+
+	measure 'emails delivered successfully current' = 250
+		formatString: 000K
+		displayFolder: Email Summary
+		lineageTag: eyk11kas-9dun-9ouz-zy9z-vm4cdr9si8yt
+
+		annotation PBI_FormatHint = {"isCustom":true}
+
+	measure 'emails delivered successfully vs prev' = 250
+		formatString: 000K
+		displayFolder: Email Summary
+		lineageTag: usff87l7-jf5o-c9qh-3qgr-uivm28yof466
+
+		annotation PBI_FormatHint = {"isCustom":true}
+
+	partition 'dim measure' = m
+		mode: import
+		source =
+				let
+				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i44FAA==", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [Column1 = _t]),
+				    #"Removed Columns" = Table.RemoveColumns(Source,{"Column1"})
+				in
+				    #"Removed Columns"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

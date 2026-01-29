@@ -1,0 +1,56 @@
+table 'Email opened'
+	lineageTag: enthhx85-krmo-uxk8-oxyi-2jy7vr99i810
+
+	column email_opened
+		dataType: double
+		formatString: 0.00
+		lineageTag: tk9zeafj-9xcc-2mxi-xwfb-ej3ams3cqe7r
+		summarizeBy: sum
+		sourceColumn: email_opened
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column conversion_rate____
+		dataType: double
+		formatString: 0.00
+		lineageTag: vzvdtvbt-e05i-jcbn-e9jl-xb5cdoy7v4ya
+		summarizeBy: sum
+		sourceColumn: conversion_rate____
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column coordinates
+		dataType: string
+		lineageTag: fpiiclzf-w7uq-ql2j-5t7c-71u8u1kii8o0
+		summarizeBy: none
+		sourceColumn: coordinates
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column dataset
+		dataType: string
+		lineageTag: mq7742k1-dg73-jjgx-424y-mnaytin852bw
+		summarizeBy: none
+		sourceColumn: dataset
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	partition 'Email opened' = m
+		mode: import
+		source =
+				let
+				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("Tc0xC8IwEAXgv1Iyt2BjEF0Fd6mDQ+gQ0qMEm4vWi+C/9y5RcMkLx8d71iqzVa3Se37uSBuOa8Du6PytOUUXFjW2VvUHvhtTTS8GFp8i/BMtNboSifOapuypGYBlBJwchYTFyqLZVSr/S15f8Gb5yPCkQkrTd1BigA5wdjNwE/1mxw8=", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [#"email_opened" = _t, #"conversion_rate____" = _t, #"coordinates" = _t, #"dataset" = _t]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"email_opened", type number}, {"conversion_rate____", type number}, {"coordinates", type text}, {"dataset", type text}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_ResultType = Table
+

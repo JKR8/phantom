@@ -1,0 +1,191 @@
+{
+  "version": "1.1.0",
+  "diagrams": [
+    {
+      "ordinal": 0,
+      "scrollPosition": {
+        "x": 0,
+        "y": 0
+      },
+      "nodes": [
+        {
+          "location": {
+            "x": 825.64140054258689,
+            "y": 152.17969419412475
+          },
+          "nodeIndex": "dim measure",
+          "nodeLineageTag": "b9b9a6fc-aa40-4937-a0cc-6f078e6486ac",
+          "size": {
+            "height": 300,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 1109.6414005425868,
+            "y": 250.17969419412475
+          },
+          "nodeIndex": "By",
+          "nodeLineageTag": "zlw85lvr-zg2u-ku4z-rbif-5tgvs2wmu358",
+          "size": {
+            "height": 104,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 1393.6414005425868,
+            "y": 250.17969419412475
+          },
+          "nodeIndex": "Choose 1st metric",
+          "nodeLineageTag": "zei8p64f-ug8f-exo2-j6gx-midl7ttwy4g2",
+          "size": {
+            "height": 104,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 1677.6414005425868,
+            "y": 250.17969419412475
+          },
+          "nodeIndex": "Choose 2nd metric",
+          "nodeLineageTag": "fpwvajyi-ujua-8dml-14m4-q6jzm6xo8bqs",
+          "size": {
+            "height": 104,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 1961.6414005425868,
+            "y": 226.17969419412475
+          },
+          "nodeIndex": "Ctor by day and email type",
+          "nodeLineageTag": "0fw5468l-89l1-ft9n-dhb1-b1e9jtfi1y3p",
+          "size": {
+            "height": 152,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 2245.6414005425868,
+            "y": 166.17969419412475
+          },
+          "nodeIndex": "dim date",
+          "nodeLineageTag": "f417fd7a-17f5-4de4-87dc-335d47cfa82c",
+          "size": {
+            "height": 272,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 2529.6414005425868,
+            "y": 214.17969419412475
+          },
+          "nodeIndex": "Email opened",
+          "nodeLineageTag": "enthhx85-krmo-uxk8-oxyi-2jy7vr99i810",
+          "size": {
+            "height": 176,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 591.641400542587,
+            "y": 278.13776384942776
+          },
+          "nodeIndex": "Email to conversion _ pipeline",
+          "nodeLineageTag": "3ti2go33-7l8c-nsa2-lsov-tbk0xms03msg",
+          "size": {
+            "height": 128,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 307.44003440730205,
+            "y": 128.2159981409651
+          },
+          "nodeIndex": "Fact",
+          "nodeLineageTag": "191v1ww4-8cbh-ykgp-ucer-sqtl4xnvl6zc",
+          "size": {
+            "height": 248,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 2813.6414005425868,
+            "y": 226.17969419412475
+          },
+          "nodeIndex": "Table0",
+          "nodeLineageTag": "axkajfm9-b4gw-xtct-qiil-a7nr8pr9yu9r",
+          "size": {
+            "height": 152,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 3097.6414005425868,
+            "y": 250.17969419412475
+          },
+          "nodeIndex": "Top",
+          "nodeLineageTag": "1ujb0m7f-tq4g-zpht-uwrk-ua4xu3510gpk",
+          "size": {
+            "height": 104,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 50,
+            "y": 426.3593883882495
+          },
+          "nodeIndex": "X label",
+          "nodeLineageTag": "e6o1yrwq-s3cf-h9jt-poby-ao5d9jem5bhd",
+          "size": {
+            "height": 128,
+            "width": 234
+          },
+          "zIndex": 0
+        },
+        {
+          "location": {
+            "x": 243.17639289378019,
+            "y": -50
+          },
+          "nodeIndex": "X label1",
+          "nodeLineageTag": "0td3x2g2-qlvy-gsrg-oxnc-bt6s2g2pbo8q",
+          "size": {
+            "height": 128,
+            "width": 234
+          },
+          "zIndex": 0
+        }
+      ],
+      "name": "All tables",
+      "zoomValue": 100,
+      "pinKeyFieldsToTop": false,
+      "showExtraHeaderInfo": false,
+      "hideKeyFieldsWhenCollapsed": false,
+      "tablesLocked": false
+    }
+  ],
+  "selectedDiagram": "All tables",
+  "defaultDiagram": "All tables"
+}

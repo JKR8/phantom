@@ -1,0 +1,17 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.5.0/schema.json",
+  "name": "todyprd88pi8s729h323",
+  "position": {
+    "x": 0,
+    "y": 11,
+    "z": 1000,
+    "height": 30,
+    "width": 1266,
+    "tabOrder": 1001
+  },
+  "visualGroup": {
+    "displayName": "Group 1",
+    "groupMode": "ScaleMode"
+  },
+  "parentGroupName": "abea9y2fl2fg8pkob5wa"
+}

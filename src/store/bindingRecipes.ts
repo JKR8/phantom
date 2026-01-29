@@ -20,6 +20,16 @@ export interface BindingRecipe {
   comparison?: 'none' | 'pl' | 'py' | 'both';
   timeGrain?: 'month' | 'quarter' | 'year';
   title?: string;
+  // Combo chart specific
+  barMetric?: string;
+  lineMetric?: string;
+  // Map chart specific
+  geoDimension?: string;
+  mapType?: 'us' | 'world';
+  displayMode?: 'choropleth' | 'bubble';
+  // KPI visual specific
+  goalText?: string;
+  goalValue?: number;
 }
 
 export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): BindingRecipe => {
@@ -65,6 +75,30 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
         timeGrain: 'month',
       };
 
+    case 'stackedArea':
+      return {
+        dimension: primaryCategory,
+        metric: primaryMeasure,
+        timeGrain: 'month',
+      };
+
+    case 'combo':
+      return {
+        dimension: primaryCategory,
+        barMetric: primaryMeasure,
+        lineMetric: secondaryMeasure,
+        topN: 5,
+        sort: 'desc',
+      };
+
+    case 'map':
+      return {
+        geoDimension: getRole('Geography') || primaryCategory,
+        metric: primaryMeasure,
+        mapType: 'us',
+        displayMode: 'choropleth',
+      };
+
     case 'pie':
     case 'donut':
       return {
@@ -94,12 +128,14 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
       };
 
     case 'card':
+    case 'kpi':
     case 'gauge':
     case 'portfolioCard':
       return {
         metric: primaryMeasure,
         operation: 'sum',
         label: primaryMeasure,
+        goalText: 'vs prev',
       };
 
     case 'multiRowCard':
@@ -200,11 +236,25 @@ export const generateSmartTitle = (
     case 'area':
       return met ? `${met} Trend` : 'Trend';
 
+    case 'stackedArea':
+      return met && dim ? `${met} by ${dim} Over Time` : 'Stacked Area';
+
+    case 'combo':
+      return recipe.barMetric && recipe.lineMetric
+        ? `${recipe.barMetric} vs ${recipe.lineMetric}`
+        : 'Combo Chart';
+
+    case 'map':
+      return recipe.metric && recipe.geoDimension
+        ? `${recipe.metric} by ${recipe.geoDimension}`
+        : 'Map';
+
     case 'pie':
     case 'donut':
       return met && dim ? `${met} by ${dim}` : met || 'Distribution';
 
     case 'card':
+    case 'kpi':
     case 'gauge':
     case 'portfolioCard':
       return met ? `Total ${met}` : 'KPI';

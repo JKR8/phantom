@@ -1,0 +1,88 @@
+table 'dim date'
+	lineageTag: f417fd7a-17f5-4de4-87dc-335d47cfa82c
+
+	column Date
+		formatString: yyyy-mm-dd
+		lineageTag: cfab14db-addc-4311-a71f-66a2db2fd9c4
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Date]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Year
+		formatString: 0
+		lineageTag: 99b4b3ce-f270-42c8-9ede-a7f446ecca62
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Year]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Quarter
+		lineageTag: 970f0461-05a3-43f9-9076-d9ce513c32dc
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Quarter]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Month.No'
+		formatString: 0
+		lineageTag: 34554e04-cc35-4038-be6c-41a0ce216fc6
+		summarizeBy: sum
+		isNameInferred
+		sourceColumn: [Month.No]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Month
+		lineageTag: 80a94bee-c078-40b3-8e49-efc484370b37
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Month]
+
+		annotation SummarizationSetBy = Automatic
+
+	column Month-Year
+		lineageTag: 82013b63-be48-44b4-956c-2c6414f2329d
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Month-Year]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Month-Year Short'
+		lineageTag: 2a31d19a-6510-44d8-8d45-91c4673a9bc8
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Month-Year Short]
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Month-Year Sort'
+		lineageTag: 2945cbc1-fb7d-42d7-bfaa-903f71d81845
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [Month-Year Sort]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition 'dim date' = calculated
+		mode: import
+		source =
+				
+				VAR min_date = DATE(2020,1,1)
+				VAR max_date = DATE(2026,12,30)
+				RETURN
+				SUMMARIZE(CALENDAR(min_date,max_date),[Date],"Year", YEAR([Date])
+				                                            ,"Quarter", "Q" & QUARTER([Date])
+				                                            ,"Month.No", MONTH([Date])
+				                                            ,"Month", FORMAT([Date],"MMM")
+				                                            ,"Month-Year", FORMAT([Date],"MMM YYYY")
+				                                            ,"Month-Year Short", FORMAT([Date],"MMM YY")
+				                                            ,"Month-Year Sort", FORMAT([Date],"YYYYMM")
+				)
+
+	annotation PBI_Id = 7e46b5723fc1492c99646c697a60da1a
+

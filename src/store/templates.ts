@@ -62,6 +62,48 @@ export const RetailTemplate: Template = {
   ]
 };
 
+// ─── Email Summary (Email Marketing Analytics) ──────────────────────────────
+// Reference template aligned to the "mokkup" visual language in PBIP exports.
+// Mokkup layout: 1280x720 page with header bar, 5 KPIs + 1 slicer, combo chart, bar chart, funnel, scatter, matrix
+export const EmailTemplate: Template = {
+  name: 'Email',
+  scenario: 'Retail',
+  items: [
+    // ═══ Row 0-4: KPI Row (matches mokkup y=65-70 positions) ═══
+    // First position is a slicer styled as a dropdown in the KPI row
+    { id: 'email-slicer-kpi', type: 'slicer', title: 'Email Type', layout: { x: 0, y: 0, w: 8, h: 4 }, props: { dimension: 'Category' } },
+    // Emails Delivered Successfully (KPI with vs prev comparison)
+    { id: 'email-kpi1', type: 'kpi', title: 'Emails Delivered Successfully', layout: { x: 8, y: 0, w: 8, h: 4 }, props: { metric: 'revenue', operation: 'sum', goalText: 'vs prev' } },
+    // Conversions (KPI with vs prev comparison)
+    { id: 'email-kpi2', type: 'kpi', title: 'Conversions', layout: { x: 16, y: 0, w: 8, h: 4 }, props: { metric: 'profit', operation: 'sum', goalText: 'vs prev' } },
+    // Click-to-Open Rate (KPI with vs prev comparison)
+    { id: 'email-kpi3', type: 'kpi', title: 'Click-to-Open Rate', layout: { x: 24, y: 0, w: 8, h: 4 }, props: { metric: 'discount', operation: 'avg', goalText: 'vs prev' } },
+    // Highest Clicks (KPI with 10,000 goal)
+    { id: 'email-kpi4', type: 'kpi', title: 'Highest Clicks', layout: { x: 32, y: 0, w: 8, h: 4 }, props: { metric: 'quantity', operation: 'sum', goalText: '10,000', goalValue: 10000 } },
+    // Highest Subscribers (KPI with 1,000 goal)
+    { id: 'email-kpi5', type: 'kpi', title: 'Highest Subscribers', layout: { x: 40, y: 0, w: 8, h: 4 }, props: { metric: 'quantity', operation: 'sum', goalText: '1,000', goalValue: 1000 } },
+
+    // ═══ Row 4-14: Main Chart Area (matches mokkup y=147 positions) ═══
+    // Combo Chart: Emails Sent (bars) + Conversion Rate (line) - mokkup lineClusteredColumnComboChart at x=7, w=821
+    { id: 'email-combo1', type: 'combo', title: 'Emails Sent & Conversion Rate', layout: { x: 0, y: 4, w: 31, h: 10 }, props: { dimension: 'Date', barMetric: 'revenue', lineMetric: 'profit' } },
+    // Bar Chart: Performance by Dataset - mokkup clusteredBarChart at x=836
+    { id: 'email-bar1', type: 'bar', title: 'Performance by Dataset', layout: { x: 31, y: 4, w: 17, h: 10 }, props: { dimension: 'Category', metric: 'revenue' } },
+
+    // ═══ Row 14-24: Bottom Section (matches mokkup y=427 positions) ═══
+    // Funnel Chart: Email to Conversion Pipeline - mokkup funnel at x=7, w=328
+    { id: 'email-funnel1', type: 'funnel', title: 'Email to Conversion Pipeline', layout: { x: 0, y: 14, w: 13, h: 10 }, props: { dimension: 'Category', metric: 'revenue' } },
+    // Scatter Chart: Email Opened vs Conversion Rate - mokkup scatterChart at x=340, w=488
+    { id: 'email-scatter1', type: 'scatter', title: 'Email Opened vs Conversion Rate', layout: { x: 13, y: 14, w: 19, h: 10 }, props: { xMetric: 'quantity', yMetric: 'profit', sizeMetric: 'revenue', dimension: 'Category' } },
+    // Matrix: CTOR by Day and Email Type (Heatmap) - mokkup pivotTable at x=836, w=437
+    { id: 'email-matrix1', type: 'matrix', title: 'CTOR by Day & Email Type', layout: { x: 32, y: 14, w: 16, h: 10 }, props: { rows: 'Region', columns: 'Store', values: 'Revenue' } },
+
+    // ═══ Additional Slicers (from mokkup slicer visuals) ═══
+    { id: 'email-slicer1', type: 'slicer', title: 'Campaign', layout: { x: 0, y: 24, w: 8, h: 2 }, props: { dimension: 'Store' } },
+    { id: 'email-slicer2', type: 'slicer', title: 'Segment', layout: { x: 8, y: 24, w: 8, h: 2 }, props: { dimension: 'Region' } },
+    { id: 'email-slicer3', type: 'slicer', title: 'Date Range', layout: { x: 16, y: 24, w: 8, h: 2 }, props: { dimension: 'Product' } },
+  ],
+};
+
 // ─── Marketing (SaaS) ────────────────────────────────────────────────────────
 // Dashboard with slicers on left + KPIs
 export const SaasMarketingTemplate: Template = {
@@ -241,4 +283,14 @@ export const SocialTemplate: Template = {
   ]
 };
 
-export const Templates = [RetailDashboardTemplate, RetailTemplate, SaasMarketingTemplate, HrTemplate, LogisticsTemplate, FinanceTemplate, ZebraTemplate, SocialTemplate];
+export const Templates = [
+  RetailDashboardTemplate,
+  RetailTemplate,
+  EmailTemplate,
+  SaasMarketingTemplate,
+  HrTemplate,
+  LogisticsTemplate,
+  FinanceTemplate,
+  ZebraTemplate,
+  SocialTemplate,
+];

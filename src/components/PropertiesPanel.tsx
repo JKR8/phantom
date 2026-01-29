@@ -105,6 +105,9 @@ const VISUAL_TYPE_LABELS: Record<string, string> = {
   stackedColumn: 'Stacked Column Chart',
   line: 'Line Chart',
   area: 'Area Chart',
+  stackedArea: 'Stacked Area Chart',
+  combo: 'Combo Chart',
+  map: 'Map Chart',
   scatter: 'Scatter Chart',
   pie: 'Pie Chart',
   donut: 'Donut Chart',
@@ -125,11 +128,11 @@ const VISUAL_TYPE_LABELS: Record<string, string> = {
 };
 
 // Types that support topN/sort/showOther
-const TOP_N_TYPES = ['bar', 'column', 'stackedBar', 'stackedColumn', 'pie', 'donut', 'funnel', 'treemap'];
+const TOP_N_TYPES = ['bar', 'column', 'stackedBar', 'stackedColumn', 'pie', 'donut', 'funnel', 'treemap', 'combo'];
 // Types that support comparison
 const COMPARISON_TYPES = ['line', 'area'];
 // Types that support timeGrain
-const TIME_GRAIN_TYPES = ['line', 'area'];
+const TIME_GRAIN_TYPES = ['line', 'area', 'stackedArea'];
 
 function sortByRecommended(items: string[], recommended: string[]): string[] {
   const order = new Map(recommended.map((name, idx) => [name, idx]));
@@ -201,11 +204,14 @@ export const PropertiesPanel: React.FC = () => {
   };
 
   // Determine which fields to show based on visual type
-  const showDimension = ['bar', 'column', 'stackedBar', 'stackedColumn', 'pie', 'donut', 'treemap', 'funnel', 'waterfall', 'slicer', 'boxplot', 'violin'].includes(type);
-  const showMetric = ['bar', 'column', 'stackedBar', 'stackedColumn', 'line', 'area', 'pie', 'donut', 'treemap', 'funnel', 'waterfall', 'card', 'gauge', 'boxplot', 'histogram', 'violin'].includes(type);
+  const showDimension = ['bar', 'column', 'stackedBar', 'stackedColumn', 'pie', 'donut', 'treemap', 'funnel', 'waterfall', 'slicer', 'boxplot', 'violin', 'stackedArea', 'combo'].includes(type);
+  const showMetric = ['bar', 'column', 'stackedBar', 'stackedColumn', 'line', 'area', 'pie', 'donut', 'treemap', 'funnel', 'waterfall', 'card', 'kpi', 'gauge', 'boxplot', 'histogram', 'violin', 'stackedArea', 'map'].includes(type);
   const showScatterMetrics = type === 'scatter' || type === 'regressionScatter';
-  const showOperation = type === 'card';
+  const showComboMetrics = type === 'combo';
+  const showMapSettings = type === 'map';
+  const showOperation = type === 'card' || type === 'kpi';
   const showCardLabel = type === 'card';
+  const showKpiGoalText = type === 'kpi';
   const showTarget = type === 'gauge';
   const showMaxRows = type === 'table';
   const showManualData = ['bar', 'column', 'stackedBar', 'stackedColumn', 'line', 'area', 'pie', 'donut', 'treemap', 'funnel', 'waterfall'].includes(type);
@@ -255,6 +261,15 @@ export const PropertiesPanel: React.FC = () => {
   );
   const isOrphanedYMetric = props.yMetric && !metricOptions.some(
     (opt) => opt.toLowerCase() === props.yMetric?.toLowerCase()
+  );
+  const isOrphanedBarMetric = props.barMetric && !metricOptions.some(
+    (opt) => opt.toLowerCase() === props.barMetric?.toLowerCase()
+  );
+  const isOrphanedLineMetric = props.lineMetric && !metricOptions.some(
+    (opt) => opt.toLowerCase() === props.lineMetric?.toLowerCase()
+  );
+  const isOrphanedGeoDimension = props.geoDimension && !dimensionOptions.some(
+    (opt) => opt.toLowerCase() === props.geoDimension?.toLowerCase()
   );
 
   return (
@@ -429,6 +444,92 @@ export const PropertiesPanel: React.FC = () => {
           </>
         )}
 
+        {showComboMetrics && (
+          <>
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Bar Metric</Label>
+              <Select
+                size="small"
+                value={resolveOptionValue(metricOptions, props.barMetric)}
+                onChange={(_, d) => onPropChange('barMetric', d.value)}
+              >
+                {metricOptions.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </Select>
+              {isOrphanedBarMetric && (
+                <div className={styles.warningRow}>
+                  <WarningRegular className={styles.warningIcon} fontSize={14} />
+                  <span>"{props.barMetric}" not in {scenario}</span>
+                </div>
+              )}
+            </div>
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Line Metric</Label>
+              <Select
+                size="small"
+                value={resolveOptionValue(metricOptions, props.lineMetric)}
+                onChange={(_, d) => onPropChange('lineMetric', d.value)}
+              >
+                {metricOptions.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </Select>
+              {isOrphanedLineMetric && (
+                <div className={styles.warningRow}>
+                  <WarningRegular className={styles.warningIcon} fontSize={14} />
+                  <span>"{props.lineMetric}" not in {scenario}</span>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {showMapSettings && (
+          <>
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Geography</Label>
+              <Select
+                size="small"
+                value={resolveOptionValue(dimensionOptions, props.geoDimension)}
+                onChange={(_, d) => onPropChange('geoDimension', d.value)}
+              >
+                {dimensionOptions.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </Select>
+              {isOrphanedGeoDimension && (
+                <div className={styles.warningRow}>
+                  <WarningRegular className={styles.warningIcon} fontSize={14} />
+                  <span>"{props.geoDimension}" not in {scenario}</span>
+                </div>
+              )}
+            </div>
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Map Type</Label>
+              <Select
+                size="small"
+                value={props.mapType || 'us'}
+                onChange={(_, d) => onPropChange('mapType', d.value)}
+              >
+                <option value="us">US States</option>
+                <option value="world">World Countries</option>
+              </Select>
+            </div>
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Display Mode</Label>
+              <Select
+                size="small"
+                value={props.displayMode || 'choropleth'}
+                onChange={(_, d) => onPropChange('displayMode', d.value)}
+              >
+                <option value="choropleth">Choropleth (Fill)</option>
+                <option value="bubble">Bubble</option>
+              </Select>
+            </div>
+          </>
+        )}
+
         {showTopN && (
           <div className={styles.fieldRow}>
             <Label className={styles.fieldLabel}>Top N</Label>
@@ -525,6 +626,18 @@ export const PropertiesPanel: React.FC = () => {
               size="small"
               value={props.label || ''}
               onChange={(_, d) => onPropChange('label', d.value)}
+            />
+          </div>
+        )}
+
+        {showKpiGoalText && (
+          <div className={styles.fieldRow}>
+            <Label className={styles.fieldLabel}>Goal Text</Label>
+            <Input
+              size="small"
+              placeholder="vs prev"
+              value={props.goalText || ''}
+              onChange={(_, d) => onPropChange('goalText', d.value)}
             />
           </div>
         )}
@@ -716,6 +829,7 @@ export const PropertiesPanel: React.FC = () => {
             </div>
           </>
         )}
+
       </div>
     </div>
   );

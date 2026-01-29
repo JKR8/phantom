@@ -1,0 +1,18 @@
+cultureInfo en-US
+
+	linguisticMetadata =
+			{
+			  "Version": "1.0.0",
+			  "Language": "en-US",
+			  "Entities": {
+			    "ctor_by_day_and_email_type.heatmap_cat1": {
+			      "Binding": {
+			        "ConceptualEntity": "Ctor by day and email type",
+			        "ConceptualProperty": "heatmap_cat1"
+			      },
+			      "State": "Generated"
+			    }
+			  }
+			}
+		contentType: json
+

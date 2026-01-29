@@ -1,0 +1,36 @@
+table 'Email to conversion _ pipeline'
+	lineageTag: 3ti2go33-7l8c-nsa2-lsov-tbk0xms03msg
+
+	column 'Email to conversion _ pipeline_funnel_id'
+		dataType: int64
+		formatString: 0
+		lineageTag: uytmf1j4-wxza-k5na-838f-carot7lknc7z
+		summarizeBy: sum
+		sourceColumn: Email to conversion _ pipeline_funnel_id
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column funnel
+		dataType: string
+		lineageTag: 5n0edhl9-9dhd-n0cq-04wf-gl5ssio23ug8
+		summarizeBy: none
+		sourceColumn: funnel
+		sortByColumn: 'Email to conversion _ pipeline_funnel_id'
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	partition 'Email to conversion _ pipeline' = m
+		mode: import
+		source =
+				let
+				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i45WMlTSUXLNTczMUQhOzStRitWJVjKCCRUr+Bek5qWmgEWNgaI+mXnZxQrOOZnJ2VBRE6BocGlScXJRZhJUyBQo5JyfV5ZaVAISiQUA", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [#"Email to conversion _ pipeline_funnel_id" = _t, #"funnel" = _t]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Email to conversion _ pipeline_funnel_id", Int64.Type}, {"funnel", type text}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_ResultType = Table
+

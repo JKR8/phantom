@@ -1,0 +1,30 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-IN
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 1
+
+annotation PBI_QueryOrder = ["Ctor by day and email type","By","Email opened","Email to conversion _ pipeline","X label","Top","Table0","X label1","Choose 1st metric","Choose 2nd metric","Fact","dim measure"]
+
+annotation PBI_ProTooling = ["DevMode"]
+
+ref table 'Ctor by day and email type'
+ref table By
+ref table 'Email opened'
+ref table 'Email to conversion _ pipeline'
+ref table 'X label'
+ref table Top
+ref table Table0
+ref table 'X label1'
+ref table 'Choose 1st metric'
+ref table 'Choose 2nd metric'
+ref table Fact
+ref table 'dim date'
+ref table 'dim measure'
+
+ref cultureInfo en-US
+

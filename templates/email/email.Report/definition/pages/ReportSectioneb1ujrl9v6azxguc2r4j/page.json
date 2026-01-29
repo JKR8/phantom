@@ -1,0 +1,86 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json",
+  "name": "ReportSectioneb1ujrl9v6azxguc2r4j",
+  "displayName": "Email Summary",
+  "displayOption": "FitToPage",
+  "height": 720,
+  "width": 1280,
+  "objects": {
+    "background": [
+      {
+        "properties": {
+          "color": {
+            "solid": {
+              "color": {
+                "expr": {
+                  "Literal": {
+                    "Value": "'#DADAFC'"
+                  }
+                }
+              }
+            }
+          },
+          "transparency": {
+            "expr": {
+              "Literal": {
+                "Value": "100D"
+              }
+            }
+          }
+        }
+      }
+    ]
+  },
+  "visualInteractions": [
+    {
+      "source": "1eqfezg3mfb0oajpdw7z",
+      "target": "bxso3iywhtznqiwb83vg",
+      "type": "NoFilter"
+    },
+    {
+      "source": "1eqfezg3mfb0oajpdw7z",
+      "target": "yjnjwh5t2cv0ncee8bl7",
+      "type": "NoFilter"
+    },
+    {
+      "source": "1eqfezg3mfb0oajpdw7z",
+      "target": "oys8i5605fnzjovj1gjm",
+      "type": "NoFilter"
+    },
+    {
+      "source": "1eqfezg3mfb0oajpdw7z",
+      "target": "aarbc9wb531pj5k7rrfz",
+      "type": "NoFilter"
+    },
+    {
+      "source": "bxso3iywhtznqiwb83vg",
+      "target": "yjnjwh5t2cv0ncee8bl7",
+      "type": "NoFilter"
+    },
+    {
+      "source": "bxso3iywhtznqiwb83vg",
+      "target": "oys8i5605fnzjovj1gjm",
+      "type": "NoFilter"
+    },
+    {
+      "source": "bxso3iywhtznqiwb83vg",
+      "target": "aarbc9wb531pj5k7rrfz",
+      "type": "NoFilter"
+    },
+    {
+      "source": "yjnjwh5t2cv0ncee8bl7",
+      "target": "oys8i5605fnzjovj1gjm",
+      "type": "NoFilter"
+    },
+    {
+      "source": "yjnjwh5t2cv0ncee8bl7",
+      "target": "aarbc9wb531pj5k7rrfz",
+      "type": "NoFilter"
+    },
+    {
+      "source": "oys8i5605fnzjovj1gjm",
+      "target": "aarbc9wb531pj5k7rrfz",
+      "type": "NoFilter"
+    }
+  ]
+}

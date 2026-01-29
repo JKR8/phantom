@@ -1,0 +1,12 @@
+relationship 7h7po7so-bq7z-db3g-vw6k-tsdi2g7rkm0j
+	fromColumn: Fact.'Email to conversion _ pipeline_funnel_id'
+	toColumn: 'Email to conversion _ pipeline'.'Email to conversion _ pipeline_funnel_id'
+
+relationship az9we6lb-at1b-41zw-v9vs-x614xfjfwgya
+	fromColumn: Fact.column_id_1
+	toColumn: 'X label'.column_id_1
+
+relationship 4nzk3x2o-eco6-cc1a-jpgj-z6nfa0m3i7iz
+	fromColumn: Fact.combochart_id
+	toColumn: 'X label1'.combochart_id
+

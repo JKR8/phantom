@@ -1,0 +1,36 @@
+table 'X label1'
+	lineageTag: 0td3x2g2-qlvy-gsrg-oxnc-bt6s2g2pbo8q
+
+	column combochart_id
+		dataType: int64
+		formatString: 0
+		lineageTag: 13ygvaen-1yqt-xdz5-1s7x-3kgrho7pbwmc
+		summarizeBy: sum
+		sourceColumn: combochart_id
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column combochart
+		dataType: string
+		lineageTag: 03zkfy2q-6a79-y8dt-19yp-jl7a5tpig62m
+		summarizeBy: none
+		sourceColumn: combochart
+		sortByColumn: combochart_id
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	partition 'X label1' = m
+		mode: import
+		source =
+				let
+				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i45WMlTSUfJKzFMwMlKK1YlWMgJy3VKTYFxjINc3sQjGNQFyHQvgXFOwbCWMawYyqhRulDmYmwPjWoD0lqbDuJZAbnBqAYxraADk+yeXwPkgd/nll8H5IIe5pCaD+bEA", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [#"combochart_id" = _t, #"combochart" = _t]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"combochart_id", Int64.Type}, {"combochart", type text}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_ResultType = Table
+

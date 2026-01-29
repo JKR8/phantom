@@ -1,0 +1,45 @@
+table 'Ctor by day and email type'
+	lineageTag: 0fw5468l-89l1-ft9n-dhb1-b1e9jtfi1y3p
+
+	column heatmap_cat1
+		dataType: string
+		lineageTag: 4k5o4sp4-0hmi-950b-pog7-ft8gvkhqz37k
+		summarizeBy: none
+		sourceColumn: heatmap_cat1
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column heatmap_cat2
+		dataType: string
+		lineageTag: 53ja50k8-0p7c-d1te-wbv3-4vgebzrsma6o
+		summarizeBy: none
+		sourceColumn: heatmap_cat2
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column heatmap_values
+		dataType: int64
+		formatString: 0
+		lineageTag: vo2eg075-mg3w-c7rs-kc33-6oidbd6wvau5
+		summarizeBy: sum
+		sourceColumn: heatmap_values
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	partition 'Ctor by day and email type' = m
+		mode: import
+		source =
+				let
+				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("bZJBa4NAEIX/i+cE4kZ39dpDb4FSAzmEHMQMaWhUkGwg/z5b31TJWy9z+OYxfs7s8Zgcrt36o25+k1Wy67tQC5ucVm987yXUPOIHOYdq0ij/40NNC+afwzVU65hX9T1UF+Ur/+djSnC5NX0rk2ZmCcNyuyEMSec4PTpang1Fw0NgmOaMR0H95NfQn31zn/eYEYZg4QhDsNxyehTUpc8YghnPhmCMR8ECgpUfHvKc/Ez2TnV/RGGnN5uzuPCGBkNO1zRRuBnKQi1H9lvW0l3qi7TSzYZ2uQlRPR039U0uN6Fd2sUm5PUVchP/oGuImv5/n6cX", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [#"heatmap_cat1" = _t, #"heatmap_cat2" = _t, #"heatmap_values" = _t]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"heatmap_cat1", type text}, {"heatmap_cat2", type text}, {"heatmap_values", Int64.Type}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_ResultType = Table
+

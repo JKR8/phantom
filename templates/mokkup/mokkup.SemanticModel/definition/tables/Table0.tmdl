@@ -1,0 +1,46 @@
+table Table0
+	lineageTag: axkajfm9-b4gw-xtct-qiil-a7nr8pr9yu9r
+
+	column kpi_title
+		dataType: string
+		lineageTag: ti4ysw59-cbdt-111b-6om0-c5vr5jzasj2u
+		summarizeBy: none
+		sourceColumn: kpi_title
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column measured_value
+		dataType: double
+		formatString: 0.000
+		lineageTag: 2wrbgsar-m7f7-98rw-a1kv-xeaz346pkxsf
+		summarizeBy: sum
+		sourceColumn: measured_value
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column percentage_change
+		dataType: double
+		formatString: 0.00%;-0.00%;0.00%
+		lineageTag: qnc2lxnt-iyvc-5bm3-2slk-akbqtyw5zc99
+		summarizeBy: sum
+		sourceColumn: percentage_change
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	partition Table0 = m
+		mode: import
+		source =
+				let
+				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i45WCskvScxRCM0rLk0qTi7KTEotKlbSUTI2szQAUgZ6hkZKsbEA", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [#"kpi_title" = _t, #"measured_value" = _t, #"percentage_change" = _t]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"kpi_title", type text}, {"measured_value", type number}, {"percentage_change", type number}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_ResultType = Table
+

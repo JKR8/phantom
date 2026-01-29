@@ -1,0 +1,36 @@
+table 'X label'
+	lineageTag: e6o1yrwq-s3cf-h9jt-poby-ao5d9jem5bhd
+
+	column column_id_1
+		dataType: int64
+		formatString: 0
+		lineageTag: pe8b8s1a-dm3k-gruw-n562-167jn3cudowl
+		summarizeBy: sum
+		sourceColumn: column_id_1
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column column
+		dataType: string
+		lineageTag: 7ascwp7c-epua-qjki-14c6-uhb0m5yav4ji
+		summarizeBy: none
+		sourceColumn: column
+		sortByColumn: column_id_1
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	partition 'X label' = m
+		mode: import
+		source =
+				let
+				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i45WMlTSUQrJz1fwTcyrVHDNTczMKVaK1YlWMgKK++WXKHjmlaQWpRaXpKaAhY2Bwp5FRak5qWWJeSUKzvlA6bwSsJQJUMolM0UhD6gruDSpOLkoMykVLGMKlPEvyUgtUoqNBQA=", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [#"column_id_1" = _t, #"column" = _t]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"column_id_1", Int64.Type}, {"column", type text}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_ResultType = Table
+
