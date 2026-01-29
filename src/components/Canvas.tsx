@@ -1,6 +1,9 @@
 import React, { useRef, useState } from 'react';
 // @ts-ignore - @types/react-grid-layout is outdated for v2.2.2
-import { GridLayout, useContainerWidth } from 'react-grid-layout';
+import { GridLayout, useContainerWidth, getCompactor } from 'react-grid-layout';
+
+// Use the built-in getCompactor with null to disable compaction
+const noCompactor = getCompactor(null);
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import { makeStyles, shorthands } from '@fluentui/react-components';
@@ -25,6 +28,8 @@ import { GaugeChart } from './GaugeChart';
 import { MultiRowCard } from './MultiRowCard';
 import { Matrix } from './Matrix';
 import { WaterfallChart } from './WaterfallChart';
+// Statistical components
+import { BoxplotChart, HistogramChart, ViolinChart, RegressionScatterChart } from './statistical';
 import { getRecipeForVisual, generateSmartTitle } from '../store/bindingRecipes';
 import { ScenarioType } from '../store/semanticLayer';
 import { SlotLayouts } from '../store/slotLayouts';
@@ -56,7 +61,7 @@ const useStyles = makeStyles({
     backgroundImage: 'radial-gradient(circle, #D2D0CE 1px, transparent 1px)',
     backgroundSize: '28px 28px',
     backgroundPosition: '14px 14px',
-    minHeight: '900px',
+    minHeight: '860px',  // Matches layout presets (30 rows)
     boxShadow: '0 2px 12px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.06)',
     ...shorthands.margin('0', 'auto'),
     width: '100%',
@@ -97,6 +102,7 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
   const items = useStore((state) => state.items);
   const scenario = useStore((state) => state.scenario);
   const layoutMode = useStore((state) => state.layoutMode);
+  const selectedArchetype = useStore((state) => state.selectedArchetype);
   const updateLayout = useStore((state) => state.updateLayout);
   const addItem = useStore((state) => state.addItem);
   const removeItem = useStore((state) => state.removeItem);
@@ -113,20 +119,20 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
     pixelY: number;
     prebuiltConfig?: any;
   } | null>(null);
+  const dropHandledRef = useRef(false); // Guard against double-handling drops
 
   const finalizeDrop = (visualType: string, gridX: number, gridY: number, w: number, h: number, prebuiltConfig?: any) => {
     const id = `visual-${Date.now()}`;
+    console.log('[finalizeDrop] Adding item:', { visualType, gridX, gridY, w, h });
 
     if (prebuiltConfig) {
-      setTimeout(() => {
-        addItem({
-          id,
-          type: prebuiltConfig.type as any,
-          title: prebuiltConfig.title,
-          layout: { x: gridX, y: gridY, w, h },
-          props: { ...prebuiltConfig.props },
-        });
-      }, 0);
+      addItem({
+        id,
+        type: prebuiltConfig.type as any,
+        title: prebuiltConfig.title,
+        layout: { x: gridX, y: gridY, w, h },
+        props: { ...prebuiltConfig.props },
+      });
       return;
     }
 
@@ -134,18 +140,60 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
     const props = { ...recipe };
     const title = generateSmartTitle(visualType, recipe, scenario as ScenarioType);
 
-    setTimeout(() => {
-      addItem({
-        id,
-        type: visualType as any,
-        title,
-        layout: { x: gridX, y: gridY, w, h },
-        props,
-      });
-    }, 0);
+    addItem({
+      id,
+      type: visualType as any,
+      title,
+      layout: { x: gridX, y: gridY, w, h },
+      props,
+    });
+  };
+
+  // Helper function to find the best slot for a drop position
+  const findSlotForPosition = (dropX: number, dropY: number) => {
+    const slots = SlotLayouts[selectedArchetype];
+
+    console.log('[findSlotForPosition] Input:', { dropX, dropY, archetype: selectedArchetype });
+
+    // First check if we dropped directly inside a slot
+    const hitSlot = slots.find(s =>
+      dropX >= s.x && dropX < s.x + s.w &&
+      dropY >= s.y && dropY < s.y + s.h
+    );
+
+    if (hitSlot) {
+      console.log('[findSlotForPosition] Hit slot:', hitSlot.name, 'at y=', hitSlot.y);
+      return hitSlot;
+    }
+
+    // Find closest slot by distance to slot center
+    let minDist = Infinity;
+    let closest = slots[0];
+    slots.forEach(s => {
+      const slotCenterX = s.x + s.w / 2;
+      const slotCenterY = s.y + s.h / 2;
+      const dx = dropX - slotCenterX;
+      const dy = dropY - slotCenterY;
+      const dist = dx * dx + dy * dy;
+      if (dist < minDist) {
+        minDist = dist;
+        closest = s;
+      }
+    });
+    console.log('[findSlotForPosition] Closest slot:', closest.name);
+    return closest;
   };
 
   const handleDrop = (_layout: any, item: any, e: any) => {
+    console.log('[handleDrop] Called with item:', item);
+
+    // Guard against double handling (both handleDrop and handleCanvasDrop firing)
+    if (dropHandledRef.current) {
+      console.log('[handleDrop] Skipping - already handled');
+      dropHandledRef.current = false;
+      return;
+    }
+
     // Use the global dragged type since dataTransfer may not be accessible
     const event = e?.nativeEvent || e;
     const visualType = dragState.visualType ||
@@ -154,50 +202,31 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
 
     if (!visualType) return;
 
+    dropHandledRef.current = true;
+    setTimeout(() => { dropHandledRef.current = false; }, 100); // Reset after short delay
+
     // Get position from drop, default to 0,0 if not provided
     let x = typeof item?.x === 'number' ? item.x : 0;
     let y = typeof item?.y === 'number' ? item.y : 0;
+    console.log('[handleDrop] Grid position from RGL:', { x, y });
     let w = (typeof item?.w === 'number' && item.w >= 2) ? item.w : 8;
     let h = (typeof item?.h === 'number' && item.h >= 2) ? item.h : 4;
 
-    // Standard Layout Snap
+    // Standard Layout Snap - snap to slot position and size
     if (layoutMode === 'Standard') {
-        const slots = SlotLayouts['Executive']; // Default to Executive for now
-        const hitSlot = slots.find(s =>
-            x >= s.x && x < s.x + s.w &&
-            y >= s.y && y < s.y + s.h
-        );
-
-        if (hitSlot) {
-            x = hitSlot.x;
-            y = hitSlot.y;
-            w = hitSlot.w;
-            h = hitSlot.h;
-        } else {
-             let minDist = Infinity;
-             let closest = slots[0];
-             slots.forEach(s => {
-                 const dx = (x) - (s.x + s.w/2);
-                 const dy = (y) - (s.y + s.h/2);
-                 const dist = dx*dx + dy*dy;
-                 if (dist < minDist) {
-                     minDist = dist;
-                     closest = s;
-                 }
-             });
-             x = closest.x;
-             y = closest.y;
-             w = closest.w;
-             h = closest.h;
-        }
+      const slot = findSlotForPosition(x, y);
+      x = slot.x;
+      y = slot.y;
+      w = slot.w;
+      h = slot.h;
     }
 
     // If a pre-built config was dragged, use it directly (no variant picker)
     if (dragState.prebuiltConfig) {
       const cfg = dragState.prebuiltConfig;
       if (layoutMode !== 'Standard') {
-          w = cfg.w;
-          h = cfg.h;
+        w = cfg.w;
+        h = cfg.h;
       }
       finalizeDrop(cfg.type, x, y, w, h, cfg);
       return;
@@ -218,7 +247,7 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
   };
 
   const generateLayout = () => {
-    return items.map((item) => ({
+    const layout = items.map((item) => ({
       i: item.id,
       x: item.layout.x,
       y: item.layout.y,
@@ -230,6 +259,10 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
       isResizable: !readOnly,
       static: !!readOnly,
     }));
+    if (layout.some(l => l.y > 0)) {
+      console.log('[generateLayout] Layout with y>0:', JSON.stringify(layout.map(l => ({ i: l.i, x: l.x, y: l.y }))));
+    }
+    return layout;
   };
 
   const renderVisual = (item: any) => {
@@ -270,6 +303,16 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
         return <WaterfallChart {...item.props} />;
       case 'slicer':
         return <Slicer {...item.props} />;
+      // Statistical visuals
+      case 'boxplot':
+        return <BoxplotChart {...item.props} />;
+      case 'histogram':
+        return <HistogramChart {...item.props} />;
+      case 'violin':
+        return <ViolinChart {...item.props} />;
+      case 'regressionScatter':
+        return <RegressionScatterChart {...item.props} />;
+      // Portfolio-specific visuals
       case 'controversyBar':
         return <ControversyBarChart {...item.props} />;
       case 'entityTable':
@@ -295,11 +338,12 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
     }
   };
 
-  const isInitialMount = useRef(true);
   const onLayoutChange = (layout: any) => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
+    const y0Items = layout.filter((l: any) => l.y === 0);
+    const yPositiveItems = layout.filter((l: any) => l.y > 0);
+    console.log('[onLayoutChange] y=0 items:', y0Items.length, 'y>0 items:', yPositiveItems.length);
+    if (yPositiveItems.length > 0) {
+      console.log('[onLayoutChange] y>0 items:', JSON.stringify(yPositiveItems.map((l: any) => ({ i: l.i, y: l.y }))));
     }
     if (mounted) {
       updateLayout(layout);
@@ -312,10 +356,22 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
     e.preventDefault();
     e.stopPropagation();
 
+    console.log('[handleCanvasDrop] Called');
+
+    // Guard against double handling (both handleDrop and handleCanvasDrop firing)
+    if (dropHandledRef.current) {
+      console.log('[handleCanvasDrop] Skipping - already handled');
+      dropHandledRef.current = false;
+      return;
+    }
+
     const visualType = dragState.visualType ||
                        e.dataTransfer?.getData?.('visualType') ||
                        e.dataTransfer?.getData?.('text/plain');
     if (!visualType) return;
+
+    dropHandledRef.current = true;
+    setTimeout(() => { dropHandledRef.current = false; }, 100); // Reset after short delay
 
     // Calculate grid position from mouse coordinates
     const rect = (containerRef as React.RefObject<HTMLDivElement>).current?.getBoundingClientRect();
@@ -331,14 +387,38 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
       const relY = e.clientY - rect.top - GRID_PADDING[1];
       gridX = Math.max(0, Math.floor(relX / (colWidth + margin)));
       gridY = Math.max(0, Math.floor(relY / (ROW_HEIGHT + GRID_MARGIN[1])));
-      // Clamp to grid bounds
-      gridX = Math.min(gridX, GRID_COLS - 16);
-      gridY = Math.max(0, gridY);
+      console.log('[handleCanvasDrop] Calculated grid:', { relX, relY, gridX, gridY, colWidth });
+      // Clamp to grid bounds (only for Free mode; Standard mode snaps to slots)
+      if (layoutMode !== 'Standard') {
+        gridX = Math.min(gridX, GRID_COLS - 16);
+      } else {
+        gridX = Math.min(gridX, GRID_COLS - 1);
+      }
+    }
+
+    let finalW = 16;
+    let finalH = 8;
+
+    // Standard Layout Snap - snap to nearest slot
+    if (layoutMode === 'Standard') {
+      try {
+        const slot = findSlotForPosition(gridX, gridY);
+        console.log('[handleCanvasDrop] Slot found:', slot);
+        gridX = slot.x;
+        gridY = slot.y;
+        finalW = slot.w;
+        finalH = slot.h;
+        console.log('[handleCanvasDrop] After snap:', { gridX, gridY, finalW, finalH });
+      } catch (err) {
+        console.error('[handleCanvasDrop] Error during snap:', err);
+      }
     }
 
     if (dragState.prebuiltConfig) {
       const cfg = dragState.prebuiltConfig;
-      finalizeDrop(cfg.type, gridX, gridY, cfg.w, cfg.h, cfg);
+      const w = layoutMode === 'Standard' ? finalW : cfg.w;
+      const h = layoutMode === 'Standard' ? finalH : cfg.h;
+      finalizeDrop(cfg.type, gridX, gridY, w, h, cfg);
       return;
     }
 
@@ -346,11 +426,11 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
     if (VARIANT_PARENT_TYPES.has(visualType)) {
       const pixelX = e.clientX;
       const pixelY = e.clientY;
-      setPendingDrop({ parentType: visualType, x: gridX, y: gridY, w: 16, h: 8, pixelX, pixelY });
+      setPendingDrop({ parentType: visualType, x: gridX, y: gridY, w: finalW, h: finalH, pixelX, pixelY });
       return;
     }
 
-    finalizeDrop(visualType, gridX, gridY, 16, 8);
+    finalizeDrop(visualType, gridX, gridY, finalW, finalH);
   };
 
   const handleCanvasClick = (e: React.MouseEvent) => {
@@ -362,7 +442,7 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
 
   const renderSlots = () => {
     if (layoutMode !== 'Standard') return null;
-    const slots = SlotLayouts['Executive'];
+    const slots = SlotLayouts[selectedArchetype];
     
     // Calculate col width (approximate, assuming 12px margin and 24 cols)
     // Actually, simple % based positioning is easier for overlays
@@ -450,8 +530,8 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
         />
         <GridLayout
           className="layout"
-          layout={generateLayout()}
           width={width}
+          compactor={noCompactor}
           gridConfig={{
             cols: GRID_COLS,
             rowHeight: ROW_HEIGHT,
@@ -464,17 +544,18 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly }) => {
             handles: ['se', 'sw', 'ne', 'nw', 'e', 'w', 'n', 's']
           }}
           dropConfig={{
-            enabled: !readOnly,
-            defaultItem: { w: 16, h: 8 }
+            enabled: false  // Disable RGL's drop handling - we use native drops
           }}
           onLayoutChange={onLayoutChange}
-          onDrop={handleDrop}
         >
           {items.map((item) => {
             // Hide menu for slicers and search controls in Portfolio scenario
             const hideMenu = scenario === 'Portfolio' && (item.type === 'slicer' || item.type === 'justificationSearch');
+            if (item.layout.y > 0) {
+              console.log('[render] Item with y>0:', item.id, 'y=', item.layout.y);
+            }
             return (
-              <div key={item.id}>
+              <div key={item.id} data-grid={{ x: item.layout.x, y: item.layout.y, w: item.layout.w, h: item.layout.h }}>
                 {item.type === 'portfolioHeader' || item.type === 'portfolioHeaderBar' || item.type === 'controversyBottomPanel' || item.type === 'portfolioKPICards' ? (
                   // These components render without visual container wrapper
                   renderVisual(item)

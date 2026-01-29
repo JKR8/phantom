@@ -134,6 +134,33 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
         dimension: primaryCategory
       };
 
+    // Statistical visuals
+    case 'boxplot':
+      return {
+        dimension: primaryCategory,
+        metric: primaryMeasure,
+      };
+
+    case 'histogram':
+      return {
+        metric: primaryMeasure,
+        dimension: primaryCategory, // Optional: for filtering
+      };
+
+    case 'violin':
+      return {
+        dimension: primaryCategory,
+        metric: primaryMeasure,
+      };
+
+    case 'regressionScatter':
+      return {
+        xMetric: primaryMeasure,
+        yMetric: secondaryMeasure,
+        dimension: primaryCategory,
+      };
+
+    // Portfolio-specific visuals
     case 'controversyBar':
       return { dimension: 'Group' };
     case 'entityTable':
@@ -207,6 +234,21 @@ export const generateSmartTitle = (
 
     case 'slicer':
       return dim ? `Filter by ${dim}` : 'Slicer';
+
+    // Statistical visuals
+    case 'boxplot':
+      return met && dim ? `${met} by ${dim}` : 'Boxplot';
+
+    case 'histogram':
+      return met ? `${met} Distribution` : 'Histogram';
+
+    case 'violin':
+      return met && dim ? `${met} by ${dim}` : 'Violin';
+
+    case 'regressionScatter':
+      return recipe.xMetric && recipe.yMetric
+        ? `${recipe.xMetric} vs ${recipe.yMetric} (Regression)`
+        : 'Regression';
 
     default:
       return visualType.charAt(0).toUpperCase() + visualType.slice(1);

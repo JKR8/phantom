@@ -117,6 +117,11 @@ const VISUAL_TYPE_LABELS: Record<string, string> = {
   matrix: 'Matrix',
   waterfall: 'Waterfall Chart',
   slicer: 'Slicer',
+  // Statistical visuals
+  boxplot: 'Boxplot',
+  histogram: 'Histogram',
+  violin: 'Violin Plot',
+  regressionScatter: 'Scatter with Regression',
 };
 
 // Types that support topN/sort/showOther
@@ -196,9 +201,9 @@ export const PropertiesPanel: React.FC = () => {
   };
 
   // Determine which fields to show based on visual type
-  const showDimension = ['bar', 'column', 'stackedBar', 'stackedColumn', 'pie', 'donut', 'treemap', 'funnel', 'waterfall', 'slicer'].includes(type);
-  const showMetric = ['bar', 'column', 'stackedBar', 'stackedColumn', 'line', 'area', 'pie', 'donut', 'treemap', 'funnel', 'waterfall', 'card', 'gauge'].includes(type);
-  const showScatterMetrics = type === 'scatter';
+  const showDimension = ['bar', 'column', 'stackedBar', 'stackedColumn', 'pie', 'donut', 'treemap', 'funnel', 'waterfall', 'slicer', 'boxplot', 'violin'].includes(type);
+  const showMetric = ['bar', 'column', 'stackedBar', 'stackedColumn', 'line', 'area', 'pie', 'donut', 'treemap', 'funnel', 'waterfall', 'card', 'gauge', 'boxplot', 'histogram', 'violin'].includes(type);
+  const showScatterMetrics = type === 'scatter' || type === 'regressionScatter';
   const showOperation = type === 'card';
   const showCardLabel = type === 'card';
   const showTarget = type === 'gauge';
@@ -209,6 +214,11 @@ export const PropertiesPanel: React.FC = () => {
   const showShowOther = TOP_N_TYPES.includes(type) && props.topN && props.topN !== 'All';
   const showComparison = COMPARISON_TYPES.includes(type);
   const showTimeGrain = TIME_GRAIN_TYPES.includes(type);
+  // Statistical visual specific settings
+  const showWhiskerMethod = type === 'boxplot';
+  const showBinMethod = type === 'histogram';
+  const showKernelSettings = type === 'violin';
+  const showRegressionType = type === 'regressionScatter';
 
   const scenarioFields = ScenarioFields[scenario] || [];
   const recDims = RecommendedDimensions[scenario] || [];
@@ -541,6 +551,170 @@ export const PropertiesPanel: React.FC = () => {
               onChange={(_, d) => onPropChange('maxRows', Number(d.value) || 100)}
             />
           </div>
+        )}
+
+        {/* Statistical Visual Settings */}
+        {showWhiskerMethod && (
+          <>
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Whisker Method</Label>
+              <Select
+                size="small"
+                value={props.whiskerMethod || 'tukey'}
+                onChange={(_, d) => onPropChange('whiskerMethod', d.value)}
+              >
+                <option value="tukey">Tukey (1.5 IQR)</option>
+                <option value="minmax">Min/Max</option>
+                <option value="percentile">Percentile (5/95)</option>
+                <option value="stddev">Std Dev (2)</option>
+              </Select>
+            </div>
+            <div className={styles.fieldRow}>
+              <Checkbox
+                checked={props.showOutliers !== false}
+                onChange={(_, d) => onPropChange('showOutliers', !!d.checked)}
+                label="Show outliers"
+              />
+            </div>
+            <div className={styles.fieldRow}>
+              <Checkbox
+                checked={props.showMean === true}
+                onChange={(_, d) => onPropChange('showMean', !!d.checked)}
+                label="Show mean"
+              />
+            </div>
+          </>
+        )}
+
+        {showBinMethod && (
+          <>
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Bin Method</Label>
+              <Select
+                size="small"
+                value={props.binMethod || 'sturges'}
+                onChange={(_, d) => onPropChange('binMethod', d.value)}
+              >
+                <option value="sturges">Sturges</option>
+                <option value="scott">Scott</option>
+                <option value="freedman-diaconis">Freedman-Diaconis</option>
+                <option value="sqrt">Square Root</option>
+                <option value="fixed-count">Fixed Count</option>
+              </Select>
+            </div>
+            {props.binMethod === 'fixed-count' && (
+              <div className={styles.fieldRow}>
+                <Label className={styles.fieldLabel}>Bin Count</Label>
+                <Input
+                  size="small"
+                  type="number"
+                  value={String(props.binCount || 10)}
+                  onChange={(_, d) => onPropChange('binCount', Number(d.value) || 10)}
+                />
+              </div>
+            )}
+            <div className={styles.fieldRow}>
+              <Checkbox
+                checked={props.showDensityCurve === true}
+                onChange={(_, d) => onPropChange('showDensityCurve', !!d.checked)}
+                label="Show density curve"
+              />
+            </div>
+            <div className={styles.fieldRow}>
+              <Checkbox
+                checked={props.showMeanLine === true}
+                onChange={(_, d) => onPropChange('showMeanLine', !!d.checked)}
+                label="Show mean line"
+              />
+            </div>
+          </>
+        )}
+
+        {showKernelSettings && (
+          <>
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Kernel</Label>
+              <Select
+                size="small"
+                value={props.kernel || 'gaussian'}
+                onChange={(_, d) => onPropChange('kernel', d.value)}
+              >
+                <option value="gaussian">Gaussian</option>
+                <option value="epanechnikov">Epanechnikov</option>
+                <option value="uniform">Uniform</option>
+                <option value="triangular">Triangular</option>
+              </Select>
+            </div>
+            <div className={styles.fieldRow}>
+              <Checkbox
+                checked={props.showInnerBox !== false}
+                onChange={(_, d) => onPropChange('showInnerBox', !!d.checked)}
+                label="Show inner box"
+              />
+            </div>
+            <div className={styles.fieldRow}>
+              <Checkbox
+                checked={props.showPoints === true}
+                onChange={(_, d) => onPropChange('showPoints', !!d.checked)}
+                label="Show data points"
+              />
+            </div>
+          </>
+        )}
+
+        {showRegressionType && (
+          <>
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Regression Type</Label>
+              <Select
+                size="small"
+                value={props.regressionType || 'linear'}
+                onChange={(_, d) => onPropChange('regressionType', d.value)}
+              >
+                <option value="none">None</option>
+                <option value="linear">Linear</option>
+                <option value="polynomial">Polynomial</option>
+                <option value="loess">LOESS</option>
+              </Select>
+            </div>
+            {props.regressionType === 'polynomial' && (
+              <div className={styles.fieldRow}>
+                <Label className={styles.fieldLabel}>Polynomial Degree</Label>
+                <Select
+                  size="small"
+                  value={String(props.polynomialDegree || 2)}
+                  onChange={(_, d) => onPropChange('polynomialDegree', Number(d.value))}
+                >
+                  <option value="2">2 (Quadratic)</option>
+                  <option value="3">3 (Cubic)</option>
+                  <option value="4">4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                </Select>
+              </div>
+            )}
+            <div className={styles.fieldRow}>
+              <Checkbox
+                checked={props.showConfidenceInterval === true}
+                onChange={(_, d) => onPropChange('showConfidenceInterval', !!d.checked)}
+                label="Show confidence interval"
+              />
+            </div>
+            <div className={styles.fieldRow}>
+              <Checkbox
+                checked={props.showEquation !== false}
+                onChange={(_, d) => onPropChange('showEquation', !!d.checked)}
+                label="Show equation"
+              />
+            </div>
+            <div className={styles.fieldRow}>
+              <Checkbox
+                checked={props.showRSquared !== false}
+                onChange={(_, d) => onPropChange('showRSquared', !!d.checked)}
+                label="Show R-squared"
+              />
+            </div>
+          </>
         )}
       </div>
     </div>

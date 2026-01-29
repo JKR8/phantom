@@ -93,7 +93,7 @@ export const LoginPage: React.FC = () => {
               },
             },
           }}
-          providers={['azure']}
+          providers={[]}
           redirectTo={window.location.origin + '/auth/callback'}
         />
         <div className={styles.guestLink}>

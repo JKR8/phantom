@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { DashboardState, Scenario, DashboardItem, LayoutMode, DbDashboard } from '../types';
+import { DashboardState, Scenario, DashboardItem, LayoutMode, Archetype, DbDashboard } from '../types';
 import { generateRetailData, generateSaaSData, generateHRData, generateLogisticsData, generatePortfolioData, generateSocialData, generateFinanceData } from '../engine/dataGenerator';
 import { useThemeStore, PALETTES, DEFAULT_PALETTE } from './useThemeStore';
 
@@ -36,6 +36,7 @@ export const useStore = create<DashboardState>((set, get) => ({
   items: initialItems,
   selectedItemId: null,
   layoutMode: 'Free',
+  selectedArchetype: 'Executive',
   // Persistence fields
   dashboardId: null,
   dashboardName: 'Untitled Dashboard',
@@ -62,6 +63,7 @@ export const useStore = create<DashboardState>((set, get) => ({
     }
   },
   setLayoutMode: (mode: LayoutMode) => set({ layoutMode: mode, isDirty: true }),
+  setArchetype: (archetype: Archetype) => set({ selectedArchetype: archetype, isDirty: true }),
   setFilter: (column, value) => {
     set((state) => {
       const newFilters = { ...state.filters };
@@ -227,6 +229,7 @@ export const useStore = create<DashboardState>((set, get) => ({
       items: initialItems,
       selectedItemId: null,
       layoutMode: 'Free',
+      selectedArchetype: 'Executive',
       dashboardId: null,
       dashboardName: 'Untitled Dashboard',
       isPublic: false,

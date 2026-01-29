@@ -16,6 +16,8 @@ import {
   CalendarRegular,
   ShieldRegular,
   DocumentHeaderRegular,
+  DataAreaRegular,
+  MathFormulaRegular,
 } from '@fluentui/react-icons';
 
 const useStyles = makeStyles({
@@ -97,6 +99,13 @@ const visuals = [
   { id: 'matrix', icon: GridRegular, label: 'Matrix', tooltip: 'Matrix' },
   { id: 'waterfall', icon: DataHistogramRegular, label: 'Waterfall', tooltip: 'Waterfall Chart' },
   { id: 'slicer', icon: TextBulletListSquareRegular, label: 'Slicer', tooltip: 'Slicer' },
+];
+
+const statisticalVisuals = [
+  { id: 'boxplot', icon: DataAreaRegular, label: 'Boxplot', tooltip: 'Box and Whisker Plot' },
+  { id: 'histogram', icon: DataHistogramRegular, label: 'Histogram', tooltip: 'Histogram with density curve' },
+  { id: 'violin', icon: DataAreaRegular, label: 'Violin', tooltip: 'Violin Plot with KDE' },
+  { id: 'regressionScatter', icon: MathFormulaRegular, label: 'Regress.', tooltip: 'Scatter with Regression Line' },
 ];
 
 const portfolioVisuals = [
@@ -210,6 +219,32 @@ export const VisualizationsPane: React.FC = () => {
       <div className={styles.header}>Visualizations</div>
       <div className={styles.content}>
         {visuals.map((visual) => (
+          <Tooltip key={visual.id} content={visual.tooltip} relationship="label">
+            <div
+              className={styles.visualButton}
+              data-testid={`visual-source-${visual.id}`}
+              draggable
+              onDragStart={(e) => {
+                dragState.visualType = visual.id;
+                dragState.prebuiltConfig = null;
+                e.dataTransfer.setData('visualType', visual.id);
+                e.dataTransfer.setData('text/plain', visual.id);
+                e.dataTransfer.effectAllowed = 'copy';
+              }}
+              onDragEnd={() => {
+                setTimeout(() => { dragState.visualType = null; dragState.prebuiltConfig = null; }, 100);
+              }}
+              unselectable="on"
+            >
+              <visual.icon className={styles.visualIcon} fontSize={24} style={{ pointerEvents: 'none' }} />
+              <Text className={styles.visualLabel} style={{ pointerEvents: 'none' }}>{visual.label}</Text>
+            </div>
+          </Tooltip>
+        ))}
+      </div>
+      <div className={styles.sectionHeader}>Statistical</div>
+      <div className={styles.content}>
+        {statisticalVisuals.map((visual) => (
           <Tooltip key={visual.id} content={visual.tooltip} relationship="label">
             <div
               className={styles.visualButton}

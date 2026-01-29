@@ -36,6 +36,12 @@ export const PBI_VISUAL_TYPES: Record<VisualType, string> = {
   matrix: 'pivotTable',
   waterfall: 'waterfallChart',
   slicer: 'slicer',
+  // Statistical visuals - reference custom visual (PhantomStatisticalVisual)
+  // Users need to install phantom-stats-pbiviz for these to render in Power BI
+  boxplot: 'PhantomStatisticalVisual',
+  histogram: 'PhantomStatisticalVisual',
+  violin: 'PhantomStatisticalVisual',
+  regressionScatter: 'PhantomStatisticalVisual',
   // Portfolio-specific visuals map to closest PBI equivalents
   controversyBar: 'clusteredBarChart',
   entityTable: 'tableEx',
@@ -346,6 +352,41 @@ function generateProjections(visual: PBIVisualConfig, scenario: Scenario): objec
       if (props.metric) {
         const metricRef = toAggregateRef(props.metric, metricOperation);
         if (metricRef) projections['Values'] = [{ queryRef: metricRef }];
+      }
+      break;
+
+    // Statistical visuals
+    case 'boxplot':
+    case 'violin':
+      if (props.dimension) {
+        const dimRef = toColumnRef(props.dimension);
+        if (dimRef) projections['Category'] = [{ queryRef: dimRef }];
+      }
+      if (props.metric) {
+        const metricRef = toColumnRef(props.metric); // Raw values, not aggregated
+        if (metricRef) projections['Values'] = [{ queryRef: metricRef }];
+      }
+      break;
+
+    case 'histogram':
+      if (props.metric) {
+        const metricRef = toColumnRef(props.metric); // Raw values for binning
+        if (metricRef) projections['Values'] = [{ queryRef: metricRef }];
+      }
+      break;
+
+    case 'regressionScatter':
+      if (props.dimension) {
+        const dimRef = toColumnRef(props.dimension);
+        if (dimRef) projections['Category'] = [{ queryRef: dimRef }];
+      }
+      if (props.xMetric) {
+        const xRef = toAggregateRef(props.xMetric);
+        if (xRef) projections['X'] = [{ queryRef: xRef }];
+      }
+      if (props.yMetric) {
+        const yRef = toAggregateRef(props.yMetric);
+        if (yRef) projections['Y'] = [{ queryRef: yRef }];
       }
       break;
   }

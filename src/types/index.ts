@@ -140,6 +140,7 @@ export interface SocialPost {
 
 export type Scenario = 'Retail' | 'SaaS' | 'HR' | 'Logistics' | 'Social' | 'Portfolio' | 'Finance';
 export type LayoutMode = 'Free' | 'Standard';
+export type Archetype = 'Executive' | 'Diagnostic' | 'Operational';
 
 export type VisualType =
   | 'bar'
@@ -160,6 +161,12 @@ export type VisualType =
   | 'matrix'
   | 'waterfall'
   | 'slicer'
+  // Statistical visuals
+  | 'boxplot'
+  | 'histogram'
+  | 'violin'
+  | 'regressionScatter'
+  // Portfolio-specific visuals
   | 'controversyBar'
   | 'entityTable'
   | 'controversyTable'
@@ -230,8 +237,10 @@ export interface DashboardState {
   items: DashboardItem[];
   selectedItemId: string | null;
   layoutMode: LayoutMode;
+  selectedArchetype: Archetype;
   setScenario: (scenario: Scenario) => void;
   setLayoutMode: (mode: LayoutMode) => void;
+  setArchetype: (archetype: Archetype) => void;
   setFilter: (column: string, value: any) => void;
   setHighlight: (dimension: string, value: string, ctrlKey?: boolean) => void;
   clearHighlight: () => void;

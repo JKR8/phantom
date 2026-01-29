@@ -236,8 +236,8 @@ export const PortfolioMonitoringTemplate: Template = {
   scenario: 'Portfolio',
   theme: 'Portfolio',
   items: [
-    // Row 0-4: Header bar (full width, compact)
-    { id: 'headerBar1', type: 'portfolioHeaderBar', title: '', layout: { x: 0, y: 0, w: 48, h: 5 }, props: {} },
+    // Row 0-2: Header bar (full width, compact)
+    { id: 'headerBar1', type: 'portfolioHeaderBar', title: '', layout: { x: 0, y: 0, w: 48, h: 3 }, props: {} },
 
     // Row 5-8: Filters + Search + KPI cards
     { id: 'slicer1', type: 'slicer', title: 'Sector', layout: { x: 0, y: 5, w: 6, h: 4 }, props: { dimension: 'Sector' } },
@@ -248,9 +248,9 @@ export const PortfolioMonitoringTemplate: Template = {
     { id: 'kpiThreshold', type: 'portfolioCard', title: 'Above Threshold', layout: { x: 36, y: 5, w: 6, h: 4 }, props: { metric: 'aboveThreshold' } },
     { id: 'kpiNegative', type: 'portfolioCard', title: 'Negative Changes', layout: { x: 42, y: 5, w: 6, h: 4 }, props: { metric: 'negativeChanges' } },
 
-    // Row 9-20: Chart (left) + Entity table (right)
-    { id: 'barChart1', type: 'controversyBar', title: 'Controversy Score Change', layout: { x: 0, y: 9, w: 20, h: 12 }, props: { dimension: 'Group' } },
-    { id: 'entityTable1', type: 'entityTable', title: 'Entity Name', layout: { x: 20, y: 9, w: 28, h: 12 }, props: { maxRows: 10 } },
+    // Row 9-21: Chart (left) + Entity table (right)
+    { id: 'barChart1', type: 'controversyBar', title: 'Controversy Score Change', layout: { x: 0, y: 9, w: 20, h: 13 }, props: { dimension: 'Group' } },
+    { id: 'entityTable1', type: 'entityTable', title: 'Entity Name', layout: { x: 20, y: 9, w: 28, h: 13 }, props: { maxRows: 10 } },
 
     // Row 21-36: Bottom band - Tabs + 3-panel layout (full width)
     { id: 'bottomPanel1', type: 'controversyBottomPanel', title: '', layout: { x: 0, y: 21, w: 48, h: 16 }, props: {} },

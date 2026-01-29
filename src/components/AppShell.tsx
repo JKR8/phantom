@@ -198,6 +198,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
   const selectedItemId = useStore((state) => state.selectedItemId);
   const layoutMode = useStore((state) => state.layoutMode);
   const setLayoutMode = useStore((state) => state.setLayoutMode);
+  const selectedArchetype = useStore((state) => state.selectedArchetype);
+  const setArchetype = useStore((state) => state.setArchetype);
   const dashboardName = useStore((state) => state.dashboardName);
   const setDashboardMeta = useStore((state) => state.setDashboardMeta);
   const [showFFMA, setShowFFMA] = React.useState(false);
@@ -260,15 +262,46 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
                   </MenuList>
                 </MenuPopover>
               </Menu>
-              <Button
-                appearance="subtle"
-                className={styles.topButton}
-                size="small"
-                icon={layoutMode === 'Standard' ? <GridRegular /> : <ResizeImageRegular />}
-                onClick={() => setLayoutMode(layoutMode === 'Standard' ? 'Free' : 'Standard')}
-              >
-                {layoutMode} Layout
-              </Button>
+              <Menu>
+                <MenuTrigger disableButtonEnhancement>
+                  <Button
+                    appearance="subtle"
+                    className={styles.topButton}
+                    size="small"
+                    icon={layoutMode === 'Standard' ? <GridRegular /> : <ResizeImageRegular />}
+                  >
+                    {layoutMode === 'Standard' ? `${selectedArchetype} Layout` : 'Free Layout'}
+                  </Button>
+                </MenuTrigger>
+                <MenuPopover>
+                  <MenuList>
+                    <MenuItem
+                      icon={<ResizeImageRegular />}
+                      onClick={() => setLayoutMode('Free')}
+                    >
+                      Free Layout {layoutMode === 'Free' && '✓'}
+                    </MenuItem>
+                    <MenuItem
+                      icon={<GridRegular />}
+                      onClick={() => { setLayoutMode('Standard'); setArchetype('Executive'); }}
+                    >
+                      Executive {layoutMode === 'Standard' && selectedArchetype === 'Executive' && '✓'}
+                    </MenuItem>
+                    <MenuItem
+                      icon={<GridRegular />}
+                      onClick={() => { setLayoutMode('Standard'); setArchetype('Diagnostic'); }}
+                    >
+                      Diagnostic {layoutMode === 'Standard' && selectedArchetype === 'Diagnostic' && '✓'}
+                    </MenuItem>
+                    <MenuItem
+                      icon={<GridRegular />}
+                      onClick={() => { setLayoutMode('Standard'); setArchetype('Operational'); }}
+                    >
+                      Operational {layoutMode === 'Standard' && selectedArchetype === 'Operational' && '✓'}
+                    </MenuItem>
+                  </MenuList>
+                </MenuPopover>
+              </Menu>
               <ExportButton />
             </>
           )}
