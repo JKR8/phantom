@@ -124,6 +124,8 @@ export interface BarChartPhantomProps {
   dimension?: string;
   /** Measure name */
   metric?: string;
+  /** Secondary metric for comparison variants (barbell, diverging) */
+  metric2?: string;
   /** Optional grouping field (for stacked/grouped) */
   series?: string;
   /** Limit to top N items */

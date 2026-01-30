@@ -518,6 +518,26 @@ export function mapToPBIPQueryState(
       // Text visuals - no query state needed
       break;
 
+    case 'barbell':
+    case 'diverging': {
+      // Comparison charts with two metrics
+      const dimField = props.dimension || defaultCategory;
+      const dim = resolveColumn(dimField, scenario);
+      const metric1 = resolveMeasure(props.metric, operation, measures, factTable);
+      const metric2 = resolveMeasure(props.metric2, operation, measures, factTable);
+
+      if (dim)
+        queryState.Category = {
+          projections: [buildQueryProjection(dim.table, dim.column, false, { active: true })],
+        };
+
+      const yProjections: Record<string, unknown>[] = [];
+      if (metric1) yProjections.push(buildQueryProjection(metric1.table, metric1.measure, true));
+      if (metric2) yProjections.push(buildQueryProjection(metric2.table, metric2.measure, true));
+      if (yProjections.length > 0) queryState.Y = { projections: yProjections };
+      break;
+    }
+
     default:
       // Unknown type - return empty query state
       break;

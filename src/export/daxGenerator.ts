@@ -59,6 +59,7 @@ export function extractMetricBindings(items: DashboardItem[], scenario: Scenario
 
     // Extract metric from various visual props
     const metric = props.metric || props.value || null;
+    const metric2 = props.metric2 || null;
     const operation = props.operation || 'sum';
 
     if (metric) {
@@ -71,6 +72,22 @@ export function extractMetricBindings(items: DashboardItem[], scenario: Scenario
             operation,
             table: mapping.table,
             column: mapping.column,
+          });
+        }
+      }
+    }
+
+    // Also extract metric2 for comparison charts (barbell, diverging)
+    if (metric2) {
+      const key2 = `${metric2}_${operation}`;
+      if (!bindings.has(key2)) {
+        const mapping2 = mapFieldToPBIColumn(scenario, metric2);
+        if (hasColumn(mapping2.table, mapping2.column)) {
+          bindings.set(key2, {
+            metric: metric2,
+            operation,
+            table: mapping2.table,
+            column: mapping2.column,
           });
         }
       }
