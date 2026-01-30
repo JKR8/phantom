@@ -184,11 +184,87 @@ export type VisualType =
   | 'portfolioHeaderBar'
   | 'controversyBottomPanel'
   | 'justificationSearch'
-  | 'portfolioKPICards';
+  | 'portfolioKPICards'
+  // Bar chart variants
+  | 'groupedBar'
+  | 'lollipop'
+  | 'barbell'
+  | 'diverging'
+  // Line chart variants
+  | 'slope'
+  | 'lineForecast'
+  | 'lineStepped'
+  // Specialized visuals
+  | 'bullet'
+  | 'dotStrip'
+  | 'gantt'
+  | 'ribbon'
+  // Map variants
+  | 'mapBubble'
+  | 'mapChoropleth';
 
-export interface DashboardItem {
+// Re-export visual props types
+export type {
+  PhantomPropsMap,
+  PhantomPropsForType,
+  PhantomVisualProps,
+  AnyPhantomProps,
+  BarChartPhantomProps,
+  LineChartPhantomProps,
+  AreaChartPhantomProps,
+  ComboChartPhantomProps,
+  PieChartPhantomProps,
+  CardPhantomProps,
+  SlicerPhantomProps,
+  TablePhantomProps,
+  MatrixPhantomProps,
+  ScatterPhantomProps,
+  GaugePhantomProps,
+  TreemapPhantomProps,
+  FunnelPhantomProps,
+  WaterfallPhantomProps,
+  MapPhantomProps,
+} from './visual-props';
+
+/**
+ * Validation error for visual props
+ */
+export interface ValidationError {
+  /** Field path that has the error (e.g., "dimension", "dataPoint.fill") */
+  field: string;
+  /** Error message */
+  message: string;
+  /** Error code for programmatic handling */
+  code: 'INVALID_VALUE' | 'MISSING_REQUIRED' | 'FIELD_NOT_FOUND' | 'TYPE_MISMATCH';
+}
+
+/**
+ * Validation warning for visual props
+ */
+export interface ValidationWarning {
+  /** Field path that has the warning */
+  field: string;
+  /** Warning message */
+  message: string;
+  /** Warning code */
+  code: 'ORPHANED_FIELD' | 'DEPRECATED' | 'UNSUPPORTED_EXPORT' | 'APPROXIMATION';
+}
+
+/**
+ * Validation result for visual props
+ */
+export interface ValidationResult {
+  /** Whether the props are valid */
+  valid: boolean;
+  /** Validation errors (prevent export if present) */
+  errors: ValidationError[];
+  /** Validation warnings (allow export but may not render correctly) */
+  warnings: ValidationWarning[];
+}
+
+export interface DashboardItem<T extends VisualType = VisualType> {
   id: string;
-  type: VisualType;
+  type: T;
   title: string;
   layout: {
     x: number;
@@ -196,7 +272,12 @@ export interface DashboardItem {
     w: number;
     h: number;
   };
-  props?: any;
+  /** Visual-specific props. Typed when T is specific, otherwise any for backward compat. */
+  props?: T extends keyof import('./visual-props').PhantomPropsMap
+    ? import('./visual-props').PhantomPropsMap[T]
+    : Record<string, unknown>;
+  /** Runtime validation state (populated by store on prop changes) */
+  _validation?: ValidationResult;
 }
 
 export interface DashboardSnapshot {
@@ -271,6 +352,9 @@ export interface DashboardState {
   // Vega-Lite rendering mode
   useVegaRendering: boolean;
   setUseVegaRendering: (use: boolean) => void;
+  // Cross-filtering toggle
+  crossFilterEnabled: boolean;
+  setCrossFilterEnabled: (enabled: boolean) => void;
   // Persistence actions
   setDashboardMeta: (meta: { id?: string | null; name?: string; isPublic?: boolean; shareId?: string | null }) => void;
   markDirty: () => void;

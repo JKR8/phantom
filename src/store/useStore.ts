@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { DashboardState, Scenario, DashboardItem, LayoutMode, Archetype, DbDashboard } from '../types';
 import { generateRetailData, generateSaaSData, generateHRData, generateLogisticsData, generatePortfolioData, generateSocialData, generateFinanceData } from '../engine/dataGenerator';
 import { useThemeStore, PALETTES, DEFAULT_PALETTE } from './useThemeStore';
+import { validateVisualProps } from '../validation/visual-props-validator';
 
 // Initial items match RetailDashboardTemplate (48-column grid)
 // Uses unique prefixed IDs to prevent React key conflicts when switching templates
@@ -47,6 +48,8 @@ export const useStore = create<DashboardState>((set, get) => ({
   lastSavedAt: null,
   useVegaRendering: false,
   setUseVegaRendering: (use: boolean) => set({ useVegaRendering: use }),
+  crossFilterEnabled: true,
+  setCrossFilterEnabled: (enabled: boolean) => set({ crossFilterEnabled: enabled }),
   setScenario: (scenario: Scenario) => {
     const emptyState = { stores: [], products: [], sales: [], customers: [], subscriptions: [], employees: [], shipments: [], financeRecords: [], portfolioEntities: [], controversyScores: [], socialPosts: [], filters: {} };
     if (scenario === 'Retail') {
@@ -132,12 +135,20 @@ export const useStore = create<DashboardState>((set, get) => ({
     }),
   selectItem: (id: string | null) => set({ selectedItemId: id }),
   updateItemProps: (id: string, props: any) =>
-    set((state) => ({
-      items: state.items.map((item) =>
-        item.id === id ? { ...item, props: { ...item.props, ...props } } : item
-      ),
-      isDirty: true,
-    })),
+    set((state) => {
+      const item = state.items.find(i => i.id === id);
+      if (!item) return state;
+
+      const mergedProps = { ...item.props, ...props };
+      const validation = validateVisualProps(item.type, mergedProps, state.scenario);
+
+      return {
+        items: state.items.map((i) =>
+          i.id === id ? { ...i, props: mergedProps, _validation: validation } : i
+        ),
+        isDirty: true,
+      };
+    }),
   updateItemTitle: (id: string, title: string) =>
     set((state) => ({
       items: state.items.map((item) =>
@@ -298,7 +309,7 @@ const getDimValue = (item: any, dimension: string, state: any): string => {
 // Pass excludeHighlightDimension to prevent self-filtering (e.g., pie chart showing Category shouldn't filter by Category highlight)
 export const useFilteredSales = (excludeHighlightDimension?: string) => {
   const state = useStore();
-  const { scenario, filters, highlight } = state;
+  const { scenario, filters, highlight, crossFilterEnabled } = state;
 
   let data: any[] = [];
 
@@ -319,8 +330,8 @@ export const useFilteredSales = (excludeHighlightDimension?: string) => {
   }
 
   return data.filter((item) => {
-    // Apply highlight cross-filter (skip if this chart's dimension matches the highlight)
-    if (highlight && highlight.dimension && highlight.values.size > 0) {
+    // Apply highlight cross-filter (skip if this chart's dimension matches the highlight or if cross-filtering is disabled)
+    if (crossFilterEnabled && highlight && highlight.dimension && highlight.values.size > 0) {
       // Don't filter if this chart is showing the same dimension as the highlight
       if (excludeHighlightDimension !== highlight.dimension) {
         const itemValue = getDimValue(item, highlight.dimension, state);

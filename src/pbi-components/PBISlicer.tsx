@@ -9,8 +9,13 @@ import React, { useMemo, useState, useRef, useEffect } from 'react';
 import {
   PBISlicerProps,
   DEFAULT_SLICER_PROPS,
-  MOKKUP_BRAND_COLORS,
 } from '../pbi-constraints';
+import {
+  PBI_TYPOGRAPHY,
+  PBI_TEXT_COLORS,
+  PBI_BACKGROUND_COLORS,
+  PBI_BORDER_COLORS,
+} from '../tokens/pbi-css-tokens';
 
 /** Props for the PBISlicer component */
 export interface PBISlicerComponentProps extends Omit<PBISlicerProps, 'field'> {
@@ -98,7 +103,7 @@ export const PBISlicer: React.FC<PBISlicerComponentProps> = (props) => {
           width: '100%',
           height: '100%',
           position: 'relative',
-          fontFamily: "'Segoe UI', sans-serif",
+          fontFamily: PBI_TYPOGRAPHY.tableCell.fontFamily,
         }}
       >
         {/* Dropdown button */}
@@ -108,15 +113,15 @@ export const PBISlicer: React.FC<PBISlicerComponentProps> = (props) => {
             width: '100%',
             height: '100%',
             padding: '4px 8px',
-            backgroundColor: items?.backgroundColor || '#FFFFFF',
-            border: '1px solid #E8E8E8',
+            backgroundColor: items?.backgroundColor || PBI_BACKGROUND_COLORS.primary,
+            border: `1px solid ${PBI_BORDER_COLORS.secondary}`,
             borderRadius: '2px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             cursor: 'pointer',
-            fontSize: items?.fontSize || 10,
-            color: items?.fontColor || MOKKUP_BRAND_COLORS.textPrimary,
+            fontSize: items?.fontSize || PBI_TYPOGRAPHY.tableCell.fontSize,
+            color: items?.fontColor || PBI_TEXT_COLORS.primary,
           }}
         >
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -133,8 +138,8 @@ export const PBISlicer: React.FC<PBISlicerComponentProps> = (props) => {
               top: '100%',
               left: 0,
               right: 0,
-              backgroundColor: items?.backgroundColor || '#FFFFFF',
-              border: '1px solid #E8E8E8',
+              backgroundColor: items?.backgroundColor || PBI_BACKGROUND_COLORS.primary,
+              border: `1px solid ${PBI_BORDER_COLORS.secondary}`,
               borderRadius: '2px',
               boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
               zIndex: 1000,
@@ -149,21 +154,21 @@ export const PBISlicer: React.FC<PBISlicerComponentProps> = (props) => {
                 style={{
                   padding: '6px 8px',
                   cursor: 'pointer',
-                  fontSize: items?.fontSize || 10,
-                  color: items?.fontColor || MOKKUP_BRAND_COLORS.textPrimary,
+                  fontSize: items?.fontSize || PBI_TYPOGRAPHY.tableCell.fontSize,
+                  color: items?.fontColor || PBI_TEXT_COLORS.primary,
                   backgroundColor: selectedValues.includes(option)
-                    ? '#F3F2F1'
+                    ? PBI_BACKGROUND_COLORS.tertiary
                     : 'transparent',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
                 }}
                 onMouseEnter={(e) => {
-                  (e.target as HTMLDivElement).style.backgroundColor = '#F3F2F1';
+                  (e.target as HTMLDivElement).style.backgroundColor = PBI_BACKGROUND_COLORS.tertiary;
                 }}
                 onMouseLeave={(e) => {
                   (e.target as HTMLDivElement).style.backgroundColor =
-                    selectedValues.includes(option) ? '#F3F2F1' : 'transparent';
+                    selectedValues.includes(option) ? PBI_BACKGROUND_COLORS.tertiary : 'transparent';
                 }}
               >
                 {isMultiSelect && (
@@ -189,8 +194,8 @@ export const PBISlicer: React.FC<PBISlicerComponentProps> = (props) => {
       style={{
         width: '100%',
         height: '100%',
-        backgroundColor: items?.backgroundColor || '#FFFFFF',
-        border: '1px solid #E8E8E8',
+        backgroundColor: items?.backgroundColor || PBI_BACKGROUND_COLORS.primary,
+        border: `1px solid ${PBI_BORDER_COLORS.secondary}`,
         borderRadius: '2px',
         overflowY: 'auto',
         fontFamily: "'Segoe UI', sans-serif",
@@ -203,9 +208,9 @@ export const PBISlicer: React.FC<PBISlicerComponentProps> = (props) => {
           style={{
             padding: '6px 8px',
             cursor: 'pointer',
-            fontSize: items?.fontSize || 10,
-            color: items?.fontColor || MOKKUP_BRAND_COLORS.textPrimary,
-            backgroundColor: selectedValues.includes(option) ? '#F3F2F1' : 'transparent',
+            fontSize: items?.fontSize || PBI_TYPOGRAPHY.tableCell.fontSize,
+            color: items?.fontColor || PBI_TEXT_COLORS.primary,
+            backgroundColor: selectedValues.includes(option) ? PBI_BACKGROUND_COLORS.tertiary : 'transparent',
             display: 'flex',
             alignItems: 'center',
             gap: '6px',

@@ -18,6 +18,12 @@ interface LineChartProps {
   manualData?: Array<{ label: string; value: number }>;
   comparison?: 'none' | 'pl' | 'py' | 'both';
   timeGrain?: 'month' | 'quarter' | 'year';
+  /** Variant type for different line chart styles */
+  variant?: 'default' | 'slope';
+  /** Show forecast line (dashed) after actual data */
+  showForecast?: boolean;
+  /** Use stepped line interpolation instead of smooth */
+  stepped?: boolean;
 }
 
 // Time dimension key for cross-filtering
@@ -38,7 +44,15 @@ function getTimeBuckets(grain: 'month' | 'quarter' | 'year'): string[] {
   return [...MONTHS];
 }
 
-export const LineChart: React.FC<LineChartProps> = ({ metric, manualData, comparison = 'both', timeGrain = 'month' }) => {
+export const LineChart: React.FC<LineChartProps> = ({
+  metric,
+  manualData,
+  comparison = 'both',
+  timeGrain = 'month',
+  variant = 'default',
+  showForecast = false,
+  stepped = false,
+}) => {
   const timeDimension = getTimeDimension(timeGrain);
   const filteredSales = useFilteredSales(timeDimension);
   useHighlight(); // Subscribe to highlight changes for re-render
@@ -136,6 +150,9 @@ export const LineChart: React.FC<LineChartProps> = ({ metric, manualData, compar
   const showPY = comparison === 'py' || comparison === 'both';
   const showVariance = comparison !== 'none';
 
+  // Line interpolation type
+  const lineType = stepped ? 'stepAfter' : 'monotone';
+
   // Find max value for scaling
   const maxVal = useMemo(() => {
     const values = data.flatMap(d => {
@@ -147,6 +164,104 @@ export const LineChart: React.FC<LineChartProps> = ({ metric, manualData, compar
     return Math.max(...values);
   }, [data, showPL, showPY]);
 
+  // Split data for forecast variant
+  const forecastSplitIndex = showForecast ? Math.floor(data.length * 0.7) : data.length;
+  const actualData = data.slice(0, forecastSplitIndex + 1);
+  const forecastData = showForecast ? data.slice(forecastSplitIndex) : [];
+
+  // ========== SLOPE VARIANT ==========
+  if (variant === 'slope') {
+    // Slope chart: shows start and end values connected by lines
+    const slopeData = data.length >= 2
+      ? [data[0], data[data.length - 1]]
+      : data;
+
+    return (
+      <div style={{ width: '100%', height: '100%', padding: '16px' }}>
+        <div style={{
+          display: 'flex',
+          height: '100%',
+          position: 'relative',
+        }}>
+          {/* Left column - Start values */}
+          <div style={{
+            width: '80px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-around',
+            alignItems: 'flex-end',
+            paddingRight: '8px',
+          }}>
+            <div style={{ fontSize: '10px', color: '#64748b' }}>{slopeData[0]?.name}</div>
+            <div style={{ fontSize: '14px', fontWeight: 600, color: '#020617' }}>
+              {formatValue(slopeData[0]?.ac || 0)}
+            </div>
+          </div>
+
+          {/* SVG lines */}
+          <svg style={{ flex: 1, height: '100%' }}>
+            {/* AC line */}
+            <line
+              x1="0"
+              y1="30%"
+              x2="100%"
+              y2={`${30 + ((slopeData[1]?.ac || 0) > (slopeData[0]?.ac || 0) ? -20 : 20)}%`}
+              stroke="#252423"
+              strokeWidth="2"
+            />
+            <circle cx="0" cy="30%" r="4" fill="#252423" />
+            <circle cx="100%" cy={`${30 + ((slopeData[1]?.ac || 0) > (slopeData[0]?.ac || 0) ? -20 : 20)}%`} r="4" fill="#252423" />
+
+            {/* PL line if shown */}
+            {showPL && (
+              <>
+                <line
+                  x1="0"
+                  y1="50%"
+                  x2="100%"
+                  y2={`${50 + ((slopeData[1]?.pl || 0) > (slopeData[0]?.pl || 0) ? -15 : 15)}%`}
+                  stroke="#999999"
+                  strokeWidth="1"
+                  strokeDasharray="4 4"
+                />
+                <circle cx="0" cy="50%" r="3" fill="#999999" />
+                <circle cx="100%" cy={`${50 + ((slopeData[1]?.pl || 0) > (slopeData[0]?.pl || 0) ? -15 : 15)}%`} r="3" fill="#999999" />
+              </>
+            )}
+          </svg>
+
+          {/* Right column - End values */}
+          <div style={{
+            width: '80px',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-around',
+            alignItems: 'flex-start',
+            paddingLeft: '8px',
+          }}>
+            <div style={{ fontSize: '10px', color: '#64748b' }}>{slopeData[1]?.name}</div>
+            <div style={{ fontSize: '14px', fontWeight: 600, color: '#020617' }}>
+              {formatValue(slopeData[1]?.ac || 0)}
+            </div>
+          </div>
+        </div>
+
+        {/* X-axis labels */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          padding: '8px 80px',
+          fontSize: '12px',
+          color: '#64748b',
+        }}>
+          <span>{slopeData[0]?.name}</span>
+          <span>{slopeData[1]?.name}</span>
+        </div>
+      </div>
+    );
+  }
+
+  // ========== DEFAULT / FORECAST / STEPPED VARIANT ==========
   return (
     <ResponsiveContainer width="100%" height="100%">
       <ComposedChart
@@ -172,7 +287,7 @@ export const LineChart: React.FC<LineChartProps> = ({ metric, manualData, compar
         <Tooltip
           formatter={(value: any, name: any) => [
             formatValue(Number(value)),
-            name === 'ac' ? 'Actual' : name === 'pl' ? 'Plan' : name === 'py' ? 'Prior Year' : 'Variance'
+            name === 'ac' ? 'Actual' : name === 'pl' ? 'Plan' : name === 'py' ? 'Prior Year' : name === 'forecast' ? 'Forecast' : 'Variance'
           ]}
           contentStyle={{ fontSize: '11px', borderRadius: '4px', border: '1px solid #F3F2F1' }}
         />
@@ -180,7 +295,7 @@ export const LineChart: React.FC<LineChartProps> = ({ metric, manualData, compar
         {/* PL line (dashed grey) */}
         {showPL && (
           <Line
-            type="monotone"
+            type={lineType}
             dataKey="pl"
             stroke="#999999"
             strokeWidth={1}
@@ -192,7 +307,7 @@ export const LineChart: React.FC<LineChartProps> = ({ metric, manualData, compar
         {/* PY line (dotted blue-grey) */}
         {showPY && (
           <Line
-            type="monotone"
+            type={lineType}
             dataKey="py"
             stroke="#6B7280"
             strokeWidth={1}
@@ -201,17 +316,31 @@ export const LineChart: React.FC<LineChartProps> = ({ metric, manualData, compar
             name="py"
           />
         )}
-        {/* AC line (solid black) */}
+        {/* AC line (solid) - show up to forecast split point if forecast mode */}
         <Line
-          type="monotone"
+          type={lineType}
           dataKey="ac"
           stroke="#252423"
           strokeWidth={2}
           dot={{ r: 3, fill: '#252423', stroke: '#252423' }}
           name="ac"
+          data={showForecast ? actualData : data}
         />
+        {/* Forecast line (dashed, same color) */}
+        {showForecast && forecastData.length > 0 && (
+          <Line
+            type={lineType}
+            dataKey="ac"
+            stroke="#118dff"
+            strokeWidth={2}
+            strokeDasharray="6 3"
+            dot={{ r: 3, fill: '#118dff', stroke: '#118dff' }}
+            name="forecast"
+            data={forecastData}
+          />
+        )}
         {/* Variance bars (pins) */}
-        {showVariance && (
+        {showVariance && !showForecast && (
           <Bar dataKey="variance" barSize={3} name="variance">
             {data.map((entry, index) => (
               <Cell

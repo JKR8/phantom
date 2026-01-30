@@ -110,3 +110,46 @@ export const RecommendedMeasures: Record<ScenarioType, string[]> = {
   Portfolio: ['MarketValue', 'ControversyScore', 'Score'],
   Social: ['Engagements', 'EngagementsPL', 'EngagementsPY', 'Mentions', 'MentionsPL', 'MentionsPY', 'SentimentScore'],
 };
+
+/** Data model types available for selection (limited to 3 core scenarios) */
+export type DataModelType = 'Retail' | 'SaaS' | 'HR';
+
+/** Data model schemas for UI display */
+export interface DataModelSchema {
+  name: string;
+  description: string;
+  tables: { name: string; fields: string[] }[];
+  relationships: string[];
+}
+
+export const DataModelSchemas: Record<DataModelType, DataModelSchema> = {
+  Retail: {
+    name: 'Retail Sales',
+    description: 'Store and product sales data with regional breakdown',
+    tables: [
+      { name: 'Sales', fields: ['Date', 'Revenue', 'Profit', 'Quantity'] },
+      { name: 'Stores', fields: ['Store', 'Region'] },
+      { name: 'Products', fields: ['Product', 'Category'] },
+    ],
+    relationships: ['Sales → Store', 'Sales → Product'],
+  },
+  SaaS: {
+    name: 'SaaS Metrics',
+    description: 'Subscription and customer metrics for software-as-a-service',
+    tables: [
+      { name: 'Subscriptions', fields: ['Date', 'MRR', 'ARR', 'Churn', 'LTV', 'CAC'] },
+      { name: 'Customers', fields: ['Customer', 'Tier', 'Industry', 'Region'] },
+    ],
+    relationships: ['Subscriptions → Customer'],
+  },
+  HR: {
+    name: 'HR Analytics',
+    description: 'Employee workforce data with performance and attrition metrics',
+    tables: [
+      { name: 'Workforce', fields: ['Date', 'Salary', 'Rating', 'Tenure', 'Attrition'] },
+      { name: 'Employees', fields: ['Employee', 'Role', 'Office'] },
+      { name: 'Departments', fields: ['Department'] },
+    ],
+    relationships: ['Workforce → Employee', 'Workforce → Department'],
+  },
+};

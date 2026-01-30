@@ -10,9 +10,14 @@ import embed, { Result } from 'vega-embed';
 import {
   PBILineChartProps,
   DEFAULT_LINE_CHART_PROPS,
-  MOKKUP_BRAND_COLORS,
   PBIHexColor,
 } from '../pbi-constraints';
+import {
+  PBI_TYPOGRAPHY,
+  PBI_TEXT_COLORS,
+  PBI_BORDER_COLORS,
+  PBI_DATA_VIZ_COLORS,
+} from '../tokens/pbi-css-tokens';
 
 /** Data shape for line chart */
 export interface LineChartDataPoint {
@@ -68,7 +73,7 @@ export const PBILineChart: React.FC<PBILineChartComponentProps> = (props) => {
     if (mergedProps.dataPoint?.fill) {
       return [mergedProps.dataPoint.fill];
     }
-    return [MOKKUP_BRAND_COLORS.primary, MOKKUP_BRAND_COLORS.lineAccent, MOKKUP_BRAND_COLORS.success];
+    return [PBI_DATA_VIZ_COLORS.category1, PBI_DATA_VIZ_COLORS.category2, PBI_DATA_VIZ_COLORS.category3];
   }, [colors, mergedProps.dataPoint?.fill]);
 
   // Generate Vega-Lite spec
@@ -92,8 +97,8 @@ export const PBILineChart: React.FC<PBILineChartComponentProps> = (props) => {
           field: 'date',
           type: 'temporal',
           axis: mergedProps.categoryAxis?.show !== false ? {
-            labelFontSize: mergedProps.categoryAxis?.labelFontSize || 10,
-            labelColor: mergedProps.categoryAxis?.labelFontColor || '#605E5C',
+            labelFontSize: mergedProps.categoryAxis?.labelFontSize || PBI_TYPOGRAPHY.axisValue.fontSize,
+            labelColor: mergedProps.categoryAxis?.labelFontColor || PBI_TEXT_COLORS.quaternary,
             title: null,
             format: '%b %Y',
           } : null,
@@ -103,7 +108,7 @@ export const PBILineChart: React.FC<PBILineChartComponentProps> = (props) => {
           type: 'quantitative',
           axis: mergedProps.valueAxis?.show !== false ? {
             grid: mergedProps.valueAxis?.gridlineShow !== false,
-            gridColor: mergedProps.valueAxis?.gridlineColor || '#F3F2F1',
+            gridColor: mergedProps.valueAxis?.gridlineColor || PBI_BORDER_COLORS.secondary,
             gridDash: [3, 3],
             title: null,
           } : null,
@@ -118,8 +123,8 @@ export const PBILineChart: React.FC<PBILineChartComponentProps> = (props) => {
         scale: { range: chartColors },
         legend: mergedProps.legend?.show ? {
           orient: mergedProps.legend.position?.toLowerCase() || 'bottom',
-          labelFontSize: 10,
-          labelColor: '#605E5C',
+          labelFontSize: PBI_TYPOGRAPHY.legendValue.fontSize,
+          labelColor: PBI_TEXT_COLORS.quaternary,
         } : null,
       };
     } else {
@@ -169,7 +174,7 @@ export const PBILineChart: React.FC<PBILineChartComponentProps> = (props) => {
       layer: layers,
       config: {
         view: { stroke: 'transparent' },
-        font: 'Segoe UI, Arial, sans-serif',
+        font: PBI_TYPOGRAPHY.axisValue.fontFamily.replace(/'/g, ''),
       },
     };
   }, [data, isMultiSeries, chartColors, mergedProps]);

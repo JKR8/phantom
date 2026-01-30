@@ -195,6 +195,10 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
         return <StackedBarChart {...item.props} />;
       case 'stackedColumn':
         return <StackedColumnChart {...item.props} />;
+      case 'groupedBar':
+        return <BarChart {...item.props} variant="grouped" />;
+      case 'lollipop':
+        return <BarChart {...item.props} variant="lollipop" />;
       case 'line':
         // Use Vega-Lite rendering when enabled (for Power BI parity)
         return useVegaRendering
@@ -234,6 +238,38 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
         return <WaterfallChart {...item.props} />;
       case 'slicer':
         return <Slicer {...item.props} />;
+      // Line variants (from PBI CSS spec)
+      case 'lineForecast':
+        return <LineChart {...item.props} showForecast={true} />;
+      case 'lineStepped':
+        return <LineChart {...item.props} stepped={true} />;
+
+      // Map variants (from PBI CSS spec)
+      case 'mapChoropleth':
+        return <MapChart {...item.props} displayMode="choropleth" />;
+      case 'mapBubble':
+        return <MapChart {...item.props} displayMode="bubble" />;
+
+      // KPI variants (from PBI CSS spec)
+      case 'bullet':
+        return <GaugeChart {...item.props} variant="bullet" />;
+
+      // Comparison charts (from PBI CSS spec)
+      case 'barbell':
+        return <BarChart {...item.props} variant="barbell" />;
+      case 'diverging':
+        return <BarChart {...item.props} variant="diverging" />;
+      case 'slope':
+        return <LineChart {...item.props} variant="slope" />;
+
+      // Specialized charts (from PBI CSS spec)
+      case 'ribbon':
+        return <StackedBarChart {...item.props} variant="ribbon" />;
+      case 'gantt':
+        return <BarChart {...item.props} variant="gantt" />;
+      case 'dotStrip':
+        return <ScatterChart {...item.props} variant="dotStrip" />;
+
       // Statistical visuals
       case 'boxplot':
         return <BoxplotChart {...item.props} />;

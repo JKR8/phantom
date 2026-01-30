@@ -58,6 +58,8 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
     case 'column':
     case 'stackedBar':
     case 'stackedColumn':
+    case 'groupedBar':
+    case 'lollipop':
       return {
         dimension: primaryCategory,
         metric: primaryMeasure,
@@ -68,6 +70,8 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
 
     case 'line':
     case 'area':
+    case 'lineForecast':
+    case 'lineStepped':
       return {
         dimension: timeDimension || primaryCategory,
         metric: primaryMeasure,
@@ -92,11 +96,20 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
       };
 
     case 'map':
+    case 'mapChoropleth':
       return {
         geoDimension: getRole('Geography') || primaryCategory,
         metric: primaryMeasure,
         mapType: 'us',
         displayMode: 'choropleth',
+      };
+
+    case 'mapBubble':
+      return {
+        geoDimension: getRole('Geography') || primaryCategory,
+        metric: primaryMeasure,
+        mapType: 'us',
+        displayMode: 'bubble',
       };
 
     case 'pie':
@@ -118,6 +131,33 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
         sort: 'desc',
       };
 
+    case 'ribbon':
+      return {
+        dimension: primaryCategory,
+        metric: primaryMeasure,
+        topN: 5,
+      };
+
+    case 'barbell':
+    case 'diverging':
+    case 'slope':
+      return {
+        dimension: primaryCategory,
+        metric: primaryMeasure,
+      };
+
+    case 'dotStrip':
+      return {
+        dimension: primaryCategory,
+        metric: primaryMeasure,
+      };
+
+    case 'gantt':
+      return {
+        dimension: primaryCategory,
+        metric: primaryMeasure,
+      };
+
     case 'scatter':
       return {
         xMetric: primaryMeasure,
@@ -131,6 +171,7 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
     case 'kpi':
     case 'gauge':
     case 'portfolioCard':
+    case 'bullet':
       return {
         metric: primaryMeasure,
         operation: 'sum',
@@ -225,7 +266,10 @@ export const generateSmartTitle = (
     case 'bar':
     case 'column':
     case 'stackedBar':
-    case 'stackedColumn': {
+    case 'stackedColumn':
+    case 'groupedBar':
+    case 'lollipop':
+    case 'ribbon': {
       const prefix = topN && topN !== 'All' ? `Top ${topN} ` : '';
       const dimLabel = dim ? `${dim}` : 'Items';
       const metLabel = met || 'Value';
@@ -234,6 +278,8 @@ export const generateSmartTitle = (
 
     case 'line':
     case 'area':
+    case 'lineForecast':
+    case 'lineStepped':
       return met ? `${met} Trend` : 'Trend';
 
     case 'stackedArea':
@@ -245,6 +291,8 @@ export const generateSmartTitle = (
         : 'Combo Chart';
 
     case 'map':
+    case 'mapBubble':
+    case 'mapChoropleth':
       return recipe.metric && recipe.geoDimension
         ? `${recipe.metric} by ${recipe.geoDimension}`
         : 'Map';
@@ -257,6 +305,7 @@ export const generateSmartTitle = (
     case 'kpi':
     case 'gauge':
     case 'portfolioCard':
+    case 'bullet':
       return met ? `Total ${met}` : 'KPI';
 
     case 'multiRowCard':
@@ -299,6 +348,18 @@ export const generateSmartTitle = (
       return recipe.xMetric && recipe.yMetric
         ? `${recipe.xMetric} vs ${recipe.yMetric} (Regression)`
         : 'Regression';
+
+    // Comparison charts
+    case 'barbell':
+    case 'diverging':
+    case 'slope':
+      return met ? `${met} Comparison` : 'Comparison';
+
+    case 'dotStrip':
+      return met && dim ? `${met} by ${dim}` : 'Dot Strip';
+
+    case 'gantt':
+      return dim ? `${dim} Timeline` : 'Timeline';
 
     default:
       return visualType.charAt(0).toUpperCase() + visualType.slice(1);

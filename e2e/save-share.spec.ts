@@ -29,8 +29,8 @@ test.describe('Save & Share UI (Guest Mode)', () => {
     await expect(titleEl).toContainText('Phantom');
     await titleEl.click();
 
-    // Input should appear in the header
-    const titleInput = page.locator('header input');
+    // Input should appear in the header (use type="text" to avoid matching the switch)
+    const titleInput = page.locator('header input[type="text"]');
     await expect(titleInput).toBeVisible({ timeout: 5000 });
 
     // Clear and type a new name

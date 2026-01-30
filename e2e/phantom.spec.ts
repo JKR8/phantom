@@ -283,11 +283,14 @@ test.describe('Phantom Drop -> Shape -> Refine', () => {
   });
 
   test('Standard Layout Snap', async ({ page }) => {
-     // 1. Toggle Layout Mode
+     // 1. Toggle Layout Mode via dropdown menu
      const layoutToggle = page.getByRole('button', { name: /Layout/i });
      await expect(layoutToggle).toContainText('Free');
      await layoutToggle.click();
-     await expect(layoutToggle).toContainText('Standard');
+
+     // Select "Executive" from the dropdown menu to switch to Standard mode
+     await page.getByRole('menuitem', { name: 'Executive' }).click();
+     await expect(layoutToggle).toContainText('Executive Layout');
 
      // Wait for slots to render
      await page.waitForTimeout(500);

@@ -23,12 +23,15 @@ import {
   GridRegular,
   ResizeImageRegular,
   MathFormulaRegular,
+  DesignIdeasRegular,
 } from '@fluentui/react-icons';
 import { FieldsPane } from './FieldsPane';
 import { VisualizationsPane } from './VisualizationsPane';
 import { PropertiesPanel } from './PropertiesPanel';
 import { DataModelPanel } from './DataModelPanel';
+import { DataModelPane } from './DataModelPane';
 import { StatisticalPane } from './StatisticalPane';
+import { PBIUiKitPane } from './PBIUiKitPane';
 import { UserMenu } from './UserMenu';
 import { SaveDashboardButton } from './SaveDashboardDialog';
 import { ShareButton } from './ShareDialog';
@@ -206,8 +209,10 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
   const setUseVegaRendering = useStore((state) => state.setUseVegaRendering);
   const dashboardName = useStore((state) => state.dashboardName);
   const setDashboardMeta = useStore((state) => state.setDashboardMeta);
-  const [showDataModel, setShowDataModel] = React.useState(false);
+  const [showDataModelPane, setShowDataModelPane] = React.useState(false);
+  const [showDataModelFull, setShowDataModelFull] = React.useState(false);
   const [showStatistical, setShowStatistical] = React.useState(false);
+  const [showPBIUiKit, setShowPBIUiKit] = React.useState(false);
   const [editingTitle, setEditingTitle] = React.useState(false);
   const [titleDraft, setTitleDraft] = React.useState(dashboardName);
 
@@ -336,25 +341,51 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
             <Button
               icon={<DatabaseRegular />}
               appearance="subtle"
-              style={showDataModel ? navBtnActiveStyle : navBtnStyle}
-              onClick={() => setShowDataModel(!showDataModel)}
-              title="Data Model"
+              style={(showDataModelPane || showDataModelFull) ? navBtnActiveStyle : navBtnStyle}
+              onClick={() => {
+                setShowDataModelPane(!showDataModelPane);
+                setShowDataModelFull(false);
+                setShowStatistical(false);
+                setShowPBIUiKit(false);
+              }}
+              onDoubleClick={() => {
+                setShowDataModelFull(!showDataModelFull);
+                setShowDataModelPane(false);
+              }}
+              title="Data Model (double-click for schema view)"
             />
             <Button
               icon={<MathFormulaRegular />}
               appearance="subtle"
               style={showStatistical ? navBtnActiveStyle : navBtnStyle}
-              onClick={() => setShowStatistical(!showStatistical)}
+              onClick={() => { setShowStatistical(!showStatistical); setShowPBIUiKit(false); setShowDataModelPane(false); }}
               title="Statistical Visuals"
+            />
+            <Button
+              icon={<DesignIdeasRegular />}
+              appearance="subtle"
+              style={showPBIUiKit ? navBtnActiveStyle : navBtnStyle}
+              onClick={() => { setShowPBIUiKit(!showPBIUiKit); setShowStatistical(false); setShowDataModelPane(false); }}
+              title="PBI UI Kit 2.0"
             />
           </nav>
         )}
-        {showStatistical && !readOnly && !showDataModel && (
+        {showDataModelPane && !readOnly && !showDataModelFull && (
+          <div className={styles.ffmaPane}>
+            <DataModelPane />
+          </div>
+        )}
+        {showStatistical && !readOnly && !showDataModelFull && !showDataModelPane && (
           <div className={styles.ffmaPane}>
             <StatisticalPane />
           </div>
         )}
-        {showDataModel && !readOnly ? (
+        {showPBIUiKit && !readOnly && !showDataModelFull && !showDataModelPane && (
+          <div className={styles.ffmaPane}>
+            <PBIUiKitPane />
+          </div>
+        )}
+        {showDataModelFull && !readOnly ? (
           /* Full-screen data model view */
           <div className={styles.dataModelView}>
             <DataModelPanel />

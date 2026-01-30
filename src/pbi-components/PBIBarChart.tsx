@@ -14,6 +14,7 @@ import {
   MOKKUP_BRAND_COLORS,
   PBIHexColor,
 } from '../pbi-constraints';
+import { PBI_TYPOGRAPHY, PBI_TEXT_COLORS, PBI_BORDER_COLORS } from '../tokens/pbi-css-tokens';
 
 /** Data shape for bar chart */
 export interface BarChartDataPoint {
@@ -86,7 +87,7 @@ export const PBIBarChart: React.FC<PBIBarChartComponentProps> = (props) => {
       },
       config: {
         view: { stroke: 'transparent' },
-        font: 'Segoe UI, Arial, sans-serif',
+        font: PBI_TYPOGRAPHY.dimensionLabel.fontFamily.replace(/'/g, ''),
       },
     };
 
@@ -98,8 +99,8 @@ export const PBIBarChart: React.FC<PBIBarChartComponentProps> = (props) => {
           type: 'nominal',
           sort: null,
           axis: mergedProps.categoryAxis?.show !== false ? {
-            labelFontSize: mergedProps.categoryAxis?.labelFontSize || 10,
-            labelColor: mergedProps.categoryAxis?.labelFontColor || '#605E5C',
+            labelFontSize: mergedProps.categoryAxis?.labelFontSize || PBI_TYPOGRAPHY.dimensionLabel.fontSize,
+            labelColor: mergedProps.categoryAxis?.labelFontColor || PBI_TEXT_COLORS.quaternary,
             title: null,
             labelLimit: 80,
           } : null,
@@ -109,7 +110,7 @@ export const PBIBarChart: React.FC<PBIBarChartComponentProps> = (props) => {
           type: 'quantitative',
           axis: mergedProps.valueAxis?.show !== false ? {
             grid: mergedProps.valueAxis?.gridlineShow !== false,
-            gridColor: mergedProps.valueAxis?.gridlineColor || '#F3F2F1',
+            gridColor: mergedProps.valueAxis?.gridlineColor || PBI_BORDER_COLORS.secondary,
             gridDash: [3, 3],
             title: null,
             labels: false,
@@ -142,8 +143,8 @@ export const PBIBarChart: React.FC<PBIBarChartComponentProps> = (props) => {
           field: 'name',
           type: 'nominal',
           axis: mergedProps.categoryAxis?.show !== false ? {
-            labelFontSize: mergedProps.categoryAxis?.labelFontSize || 10,
-            labelColor: mergedProps.categoryAxis?.labelFontColor || '#605E5C',
+            labelFontSize: mergedProps.categoryAxis?.labelFontSize || PBI_TYPOGRAPHY.dimensionLabel.fontSize,
+            labelColor: mergedProps.categoryAxis?.labelFontColor || PBI_TEXT_COLORS.quaternary,
             title: null,
             labelAngle: 0,
           } : null,
@@ -153,7 +154,7 @@ export const PBIBarChart: React.FC<PBIBarChartComponentProps> = (props) => {
           type: 'quantitative',
           axis: mergedProps.valueAxis?.show !== false ? {
             grid: mergedProps.valueAxis?.gridlineShow !== false,
-            gridColor: mergedProps.valueAxis?.gridlineColor || '#F3F2F1',
+            gridColor: mergedProps.valueAxis?.gridlineColor || PBI_BORDER_COLORS.secondary,
             gridDash: [3, 3],
             title: null,
           } : null,

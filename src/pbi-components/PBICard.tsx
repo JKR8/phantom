@@ -12,6 +12,12 @@ import {
   MOKKUP_BRAND_COLORS,
   PBIHexColor,
 } from '../pbi-constraints';
+import {
+  PBI_TYPOGRAPHY,
+  PBI_TEXT_COLORS,
+  PBI_BACKGROUND_COLORS,
+  PBI_BORDER_COLORS,
+} from '../tokens/pbi-css-tokens';
 
 /** Props for the PBICard component */
 export interface PBICardComponentProps extends Omit<PBICardProps, 'value' | 'referenceValues'> {
@@ -95,22 +101,22 @@ export const PBICard: React.FC<PBICardComponentProps> = (props) => {
   const formattedValue = formatValue(value);
   const hasVariances = variancePY !== undefined || variancePL !== undefined;
 
-  const positiveColor = MOKKUP_BRAND_COLORS.success;
-  const negativeColor = '#D64554' as PBIHexColor;
+  const positiveColor = PBI_TEXT_COLORS.success;
+  const negativeColor = PBI_TEXT_COLORS.danger;
 
   return (
     <div
       style={{
         width: '100%',
         height: '100%',
-        backgroundColor: mergedProps.cardBackground?.color || '#FFFFFF',
+        backgroundColor: mergedProps.cardBackground?.color || PBI_BACKGROUND_COLORS.primary,
         borderLeft: `4px solid ${accentColor}`,
         borderRadius: '2px',
         display: 'flex',
         flexDirection: 'column',
         padding: `${padding?.top || 6}px ${padding?.right || 10}px ${padding?.bottom || 6}px ${padding?.left || 10}px`,
         boxSizing: 'border-box',
-        fontFamily: "'Segoe UI', sans-serif",
+        fontFamily: PBI_TYPOGRAPHY.kpiValue.fontFamily,
       }}
     >
       {/* Callout area */}
@@ -128,8 +134,8 @@ export const PBICard: React.FC<PBICardComponentProps> = (props) => {
         {calloutLabel?.show !== false && (
           <div
             style={{
-              fontSize: calloutLabel?.fontSize || 12,
-              color: calloutLabel?.fontColor || MOKKUP_BRAND_COLORS.textSecondary,
+              fontSize: calloutLabel?.fontSize || PBI_TYPOGRAPHY.kpiLabel.fontSize,
+              color: calloutLabel?.fontColor || PBI_TEXT_COLORS.tertiary,
               marginBottom: '4px',
             }}
           >
@@ -140,9 +146,9 @@ export const PBICard: React.FC<PBICardComponentProps> = (props) => {
         {/* Main value */}
         <div
           style={{
-            fontSize: calloutValue?.fontSize || 28,
-            fontWeight: 'bold',
-            color: calloutValue?.fontColor || MOKKUP_BRAND_COLORS.textPrimary,
+            fontSize: calloutValue?.fontSize || PBI_TYPOGRAPHY.kpiValue.fontSize,
+            fontWeight: PBI_TYPOGRAPHY.kpiValue.fontWeight,
+            color: calloutValue?.fontColor || PBI_TEXT_COLORS.primary,
           }}
         >
           {formattedValue}
@@ -157,7 +163,7 @@ export const PBICard: React.FC<PBICardComponentProps> = (props) => {
             <div
               style={{
                 height: divider?.width || 1,
-                backgroundColor: divider?.color || '#F0F0F0',
+                backgroundColor: divider?.color || PBI_BORDER_COLORS.secondary,
                 margin: '8px 0',
               }}
             />
@@ -176,7 +182,7 @@ export const PBICard: React.FC<PBICardComponentProps> = (props) => {
                 <span
                   style={{
                     fontSize: 11,
-                    color: MOKKUP_BRAND_COLORS.textSecondary,
+                    color: PBI_TEXT_COLORS.tertiary,
                   }}
                 >
                   vs PY:
@@ -198,7 +204,7 @@ export const PBICard: React.FC<PBICardComponentProps> = (props) => {
                 <span
                   style={{
                     fontSize: 11,
-                    color: MOKKUP_BRAND_COLORS.textSecondary,
+                    color: PBI_TEXT_COLORS.tertiary,
                   }}
                 >
                   vs PL:

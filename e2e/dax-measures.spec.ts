@@ -189,7 +189,12 @@ test.describe('DAX Measure Generation', () => {
   });
 
   test('generateAllMeasures produces Portfolio-specific KPIs', async ({ page }) => {
-    await openTemplate(page, 'Portfolio Monitoring');
+    // Portfolio scenario doesn't have a dedicated template, set scenario directly
+    await page.evaluate(() => {
+      (window as any).__phantomDebug.useStore.getState().setScenario('Portfolio');
+    });
+    // Wait for scenario switch to complete
+    await page.waitForTimeout(500);
 
     const measures = await page.evaluate(() => {
       const debug = (window as any).__phantomDebug;

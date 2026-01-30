@@ -13,8 +13,13 @@ import {
   DataHistogramRegular,
   GridRegular,
   DataAreaRegular,
-  MathFormulaRegular,
   GlobeRegular,
+  GaugeRegular,
+  CalendarLtrRegular,
+  ArrowTrendingLinesRegular,
+  ChartMultipleRegular,
+  TargetArrowRegular,
+  SlideMultipleRegular,
 } from '@fluentui/react-icons';
 
 const useStyles = makeStyles({
@@ -88,11 +93,14 @@ const useStyles = makeStyles({
   },
 });
 
+/**
+ * ORIGINAL VISUALS - Bottom bar (restored)
+ */
 const visuals = [
   { id: 'bar', icon: DataBarHorizontalRegular, label: 'Bar', tooltip: 'Bar Chart (pick variant on drop)' },
   { id: 'column', icon: DataHistogramRegular, label: 'Column', tooltip: 'Column Chart (pick variant on drop)' },
   { id: 'line', icon: DataLineRegular, label: 'Line', tooltip: 'Line / Area / Stacked Area (pick variant on drop)' },
-  { id: 'combo', icon: DataHistogramRegular, label: 'Combo', tooltip: 'Combo Chart (Line + Column)' },
+  { id: 'combo', icon: ChartMultipleRegular, label: 'Combo', tooltip: 'Combo Chart (Line + Column)' },
   { id: 'scatter', icon: DataScatterRegular, label: 'Scatter', tooltip: 'Scatter Chart' },
   { id: 'pie', icon: DataPieRegular, label: 'Pie', tooltip: 'Pie / Donut (pick variant on drop)' },
   { id: 'funnel', icon: DataFunnelRegular, label: 'Funnel', tooltip: 'Funnel Chart' },
@@ -106,11 +114,70 @@ const visuals = [
   { id: 'slicer', icon: TextBulletListSquareRegular, label: 'Slicer', tooltip: 'Slicer' },
 ];
 
-const statisticalVisuals = [
-  { id: 'boxplot', icon: DataAreaRegular, label: 'Box', tooltip: 'Box and Whisker Plot' },
-  { id: 'histogram', icon: DataHistogramRegular, label: 'Hist.', tooltip: 'Histogram with density curve' },
-  { id: 'violin', icon: DataAreaRegular, label: 'Violin', tooltip: 'Violin Plot with KDE' },
-  { id: 'regressionScatter', icon: MathFormulaRegular, label: 'Regr.', tooltip: 'Scatter with Regression Line' },
+/**
+ * PBI UI KIT 2.0 - All 29 chart types from CSS spec (docs/power-bi-chart-css.md)
+ * These are shown in the PBIUiKitPane (left sidebar)
+ *
+ * Note: Some charts (Bar, Line, Pie, Scatter, Table, Treemap, Waterfall, Combo, Card)
+ * are also in the bottom bar for quick access.
+ */
+export const pbiUiKitVisuals = [
+  // === AREA CHARTS (CSS #1-2) ===
+  { id: 'area', icon: DataAreaRegular, label: 'Area', tooltip: '1. Area Chart (Layered)' },
+  { id: 'stackedArea', icon: DataAreaRegular, label: 'Stk Area', tooltip: '2. Area Chart (Stacked)' },
+
+  // === BAR CHARTS (CSS #3-6) ===
+  { id: 'bar', icon: DataBarHorizontalRegular, label: 'Bar', tooltip: '3. Bar Chart' },
+  { id: 'groupedBar', icon: DataBarHorizontalRegular, label: 'Grouped', tooltip: '4. Bar Chart (Grouped)' },
+  { id: 'lollipop', icon: DataBarHorizontalRegular, label: 'Lollipop', tooltip: '5. Bar Chart (Lollipop)' },
+  { id: 'stackedBar', icon: DataBarHorizontalRegular, label: 'Stk Bar', tooltip: '6. Bar Chart (Stacked)' },
+
+  // === COMPARISON CHARTS (CSS #7, 12, 26) ===
+  { id: 'barbell', icon: DataBarHorizontalRegular, label: 'Barbell', tooltip: '7. Barbell Chart' },
+  { id: 'diverging', icon: DataBarHorizontalRegular, label: 'Diverging', tooltip: '12. Diverging Chart' },
+  { id: 'slope', icon: ArrowTrendingLinesRegular, label: 'Slope', tooltip: '26. Slope Chart' },
+
+  // === STATISTICAL (CSS #8, 16) ===
+  { id: 'boxplot', icon: DataAreaRegular, label: 'Boxplot', tooltip: '8. Boxplot Chart' },
+  { id: 'histogram', icon: DataHistogramRegular, label: 'Histogram', tooltip: '16. Histogram Chart' },
+
+  // === KPI & GAUGE (CSS #9, 10, 15) ===
+  { id: 'bullet', icon: TargetArrowRegular, label: 'Bullet', tooltip: '9. Bullet Chart' },
+  { id: 'card', icon: NumberSymbolSquareRegular, label: 'Card/KPI', tooltip: '10. Card/KPI' },
+  { id: 'gauge', icon: GaugeRegular, label: 'Gauge', tooltip: '15. Gauge Chart' },
+
+  // === COMBINATION (CSS #11) ===
+  { id: 'combo', icon: ChartMultipleRegular, label: 'Combo', tooltip: '11. Combination Chart' },
+
+  // === SPECIALIZED (CSS #13, 14, 24) ===
+  { id: 'dotStrip', icon: DataScatterRegular, label: 'Dot Strip', tooltip: '13. Dot Strip Chart' },
+  { id: 'gantt', icon: CalendarLtrRegular, label: 'Gantt', tooltip: '14. Gantt Chart' },
+  { id: 'ribbon', icon: SlideMultipleRegular, label: 'Ribbon', tooltip: '24. Ribbon Chart' },
+
+  // === LINE CHARTS (CSS #17-19) ===
+  { id: 'line', icon: DataLineRegular, label: 'Line', tooltip: '17. Line Chart' },
+  { id: 'lineForecast', icon: ArrowTrendingLinesRegular, label: 'Forecast', tooltip: '18. Line Chart (Forecast)' },
+  { id: 'lineStepped', icon: DataLineRegular, label: 'Stepped', tooltip: '19. Line Chart (Stepped)' },
+
+  // === MAPS (CSS #20-21) ===
+  { id: 'mapBubble', icon: GlobeRegular, label: 'Bubble Map', tooltip: '20. Map Chart (Bubble)' },
+  { id: 'mapChoropleth', icon: GlobeRegular, label: 'Choropleth', tooltip: '21. Map Chart (Choropleth)' },
+
+  // === PIE CHARTS (CSS #22-23) ===
+  { id: 'pie', icon: DataPieRegular, label: 'Pie', tooltip: '22. Pie Chart' },
+  { id: 'donut', icon: DataPieRegular, label: 'Donut', tooltip: '23. Pie Chart (Donut)' },
+
+  // === SCATTER (CSS #25) ===
+  { id: 'scatter', icon: DataScatterRegular, label: 'Scatter', tooltip: '25. Scatter Plot Chart' },
+
+  // === TABLE (CSS #27) ===
+  { id: 'table', icon: TableRegular, label: 'Table', tooltip: '27. Table' },
+
+  // === TREEMAP (CSS #28) ===
+  { id: 'treemap', icon: DataTreemapRegular, label: 'Treemap', tooltip: '28. Treemap Chart' },
+
+  // === WATERFALL (CSS #29) ===
+  { id: 'waterfall', icon: DataHistogramRegular, label: 'Waterfall', tooltip: '29. Waterfall Chart' },
 ];
 
 
@@ -140,6 +207,34 @@ const scheduleClearDragState = () => {
   }, 100);
 };
 
+// Helper to render a visual button
+const VisualButton: React.FC<{
+  visual: { id: string; icon: any; label: string; tooltip: string };
+  styles: any;
+}> = ({ visual, styles }) => (
+  <Tooltip content={visual.tooltip} relationship="label">
+    <div
+      className={styles.visualButton}
+      data-testid={`visual-source-${visual.id}`}
+      draggable
+      onDragStart={(e) => {
+        clearDragState();
+        dragState.visualType = visual.id;
+        e.dataTransfer.setData('visualType', visual.id);
+        e.dataTransfer.setData('text/plain', visual.id);
+        e.dataTransfer.effectAllowed = 'copy';
+      }}
+      onDragEnd={() => {
+        scheduleClearDragState();
+      }}
+      unselectable="on"
+    >
+      <visual.icon className={styles.visualIcon} fontSize={24} style={{ pointerEvents: 'none' }} />
+      <Text className={styles.visualLabel} style={{ pointerEvents: 'none' }}>{visual.label}</Text>
+    </div>
+  </Tooltip>
+);
+
 export const VisualizationsPane: React.FC = () => {
   const styles = useStyles();
 
@@ -148,53 +243,7 @@ export const VisualizationsPane: React.FC = () => {
       <div className={styles.header}>Visualizations</div>
       <div className={styles.content}>
         {visuals.map((visual) => (
-          <Tooltip key={visual.id} content={visual.tooltip} relationship="label">
-            <div
-              className={styles.visualButton}
-              data-testid={`visual-source-${visual.id}`}
-              draggable
-              onDragStart={(e) => {
-                clearDragState(); // Clear any pending timeout
-                dragState.visualType = visual.id;
-                e.dataTransfer.setData('visualType', visual.id);
-                e.dataTransfer.setData('text/plain', visual.id);
-                e.dataTransfer.effectAllowed = 'copy';
-              }}
-              onDragEnd={() => {
-                scheduleClearDragState();
-              }}
-              unselectable="on"
-            >
-              <visual.icon className={styles.visualIcon} fontSize={24} style={{ pointerEvents: 'none' }} />
-              <Text className={styles.visualLabel} style={{ pointerEvents: 'none' }}>{visual.label}</Text>
-            </div>
-          </Tooltip>
-        ))}
-      </div>
-      <div className={styles.sectionHeader}>Statistical</div>
-      <div className={styles.content}>
-        {statisticalVisuals.map((visual) => (
-          <Tooltip key={visual.id} content={visual.tooltip} relationship="label">
-            <div
-              className={styles.visualButton}
-              data-testid={`visual-source-${visual.id}`}
-              draggable
-              onDragStart={(e) => {
-                clearDragState(); // Clear any pending timeout
-                dragState.visualType = visual.id;
-                e.dataTransfer.setData('visualType', visual.id);
-                e.dataTransfer.setData('text/plain', visual.id);
-                e.dataTransfer.effectAllowed = 'copy';
-              }}
-              onDragEnd={() => {
-                scheduleClearDragState();
-              }}
-              unselectable="on"
-            >
-              <visual.icon className={styles.visualIcon} fontSize={24} style={{ pointerEvents: 'none' }} />
-              <Text className={styles.visualLabel} style={{ pointerEvents: 'none' }}>{visual.label}</Text>
-            </div>
-          </Tooltip>
+          <VisualButton key={visual.id} visual={visual} styles={styles} />
         ))}
       </div>
     </div>

@@ -12,9 +12,17 @@ import {
   Divider,
   Checkbox,
 } from '@fluentui/react-components';
-import { AddRegular, DeleteRegular, WarningRegular } from '@fluentui/react-icons';
+import { AddRegular, DeleteRegular, WarningRegular, ErrorCircleRegular } from '@fluentui/react-icons';
 import { useStore } from '../store/useStore';
 import { ScenarioFields, ScenarioType, RecommendedDimensions, RecommendedMeasures } from '../store/semanticLayer';
+import {
+  ValidationDisplay,
+  ValidationIndicator,
+  ConstrainedSelect,
+  OPERATION_OPTIONS,
+  TIME_GRAIN_OPTIONS,
+  COMPARISON_OPTIONS,
+} from './property-inputs';
 
 const useStyles = makeStyles({
   panel: {
@@ -94,33 +102,83 @@ const useStyles = makeStyles({
     color: '#D83B01',
     flexShrink: 0,
   },
+  validationSummary: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    ...shorthands.padding('8px', '10px'),
+    ...shorthands.borderRadius('4px'),
+    marginBottom: '8px',
+  },
+  validationError: {
+    backgroundColor: '#FEF2F2',
+    ...shorthands.border('1px', 'solid', '#FECACA'),
+    color: '#D13438',
+  },
+  validationWarning: {
+    backgroundColor: '#FFFBEB',
+    ...shorthands.border('1px', 'solid', '#FDE68A'),
+    color: '#92400E',
+  },
 });
 
-const OPERATION_OPTIONS = ['sum', 'avg', 'count', 'min', 'max'];
+// OPERATION_OPTIONS imported from property-inputs
 
+/**
+ * Visual type labels matching Power BI UI Kit 2.0 CSS spec
+ * All 29+ chart types from docs/power-bi-chart-css.md
+ */
 const VISUAL_TYPE_LABELS: Record<string, string> = {
+  // Bar & Column Charts
   bar: 'Clustered Bar Chart',
-  column: 'Clustered Column Chart',
   stackedBar: 'Stacked Bar Chart',
+  column: 'Clustered Column Chart',
   stackedColumn: 'Stacked Column Chart',
+  waterfall: 'Waterfall Chart',
+  combo: 'Combination Chart',
+
+  // Line & Area Charts
   line: 'Line Chart',
-  area: 'Area Chart',
+  lineForecast: 'Line Chart (Forecast)',
+  lineStepped: 'Stepped Line Chart',
+  area: 'Area Chart (Layered)',
   stackedArea: 'Stacked Area Chart',
-  combo: 'Combo Chart',
-  map: 'Map Chart',
-  scatter: 'Scatter Chart',
+
+  // Pie & Part-to-Whole
   pie: 'Pie Chart',
   donut: 'Donut Chart',
   funnel: 'Funnel Chart',
   treemap: 'Treemap',
-  gauge: 'Gauge',
-  card: 'KPI Card',
+
+  // Maps
+  map: 'Map Chart',
+  mapChoropleth: 'Choropleth Map',
+  mapBubble: 'Bubble Map',
+
+  // KPI & Cards
+  card: 'Card / KPI',
+  kpi: 'KPI Visual',
+  gauge: 'Gauge Chart',
+  bullet: 'Bullet Chart',
   multiRowCard: 'Multi-row Card',
+
+  // Tables
   table: 'Data Table',
   matrix: 'Matrix',
-  waterfall: 'Waterfall Chart',
+
+  // Comparison Charts
+  scatter: 'Scatter Plot',
+  barbell: 'Barbell Chart',
+  diverging: 'Diverging Chart',
+  slope: 'Slope Chart',
+
+  // Specialized Charts
+  ribbon: 'Ribbon Chart',
+  gantt: 'Gantt Chart',
+  dotStrip: 'Dot Strip Chart',
   slicer: 'Slicer',
-  // Statistical visuals
+
+  // Statistical Visuals
   boxplot: 'Boxplot',
   histogram: 'Histogram',
   violin: 'Violin Plot',
@@ -171,9 +229,11 @@ export const PropertiesPanel: React.FC = () => {
     return <div className={styles.noSelection}>Select a visual to edit</div>;
   }
 
-  const props = item.props || {};
+  // Use Record<string, any> since this component accesses props dynamically by key
+  const props = (item.props || {}) as Record<string, any>;
   const type = item.type;
-  const manualData: Array<{ label: string; value: number }> = props.manualData || [];
+  const validation = item._validation;
+  const manualData: Array<{ label: string; value: number }> = (props.manualData as Array<{ label: string; value: number }>) || [];
   const dataSource = props.manualData ? 'manual' : 'auto';
 
   const setDataSource = (source: string) => {
@@ -292,6 +352,24 @@ export const PropertiesPanel: React.FC = () => {
           <Text className={styles.typeLabel}>{VISUAL_TYPE_LABELS[type] || type}</Text>
         </div>
       </div>
+
+      {/* Validation Summary */}
+      {validation && !validation.valid && (
+        <div className={`${styles.validationSummary} ${styles.validationError}`}>
+          <ErrorCircleRegular fontSize={16} />
+          <Text size={200}>
+            {validation.errors.length} error{validation.errors.length !== 1 ? 's' : ''} found
+          </Text>
+        </div>
+      )}
+      {validation && validation.valid && validation.warnings.length > 0 && (
+        <div className={`${styles.validationSummary} ${styles.validationWarning}`}>
+          <WarningRegular fontSize={16} />
+          <Text size={200}>
+            {validation.warnings.length} warning{validation.warnings.length !== 1 ? 's' : ''}
+          </Text>
+        </div>
+      )}
 
       <Divider />
 
@@ -576,46 +654,36 @@ export const PropertiesPanel: React.FC = () => {
         {showComparison && (
           <div className={styles.fieldRow}>
             <Label className={styles.fieldLabel}>Comparison</Label>
-            <Select
-              size="small"
+            <ConstrainedSelect
+              options={COMPARISON_OPTIONS}
               value={props.comparison || 'both'}
-              onChange={(_, d) => onPropChange('comparison', d.value)}
-            >
-              <option value="none">None</option>
-              <option value="pl">Plan</option>
-              <option value="py">Prior Year</option>
-              <option value="both">Both</option>
-            </Select>
+              onChange={(value) => onPropChange('comparison', value)}
+            />
           </div>
         )}
 
         {showTimeGrain && (
           <div className={styles.fieldRow}>
             <Label className={styles.fieldLabel}>Time Grain</Label>
-            <Select
-              size="small"
+            <ConstrainedSelect
+              options={TIME_GRAIN_OPTIONS}
               value={props.timeGrain || 'month'}
-              onChange={(_, d) => onPropChange('timeGrain', d.value)}
-            >
-              <option value="month">Month</option>
-              <option value="quarter">Quarter</option>
-              <option value="year">Year</option>
-            </Select>
+              onChange={(value) => onPropChange('timeGrain', value)}
+            />
           </div>
         )}
 
         {showOperation && (
           <div className={styles.fieldRow}>
-            <Label className={styles.fieldLabel}>Operation</Label>
-            <Select
-              size="small"
+            <Label className={styles.fieldLabel}>
+              Operation
+              <ValidationIndicator validation={validation} field="operation" />
+            </Label>
+            <ConstrainedSelect
+              options={OPERATION_OPTIONS}
               value={props.operation || 'sum'}
-              onChange={(_, d) => onPropChange('operation', d.value)}
-            >
-              {OPERATION_OPTIONS.map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
-              ))}
-            </Select>
+              onChange={(value) => onPropChange('operation', value)}
+            />
           </div>
         )}
 
@@ -831,6 +899,17 @@ export const PropertiesPanel: React.FC = () => {
         )}
 
       </div>
+
+      {/* Validation Details */}
+      {validation && (validation.errors.length > 0 || validation.warnings.length > 0) && (
+        <>
+          <Divider />
+          <div className={styles.section}>
+            <Text className={styles.sectionHeader}>Validation</Text>
+            <ValidationDisplay validation={validation} />
+          </div>
+        </>
+      )}
     </div>
   );
 };

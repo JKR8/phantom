@@ -58,6 +58,23 @@ export const PBI_VISUAL_TYPES: Record<VisualType, string> = {
   controversyBottomPanel: 'tableEx',
   justificationSearch: 'slicer',
   portfolioKPICards: 'multiRowCard',
+  // Bar chart variants - map to clustered bar
+  groupedBar: 'clusteredBarChart',
+  lollipop: 'clusteredBarChart',
+  barbell: 'clusteredBarChart',
+  diverging: 'clusteredBarChart',
+  // Line chart variants
+  slope: 'lineChart',
+  lineForecast: 'lineChart',
+  lineStepped: 'lineChart',
+  // Specialized visuals mapped to closest PBI equivalents
+  bullet: 'gauge',
+  dotStrip: 'scatterChart',
+  gantt: 'PhantomStatisticalVisual',
+  ribbon: 'ribbonChart',
+  // Map variants
+  mapBubble: 'filledMap',
+  mapChoropleth: 'filledMap',
 };
 
 export interface PBIPosition {

@@ -84,6 +84,9 @@ export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth
   const showStrip = STRIP_TYPES.includes(selectedItem.type);
   if (!showStrip) return null;
 
+  // Cast props to Record<string, any> for dynamic property access
+  const props = (selectedItem.props || {}) as Record<string, any>;
+
   const fields = ScenarioFields[scenario] || [];
   const measures = fields.filter(f => f.role === 'Measure');
   const categories = fields.filter(f => ['Category', 'Entity', 'Geography'].includes(f.role));
@@ -123,7 +126,7 @@ export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth
         <Text className={styles.label}>Bars</Text>
         <RadioGroup
             layout="horizontal"
-            value={String(selectedItem.props?.topN ?? 'All')}
+            value={String(props.topN ?? 'All')}
             onChange={(_, data) => handleTitleUpdate('topN', data.value)}
         >
           <Radio value="2" label="2" data-testid="quick-shape-bars-2" />
@@ -137,7 +140,7 @@ export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth
 
       <div className={styles.group}>
         <Checkbox
-          checked={selectedItem.props?.showOther !== false}
+          checked={props.showOther !== false}
           onChange={(_, data) => handleUpdate('showOther', !!data.checked)}
           label={<Text className={styles.label}>Other</Text>}
           data-testid="quick-shape-show-other"
@@ -150,7 +153,7 @@ export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth
         <Text className={styles.label}>By</Text>
         <Menu>
           <MenuTrigger disableButtonEnhancement>
-            <Button size="small" appearance="outline" data-testid="quick-shape-dimension-trigger">{selectedItem.props?.dimension || 'Select...'}</Button>
+            <Button size="small" appearance="outline" data-testid="quick-shape-dimension-trigger">{props.dimension || 'Select...'}</Button>
           </MenuTrigger>
           <MenuPopover>
             <MenuList>
@@ -170,7 +173,7 @@ export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth
         <Text className={styles.label}>Show</Text>
         <Menu>
           <MenuTrigger disableButtonEnhancement>
-            <Button size="small" appearance="outline">{selectedItem.props?.metric || 'Select...'}</Button>
+            <Button size="small" appearance="outline">{props.metric || 'Select...'}</Button>
           </MenuTrigger>
           <MenuPopover>
             <MenuList>
@@ -200,7 +203,7 @@ export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth
         <Text className={styles.label}>Grain</Text>
         <RadioGroup
             layout="horizontal"
-            value={selectedItem.props?.timeGrain || 'month'}
+            value={props.timeGrain || 'month'}
             onChange={(_, data) => handleUpdate('timeGrain', data.value)}
         >
           <Radio value="month" label="Month" />
@@ -215,7 +218,7 @@ export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth
         <Text className={styles.label}>Metric</Text>
         <Menu>
           <MenuTrigger disableButtonEnhancement>
-            <Button size="small" appearance="outline">{selectedItem.props?.metric || 'Select...'}</Button>
+            <Button size="small" appearance="outline">{props.metric || 'Select...'}</Button>
           </MenuTrigger>
           <MenuPopover>
             <MenuList>
@@ -236,7 +239,7 @@ export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth
             <Text className={styles.label}>Compare</Text>
             <RadioGroup
                 layout="horizontal"
-                value={selectedItem.props?.comparison || 'both'}
+                value={props.comparison || 'both'}
                 onChange={(_, data) => handleUpdate('comparison', data.value)}
             >
               <Radio value="none" label="None" />
@@ -256,7 +259,7 @@ export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth
         <Text className={styles.label}>Slices</Text>
         <RadioGroup
             layout="horizontal"
-            value={String(selectedItem.props?.topN ?? 'All')}
+            value={String(props.topN ?? 'All')}
             onChange={(_, data) => handleTitleUpdate('topN', data.value)}
         >
           <Radio value="3" label="3" />
@@ -272,7 +275,7 @@ export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth
         <Text className={styles.label}>By</Text>
         <Menu>
           <MenuTrigger disableButtonEnhancement>
-            <Button size="small" appearance="outline" data-testid="quick-shape-dimension-trigger">{selectedItem.props?.dimension || 'Select...'}</Button>
+            <Button size="small" appearance="outline" data-testid="quick-shape-dimension-trigger">{props.dimension || 'Select...'}</Button>
           </MenuTrigger>
           <MenuPopover>
             <MenuList>
@@ -292,7 +295,7 @@ export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth
         <Text className={styles.label}>Show</Text>
         <Menu>
           <MenuTrigger disableButtonEnhancement>
-            <Button size="small" appearance="outline">{selectedItem.props?.metric || 'Select...'}</Button>
+            <Button size="small" appearance="outline">{props.metric || 'Select...'}</Button>
           </MenuTrigger>
           <MenuPopover>
             <MenuList>
@@ -314,7 +317,7 @@ export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth
         <Text className={styles.label}>Measure</Text>
         <Menu>
           <MenuTrigger disableButtonEnhancement>
-            <Button size="small" appearance="outline">{selectedItem.props?.metric || 'Select...'}</Button>
+            <Button size="small" appearance="outline">{props.metric || 'Select...'}</Button>
           </MenuTrigger>
           <MenuPopover>
             <MenuList>
@@ -332,7 +335,7 @@ export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth
         <Text className={styles.label}>Agg</Text>
         <RadioGroup
             layout="horizontal"
-            value={selectedItem.props?.operation || 'sum'}
+            value={props.operation || 'sum'}
             onChange={(_, data) => handleUpdate('operation', data.value)}
         >
           <Radio value="sum" label="Sum" />
@@ -349,7 +352,7 @@ export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth
         <Text className={styles.label}>Rows</Text>
         <RadioGroup
             layout="horizontal"
-            value={String(selectedItem.props?.maxRows || 25)}
+            value={String(props.maxRows || 25)}
             onChange={(_, data) => handleUpdate('maxRows', data.value === 'All' ? 9999 : Number(data.value))}
         >
           <Radio value="10" label="10" />
@@ -367,7 +370,7 @@ export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth
         <Text className={styles.label}>X</Text>
         <Menu>
           <MenuTrigger disableButtonEnhancement>
-            <Button size="small" appearance="outline">{selectedItem.props?.xMetric || 'Select...'}</Button>
+            <Button size="small" appearance="outline">{props.xMetric || 'Select...'}</Button>
           </MenuTrigger>
           <MenuPopover>
             <MenuList>
@@ -385,7 +388,7 @@ export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth
         <Text className={styles.label}>Y</Text>
         <Menu>
           <MenuTrigger disableButtonEnhancement>
-            <Button size="small" appearance="outline">{selectedItem.props?.yMetric || 'Select...'}</Button>
+            <Button size="small" appearance="outline">{props.yMetric || 'Select...'}</Button>
           </MenuTrigger>
           <MenuPopover>
             <MenuList>
@@ -407,7 +410,7 @@ export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth
         <Text className={styles.label}>Field</Text>
         <Menu>
           <MenuTrigger disableButtonEnhancement>
-            <Button size="small" appearance="outline" data-testid="quick-shape-dimension-trigger">{selectedItem.props?.dimension || 'Select...'}</Button>
+            <Button size="small" appearance="outline" data-testid="quick-shape-dimension-trigger">{props.dimension || 'Select...'}</Button>
           </MenuTrigger>
           <MenuPopover>
             <MenuList>
@@ -429,7 +432,7 @@ export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth
         <Text className={styles.label}>By</Text>
         <Menu>
           <MenuTrigger disableButtonEnhancement>
-            <Button size="small" appearance="outline" data-testid="quick-shape-dimension-trigger">{selectedItem.props?.dimension || 'Select...'}</Button>
+            <Button size="small" appearance="outline" data-testid="quick-shape-dimension-trigger">{props.dimension || 'Select...'}</Button>
           </MenuTrigger>
           <MenuPopover>
             <MenuList>
@@ -447,7 +450,7 @@ export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth
         <Text className={styles.label}>Show</Text>
         <Menu>
           <MenuTrigger disableButtonEnhancement>
-            <Button size="small" appearance="outline">{selectedItem.props?.metric || 'Select...'}</Button>
+            <Button size="small" appearance="outline">{props.metric || 'Select...'}</Button>
           </MenuTrigger>
           <MenuPopover>
             <MenuList>

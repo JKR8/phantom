@@ -54,8 +54,9 @@ export function extractMetricBindings(items: DashboardItem[], scenario: Scenario
     tableColumns.get(table)?.has(column.toLowerCase());
 
   items.forEach(item => {
-    const props = item.props || {};
-    
+    // Cast to Record<string, any> for dynamic property access
+    const props = (item.props || {}) as Record<string, any>;
+
     // Extract metric from various visual props
     const metric = props.metric || props.value || null;
     const operation = props.operation || 'sum';
@@ -257,7 +258,8 @@ export function generateWaterfallMeasures(items: DashboardItem[], scenario: Scen
   const waterfallItems = items.filter(item => item.type === 'waterfall');
 
   waterfallItems.forEach((item, index) => {
-    const props = item.props || {};
+    // Cast to Record<string, any> for dynamic property access
+    const props = (item.props || {}) as Record<string, any>;
     const dimension = props.dimension || 'Region';
     const metric = props.metric || 'revenue';
     const metricLabel = metric.charAt(0).toUpperCase() + metric.slice(1);
