@@ -1,15 +1,4 @@
-import React, { useMemo } from 'react';
-import {
-  BarChart as ReBarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-  LabelList
-} from 'recharts';
+import React, { useMemo, useState, useCallback } from 'react';
 import { useStore, useFilteredSales } from '../store/useStore';
 import { formatMetricValue, getDimensionValue, getMetricValue } from '../utils/chartUtils';
 
@@ -19,36 +8,74 @@ interface WaterfallChartProps {
   manualData?: Array<{ label: string; value: number }>;
 }
 
+interface WaterfallDataPoint {
+  name: string;
+  start: number;
+  end: number;
+  value: number;
+  fill: string;
+  type: 'total' | 'variance';
+}
+
 export const WaterfallChart: React.FC<WaterfallChartProps> = ({ dimension, metric, manualData }) => {
+  const [size, setSize] = useState({ width: 300, height: 200 });
   const filteredSales = useFilteredSales(dimension);
   const stores = useStore((state) => state.stores);
   const products = useStore((state) => state.products);
   const customers = useStore((state) => state.customers);
 
-  const data = useMemo(() => {
+  const containerRef = useCallback((node: HTMLDivElement | null) => {
+    if (node) {
+      // Immediate measurement
+      const updateSize = () => {
+        const rect = node.getBoundingClientRect();
+        if (rect.width > 50 && rect.height > 50) {
+          setSize({ width: rect.width, height: rect.height });
+        }
+      };
+
+      updateSize();
+
+      // Also observe for changes
+      const observer = new ResizeObserver(() => {
+        requestAnimationFrame(updateSize);
+      });
+      observer.observe(node);
+
+      // Retry after a short delay in case initial size was 0
+      setTimeout(updateSize, 100);
+    }
+  }, []);
+
+  const data = useMemo((): WaterfallDataPoint[] => {
     if (manualData && manualData.length > 0) {
-      // For manual data, render as simple waterfall: start, items, total
       const total = manualData.reduce((sum, d) => sum + d.value, 0);
-      const waterfallData: any[] = [];
+      const waterfallData: WaterfallDataPoint[] = [];
       let running = 0;
+
       manualData.forEach((d) => {
         const start = running;
-        running += d.value;
+        const end = running + d.value;
         waterfallData.push({
           name: d.label,
-          value: [start, running],
-          displayValue: d.value,
+          start: Math.min(start, end),
+          end: Math.max(start, end),
+          value: d.value,
           fill: d.value >= 0 ? '#107C10' : '#A4262C',
           type: 'variance',
         });
+        running += d.value;
       });
+
       waterfallData.push({
         name: 'Total',
-        value: [0, total],
-        displayValue: total,
-        fill: '#000000',
+        start: 0,
+        end: Math.abs(total),
+        value: total,
+        fill: total >= 0 ? '#000000' : '#A4262C',
         type: 'total',
       });
+
       return waterfallData;
     }
 
@@ -60,92 +87,198 @@ export const WaterfallChart: React.FC<WaterfallChartProps> = ({ dimension, metri
 
     filteredSales.forEach((sale) => {
       const key = getDimensionValue(sale, dimension, { stores, products, customers });
-
       if (!aggregation[key]) aggregation[key] = { ac: 0, py: 0 };
-      
+
       const acVal = getMetricValue(sale, metric);
       const pyVal = getMetricValue(sale, `${metric}PY`) || acVal * 0.9;
-      
+
       aggregation[key].ac += acVal;
       aggregation[key].py += pyVal;
       totalAC += acVal;
       totalPY += pyVal;
     });
 
-    const waterfallData = [];
+    const waterfallData: WaterfallDataPoint[] = [];
 
-    // 1. Start Bar (PY)
+    // PY bar
     waterfallData.push({
       name: 'PY',
-      value: [0, totalPY],
-      displayValue: totalPY,
-      fill: '#999999', // Grey for PY
+      start: 0,
+      end: totalPY,
+      value: totalPY,
+      fill: '#999999',
       type: 'total'
     });
 
-    // 2. Variance Bars
+    // Variance bars
     let runningTotal = totalPY;
     Object.entries(aggregation).forEach(([name, vals]) => {
-        const diff = vals.ac - vals.py;
-        const start = runningTotal;
-        runningTotal += diff;
-        waterfallData.push({
-            name: name,
-            value: [start, runningTotal],
-            displayValue: diff,
-            fill: diff >= 0 ? '#107C10' : '#A4262C', // Green / Red
-            type: 'variance'
-        });
+      const diff = vals.ac - vals.py;
+      const start = runningTotal;
+      const end = runningTotal + diff;
+
+      waterfallData.push({
+        name,
+        start: Math.min(start, end),
+        end: Math.max(start, end),
+        value: diff,
+        fill: diff >= 0 ? '#107C10' : '#A4262C',
+        type: 'variance'
+      });
+
+      runningTotal += diff;
     });
 
-    // 3. End Bar (AC)
+    // AC bar
     waterfallData.push({
       name: 'AC',
-      value: [0, totalAC],
-      displayValue: totalAC,
-      fill: '#000000', // Black for AC
+      start: 0,
+      end: totalAC,
+      value: totalAC,
+      fill: '#000000',
       type: 'total'
     });
 
     return waterfallData;
-  }, [manualData, filteredSales, dimension, metric, stores, products]);
+  }, [manualData, filteredSales, dimension, metric, stores, products, customers]);
 
   const formatValue = (val: number) => formatMetricValue(metric, val, true);
 
+  // Chart dimensions with minimums and compact margins for small containers
+  const margin = { top: 18, right: 10, left: 35, bottom: 20 };
+  const effectiveWidth = Math.max(150, size.width);
+  const effectiveHeight = Math.max(100, size.height);
+  const chartWidth = Math.max(60, effectiveWidth - margin.left - margin.right);
+  const chartHeight = Math.max(40, effectiveHeight - margin.top - margin.bottom);
+
+  // Y-axis scale
+  const yMax = useMemo(() => {
+    if (data.length === 0) return 100;
+    return Math.max(...data.map(d => Math.max(d.start, d.end))) * 1.15;
+  }, [data]);
+
+  const yMin = useMemo(() => {
+    if (data.length === 0) return 0;
+    return Math.min(0, ...data.map(d => Math.min(d.start, d.end)));
+  }, [data]);
+
+  const yScale = useCallback((val: number) => {
+    const range = yMax - yMin;
+    if (range === 0 || chartHeight === 0) return 0;
+    return chartHeight - ((val - yMin) / range) * chartHeight;
+  }, [yMax, yMin, chartHeight]);
+
+  // Bar dimensions
+  const barCount = data.length || 1;
+  const totalBarSpace = chartWidth;
+  const barWidth = Math.max(20, (totalBarSpace / barCount) * 0.6);
+  const barGap = (totalBarSpace - barWidth * barCount) / (barCount + 1);
+
+  // Y-axis ticks
+  const yTicks = useMemo(() => {
+    const tickCount = 5;
+    const range = yMax - yMin;
+    const step = range / tickCount;
+    return Array.from({ length: tickCount + 1 }, (_, i) => yMin + i * step);
+  }, [yMin, yMax]);
+
+  if (data.length === 0) {
+    return (
+      <div ref={containerRef} style={{ width: '100%', height: '100%', backgroundColor: 'white' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#999' }}>
+          No data
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ width: '100%', height: '100%', backgroundColor: 'white' }}>
-        <ResponsiveContainer width="100%" height="100%">
-        <ReBarChart data={data} margin={{ top: 30, right: 30, left: 20, bottom: 20 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F2F1" />
-            <XAxis 
-                dataKey="name" 
-                tick={{ fontSize: 9, fill: '#605E5C' }} 
-                axisLine={{ stroke: '#F3F2F1' }}
-                tickLine={false}
+    <div ref={containerRef} style={{ width: '100%', height: '100%', minWidth: '200px', minHeight: '150px', backgroundColor: 'white' }}>
+      <svg width={effectiveWidth} height={effectiveHeight} className="waterfall-chart" data-testid="waterfall-svg">
+        <g transform={`translate(${margin.left}, ${margin.top})`}>
+          {/* Grid lines */}
+          {yTicks.map((tick, i) => (
+            <line
+              key={`grid-${i}`}
+              x1={0}
+              y1={yScale(tick)}
+              x2={chartWidth}
+              y2={yScale(tick)}
+              stroke="#F3F2F1"
+              strokeDasharray="3 3"
             />
-            <YAxis 
-                tickFormatter={(value) => formatValue(Number(value))}
-                tick={{ fontSize: 9, fill: '#605E5C' }}
-                axisLine={false}
-                tickLine={false}
-            />
-            <Tooltip 
-                formatter={(val: any) => [formatMetricValue(metric, Number(val[1] - val[0])), 'Change']}
-                contentStyle={{ fontSize: '12px', borderRadius: '4px', border: '1px solid #F3F2F1' }}
-            />
-            <Bar dataKey="value" radius={[2, 2, 0, 0]}>
-            {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.fill} />
-            ))}
-            <LabelList 
-                dataKey="displayValue" 
-                position="top" 
-                formatter={(val: any) => formatValue(Number(val))}
-                style={{ fontSize: '10px', fontWeight: 'bold', fill: '#252423' }}
-            />
-            </Bar>
-        </ReBarChart>
-        </ResponsiveContainer>
+          ))}
+
+          {/* Y-axis labels */}
+          {yTicks.map((tick, i) => (
+            <text
+              key={`ytick-${i}`}
+              x={-8}
+              y={yScale(tick)}
+              textAnchor="end"
+              alignmentBaseline="middle"
+              fontSize={9}
+              fill="#605E5C"
+            >
+              {formatValue(tick)}
+            </text>
+          ))}
+
+          {/* Bars */}
+          {data.map((d, i) => {
+            const x = barGap + i * (barWidth + barGap);
+            const yTop = yScale(d.end);
+            const yBottom = yScale(d.start);
+            const height = Math.abs(yBottom - yTop);
+            const y = Math.min(yTop, yBottom);
+
+            return (
+              <g key={`bar-${i}`} className="waterfall-bar">
+                <rect
+                  x={x}
+                  y={y}
+                  width={barWidth}
+                  height={Math.max(1, height)}
+                  fill={d.fill}
+                  rx={2}
+                  ry={2}
+                  className="waterfall-rect"
+                />
+                {/* Value label */}
+                <text
+                  x={x + barWidth / 2}
+                  y={y - 5}
+                  textAnchor="middle"
+                  fontSize={10}
+                  fontWeight="bold"
+                  fill="#252423"
+                >
+                  {formatValue(d.value)}
+                </text>
+                {/* X-axis label */}
+                <text
+                  x={x + barWidth / 2}
+                  y={chartHeight + 15}
+                  textAnchor="middle"
+                  fontSize={9}
+                  fill="#605E5C"
+                >
+                  {d.name}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* X-axis line */}
+          <line
+            x1={0}
+            y1={chartHeight}
+            x2={chartWidth}
+            y2={chartHeight}
+            stroke="#F3F2F1"
+          />
+        </g>
+      </svg>
     </div>
   );
 };
