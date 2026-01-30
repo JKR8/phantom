@@ -268,7 +268,10 @@ export function mapToPBIPQueryState(
     case 'bar':
     case 'column':
     case 'stackedBar':
-    case 'stackedColumn': {
+    case 'stackedColumn':
+    case 'groupedBar':
+    case 'lollipop':
+    case 'gantt': {
       const dimField = props.dimension || defaultCategory;
       const dim = resolveColumn(dimField, scenario);
       const metric = resolveMeasure(props.metric, operation, measures, factTable);
@@ -289,7 +292,10 @@ export function mapToPBIPQueryState(
 
     case 'line':
     case 'area':
-    case 'stackedArea': {
+    case 'stackedArea':
+    case 'slope':
+    case 'lineForecast':
+    case 'lineStepped': {
       const dimField = props.dimension || defaultTime;
       const dim = resolveColumn(dimField, scenario);
       const metric = resolveMeasure(props.metric, operation, measures, factTable);
@@ -303,7 +309,8 @@ export function mapToPBIPQueryState(
 
     case 'pie':
     case 'donut':
-    case 'treemap': {
+    case 'treemap':
+    case 'ribbon': {
       const dimField = props.dimension || defaultCategory;
       const dim = resolveColumn(dimField, scenario);
       const metric = resolveMeasure(props.metric, operation, measures, factTable);
@@ -343,7 +350,8 @@ export function mapToPBIPQueryState(
     }
 
     case 'card':
-    case 'gauge': {
+    case 'gauge':
+    case 'bullet': {
       const metric = resolveMeasure(props.metric, operation, measures, factTable);
       if (metric) {
         const projections = [buildQueryProjection(metric.table, metric.measure, true)];
@@ -372,7 +380,8 @@ export function mapToPBIPQueryState(
     }
 
     case 'scatter':
-    case 'regressionScatter': {
+    case 'regressionScatter':
+    case 'dotStrip': {
       const x = resolveMeasure(props.xMetric, operation, measures, factTable);
       const y = resolveMeasure(props.yMetric, operation, measures, factTable);
       const size = resolveMeasure(props.sizeMetric, operation, measures, factTable);
@@ -535,6 +544,37 @@ export function mapToPBIPQueryState(
       if (metric1) yProjections.push(buildQueryProjection(metric1.table, metric1.measure, true));
       if (metric2) yProjections.push(buildQueryProjection(metric2.table, metric2.measure, true));
       if (yProjections.length > 0) queryState.Y = { projections: yProjections };
+      break;
+    }
+
+    case 'mapBubble':
+    case 'mapChoropleth':
+    case 'map': {
+      // Map visuals use Location + metric
+      const locationField = props.geoDimension || props.location || 'Region';
+      const loc = resolveColumn(locationField, scenario);
+      const metric = resolveMeasure(props.metric || props.colorMetric || props.sizeMetric, operation, measures, factTable);
+
+      if (loc)
+        queryState.Location = {
+          projections: [buildQueryProjection(loc.table, loc.column, false, { active: true })],
+        };
+      if (metric) queryState.Size = { projections: [buildQueryProjection(metric.table, metric.measure, true)] };
+      break;
+    }
+
+    case 'boxplot':
+    case 'histogram': {
+      // Statistical visuals use dimension + metric
+      const dimField = props.dimension || defaultCategory;
+      const dim = resolveColumn(dimField, scenario);
+      const metric = resolveMeasure(props.metric, operation, measures, factTable);
+
+      if (dim)
+        queryState.Category = {
+          projections: [buildQueryProjection(dim.table, dim.column, false, { active: true })],
+        };
+      if (metric) queryState.Y = { projections: [buildQueryProjection(metric.table, metric.measure, true)] };
       break;
     }
 

@@ -278,6 +278,98 @@ export const SocialTemplate: Template = {
   ]
 };
 
+// ─── PBI UI Kit Test Template ─────────────────────────────────────────────────
+// All 29 PBI UI Kit 2.0 chart types in menu order - for testing which render correctly
+export const PbiUiKitTestTemplate: Template = {
+  name: 'PBI UI Kit Test (All 29 Charts)',
+  scenario: 'Retail',
+  items: [
+    // Row 0: Area Charts (CSS #1-2) + Bar Charts (CSS #3-4)
+    { id: 'test-area', type: 'area', title: '1. Area Chart', layout: { x: 0, y: 0, w: 12, h: 7 }, props: { metric: 'revenue' } },
+    { id: 'test-stackedArea', type: 'stackedArea', title: '2. Stacked Area', layout: { x: 12, y: 0, w: 12, h: 7 }, props: { metric: 'revenue' } },
+    { id: 'test-bar', type: 'bar', title: '3. Bar Chart', layout: { x: 24, y: 0, w: 12, h: 7 }, props: { dimension: 'Region', metric: 'revenue' } },
+    { id: 'test-groupedBar', type: 'groupedBar', title: '4. Grouped Bar', layout: { x: 36, y: 0, w: 12, h: 7 }, props: { dimension: 'Region', metric: 'revenue' } },
+
+    // Row 1: Bar Charts continued (CSS #5-6) + Comparison (CSS #7, 12)
+    { id: 'test-lollipop', type: 'lollipop', title: '5. Lollipop', layout: { x: 0, y: 7, w: 12, h: 7 }, props: { dimension: 'Region', metric: 'revenue' } },
+    { id: 'test-stackedBar', type: 'stackedBar', title: '6. Stacked Bar', layout: { x: 12, y: 7, w: 12, h: 7 }, props: { dimension: 'Region', metric: 'revenue' } },
+    { id: 'test-barbell', type: 'barbell', title: '7. Barbell Chart', layout: { x: 24, y: 7, w: 12, h: 7 }, props: { dimension: 'Region', metric: 'revenue', metric2: 'profit' } },
+    { id: 'test-diverging', type: 'diverging', title: '12. Diverging Chart', layout: { x: 36, y: 7, w: 12, h: 7 }, props: { dimension: 'Region', metric: 'revenue', metric2: 'profit' } },
+
+    // Row 2: Comparison (CSS #26) + Statistical (CSS #8, 16) + KPI (CSS #9)
+    { id: 'test-slope', type: 'slope', title: '26. Slope Chart', layout: { x: 0, y: 14, w: 12, h: 7 }, props: { metric: 'revenue' } },
+    { id: 'test-boxplot', type: 'boxplot', title: '8. Boxplot Chart', layout: { x: 12, y: 14, w: 12, h: 7 }, props: { dimension: 'Region', metric: 'revenue' } },
+    { id: 'test-histogram', type: 'histogram', title: '16. Histogram', layout: { x: 24, y: 14, w: 12, h: 7 }, props: { metric: 'revenue' } },
+    { id: 'test-bullet', type: 'bullet', title: '9. Bullet Chart', layout: { x: 36, y: 14, w: 12, h: 7 }, props: { metric: 'revenue', target: 50000 } },
+
+    // Row 3: KPI & Gauge (CSS #10, 15) + Combination (CSS #11) + Specialized (CSS #13)
+    { id: 'test-card', type: 'card', title: '10. Card/KPI', layout: { x: 0, y: 21, w: 12, h: 7 }, props: { metric: 'revenue', operation: 'sum', label: 'Total Revenue' } },
+    { id: 'test-gauge', type: 'gauge', title: '15. Gauge Chart', layout: { x: 12, y: 21, w: 12, h: 7 }, props: { metric: 'revenue', target: 100000 } },
+    { id: 'test-combo', type: 'combo', title: '11. Combo Chart', layout: { x: 24, y: 21, w: 12, h: 7 }, props: { dimension: 'Date', barMetric: 'revenue', lineMetric: 'profit' } },
+    { id: 'test-dotStrip', type: 'dotStrip', title: '13. Dot Strip', layout: { x: 36, y: 21, w: 12, h: 7 }, props: { xMetric: 'revenue', yMetric: 'profit', dimension: 'Category' } },
+
+    // Row 4: Specialized (CSS #14, 24) + Line Charts (CSS #17-18)
+    { id: 'test-gantt', type: 'gantt', title: '14. Gantt Chart', layout: { x: 0, y: 28, w: 12, h: 7 }, props: { dimension: 'Category', metric: 'revenue' } },
+    { id: 'test-ribbon', type: 'ribbon', title: '24. Ribbon Chart', layout: { x: 12, y: 28, w: 12, h: 7 }, props: { dimension: 'Region', metric: 'revenue' } },
+    { id: 'test-line', type: 'line', title: '17. Line Chart', layout: { x: 24, y: 28, w: 12, h: 7 }, props: { metric: 'revenue' } },
+    { id: 'test-lineForecast', type: 'lineForecast', title: '18. Line Forecast', layout: { x: 36, y: 28, w: 12, h: 7 }, props: { metric: 'revenue' } },
+
+    // Row 5: Line Charts (CSS #19) + Maps (CSS #20-21) + Pie (CSS #22)
+    { id: 'test-lineStepped', type: 'lineStepped', title: '19. Stepped Line', layout: { x: 0, y: 35, w: 12, h: 7 }, props: { metric: 'revenue' } },
+    { id: 'test-mapBubble', type: 'mapBubble', title: '20. Bubble Map', layout: { x: 12, y: 35, w: 12, h: 7 }, props: { geoDimension: 'Region', metric: 'revenue' } },
+    { id: 'test-mapChoropleth', type: 'mapChoropleth', title: '21. Choropleth Map', layout: { x: 24, y: 35, w: 12, h: 7 }, props: { geoDimension: 'Region', metric: 'revenue' } },
+    { id: 'test-pie', type: 'pie', title: '22. Pie Chart', layout: { x: 36, y: 35, w: 12, h: 7 }, props: { dimension: 'Category', metric: 'revenue' } },
+
+    // Row 6: Pie (CSS #23) + Scatter (CSS #25) + Table (CSS #27) + Treemap (CSS #28)
+    { id: 'test-donut', type: 'donut', title: '23. Donut Chart', layout: { x: 0, y: 42, w: 12, h: 7 }, props: { dimension: 'Category', metric: 'revenue' } },
+    { id: 'test-scatter', type: 'scatter', title: '25. Scatter Plot', layout: { x: 12, y: 42, w: 12, h: 7 }, props: { xMetric: 'revenue', yMetric: 'profit', dimension: 'Category' } },
+    { id: 'test-table', type: 'table', title: '27. Table', layout: { x: 24, y: 42, w: 12, h: 7 }, props: { maxRows: 10 } },
+    { id: 'test-treemap', type: 'treemap', title: '28. Treemap', layout: { x: 36, y: 42, w: 12, h: 7 }, props: { dimension: 'Category', metric: 'revenue' } },
+
+    // Row 7: Waterfall (CSS #29)
+    { id: 'test-waterfall', type: 'waterfall', title: '29. Waterfall', layout: { x: 0, y: 49, w: 12, h: 7 }, props: { dimension: 'Region', metric: 'profit' } },
+  ]
+};
+
+// ─── Retail Analytics (PBI UI Kit Only) ─────────────────────────────────────
+// Dashboard using only PBI UI Kit components to ensure proper rendering in Power BI
+export const RetailAnalyticsPbiTemplate: Template = {
+  name: 'Retail Analytics (PBI Kit)',
+  scenario: 'Retail',
+  items: [
+    // Row 0-4: KPI Cards row (5 cards across top)
+    { id: 'ra-card1', type: 'card', title: 'Total Revenue', layout: { x: 0, y: 0, w: 10, h: 5 }, props: { metric: 'revenue', operation: 'sum', label: 'Revenue', colorIndex: 0 } },
+    { id: 'ra-card2', type: 'card', title: 'Total Profit', layout: { x: 10, y: 0, w: 10, h: 5 }, props: { metric: 'profit', operation: 'sum', label: 'Profit', colorIndex: 1 } },
+    { id: 'ra-card3', type: 'card', title: 'Units Sold', layout: { x: 20, y: 0, w: 9, h: 5 }, props: { metric: 'quantity', operation: 'sum', label: 'Quantity', colorIndex: 2 } },
+    { id: 'ra-card4', type: 'card', title: 'Avg Order', layout: { x: 29, y: 0, w: 9, h: 5 }, props: { metric: 'revenue', operation: 'avg', label: 'Avg Order', colorIndex: 3 } },
+    { id: 'ra-card5', type: 'card', title: 'Transactions', layout: { x: 38, y: 0, w: 10, h: 5 }, props: { metric: 'revenue', operation: 'count', label: 'Count', colorIndex: 4 } },
+
+    // Row 5-7: Slicer bar for filtering
+    { id: 'ra-slicer1', type: 'slicer', title: 'Store', layout: { x: 0, y: 5, w: 12, h: 3 }, props: { dimension: 'Store' } },
+    { id: 'ra-slicer2', type: 'slicer', title: 'Region', layout: { x: 12, y: 5, w: 12, h: 3 }, props: { dimension: 'Region' } },
+    { id: 'ra-slicer3', type: 'slicer', title: 'Category', layout: { x: 24, y: 5, w: 12, h: 3 }, props: { dimension: 'Category' } },
+    { id: 'ra-slicer4', type: 'slicer', title: 'Product', layout: { x: 36, y: 5, w: 12, h: 3 }, props: { dimension: 'Product' } },
+
+    // Row 8-16: Main chart area - Bar + Donut + Gauge
+    { id: 'ra-bar1', type: 'bar', title: 'Revenue by Region', layout: { x: 0, y: 8, w: 20, h: 9 }, props: { dimension: 'Region', metric: 'revenue', topN: 5 } },
+    { id: 'ra-donut1', type: 'donut', title: 'Revenue by Category', layout: { x: 20, y: 8, w: 14, h: 9 }, props: { dimension: 'Category', metric: 'revenue' } },
+    { id: 'ra-gauge1', type: 'gauge', title: 'Revenue vs Target', layout: { x: 34, y: 8, w: 14, h: 9 }, props: { metric: 'revenue', target: 500000 } },
+
+    // Row 17-25: Trend + Comparison charts
+    { id: 'ra-line1', type: 'line', title: 'Revenue Trend', layout: { x: 0, y: 17, w: 16, h: 9 }, props: { metric: 'revenue' } },
+    { id: 'ra-area1', type: 'area', title: 'Profit Trend', layout: { x: 16, y: 17, w: 16, h: 9 }, props: { metric: 'profit' } },
+    { id: 'ra-stackedBar1', type: 'stackedBar', title: 'Revenue by Store', layout: { x: 32, y: 17, w: 16, h: 9 }, props: { dimension: 'Store', metric: 'revenue' } },
+
+    // Row 26-34: Distribution + Detail
+    { id: 'ra-treemap1', type: 'treemap', title: 'Revenue Treemap', layout: { x: 0, y: 26, w: 16, h: 9 }, props: { dimension: 'Category', metric: 'revenue' } },
+    { id: 'ra-waterfall1', type: 'waterfall', title: 'Profit Bridge', layout: { x: 16, y: 26, w: 16, h: 9 }, props: { dimension: 'Region', metric: 'profit' } },
+    { id: 'ra-scatter1', type: 'scatter', title: 'Revenue vs Profit', layout: { x: 32, y: 26, w: 16, h: 9 }, props: { xMetric: 'revenue', yMetric: 'profit', dimension: 'Category' } },
+
+    // Row 35-42: Table for details
+    { id: 'ra-table1', type: 'table', title: 'Sales Details', layout: { x: 0, y: 35, w: 48, h: 8 }, props: { maxRows: 50 } },
+  ]
+};
+
 export const Templates = [
   RetailDashboardTemplate,
   RetailTemplate,
@@ -288,4 +380,6 @@ export const Templates = [
   FinanceTemplate,
   ZebraTemplate,
   SocialTemplate,
+  PbiUiKitTestTemplate,
+  RetailAnalyticsPbiTemplate,
 ];
