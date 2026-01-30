@@ -17,22 +17,42 @@ const useStyles = makeStyles({
   container: {
     height: '100%',
     ...shorthands.overflow('auto'),
-    ...shorthands.padding('8px'),
+    ...shorthands.padding('4px'),
+    fontFamily: '"Segoe UI", "Segoe UI Web (West European)", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+    backgroundColor: 'white',
   },
   table: {
-    fontSize: '11px',
+    fontSize: '12px',
+    width: '100%',
+    borderCollapse: 'collapse',
   },
   headerCell: {
     fontWeight: '600',
     fontSize: '11px',
-    backgroundColor: '#F3F2F1',
+    backgroundColor: '#F5F5F5',
+    color: '#323130',
+    ...shorthands.padding('8px', '12px'),
+    textAlign: 'left',
+    borderBottom: '1px solid #E1DFDD',
+    whiteSpace: 'nowrap',
+  },
+  row: {
+    ':hover': {
+      backgroundColor: '#F5F5F5',
+    },
+  },
+  rowEven: {
+    backgroundColor: '#FAFAFA',
   },
   cell: {
-    fontSize: '11px',
-    ...shorthands.padding('4px', '8px'),
+    fontSize: '12px',
+    ...shorthands.padding('6px', '12px'),
+    borderBottom: '1px solid #EDEBE9',
+    color: '#323130',
   },
   numberCell: {
     textAlign: 'right',
+    fontVariantNumeric: 'tabular-nums',
   },
 });
 
@@ -124,8 +144,8 @@ export const DataTable: React.FC<DataTableProps> = ({ maxRows = 50, columns }) =
           </TableRow>
         </TableHeader>
         <TableBody>
-          {tableData.map((row) => (
-            <TableRow key={row.id}>
+          {tableData.map((row, index) => (
+            <TableRow key={row.id} className={`${styles.row} ${index % 2 === 1 ? styles.rowEven : ''}`}>
               {effectiveColumns.map(col => {
                 const val = resolveCellValue(row, col);
                 const isNum = typeof val === 'number' && Number.isFinite(val);

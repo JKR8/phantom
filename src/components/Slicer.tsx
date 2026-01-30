@@ -62,6 +62,14 @@ export const Slicer: React.FC<SlicerProps> = ({ dimension, title }) => {
         else if (dimension === 'Region') rawOptions = Array.from(new Set(stores.map(s => s.region)));
         else if (dimension === 'Product') rawOptions = products.map(p => p.name);
         else if (dimension === 'Category') rawOptions = Array.from(new Set(products.map(p => p.category)));
+        else if (dimension === 'Month' || dimension === 'Date') {
+          const sales = useStore.getState().sales;
+          rawOptions = Array.from(new Set(sales.map(s => {
+            const d = new Date(s.date as any);
+            if (Number.isNaN(d.getTime())) return null;
+            return d.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+          }).filter(Boolean) as string[]));
+        }
     } 
     // SaaS
     else if (scenario === 'SaaS') {

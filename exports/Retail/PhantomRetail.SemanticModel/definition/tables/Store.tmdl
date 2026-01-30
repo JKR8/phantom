@@ -1,0 +1,68 @@
+table Store
+	lineageTag: 2e270237-7a5c-4bc5-a7e1-2e7d952ef002
+
+	column StoreID
+		dataType: string
+		lineageTag: 7a0e5303-5d7d-4fef-8d81-272dbfb96927
+		summarizeBy: none
+		sourceColumn: StoreID
+
+	column StoreName
+		dataType: string
+		lineageTag: c9135a79-d7e7-4c82-aa10-f2e608eb92b8
+		summarizeBy: none
+		sourceColumn: StoreName
+
+	column Region
+		dataType: string
+		lineageTag: 50ea1110-e24c-4e8f-a9dc-476db622d3b7
+		summarizeBy: none
+		sourceColumn: Region
+
+	column Country
+		dataType: string
+		lineageTag: 1ef0bf62-eda4-4171-b5b0-0c5aa755e6d6
+		summarizeBy: none
+		sourceColumn: Country
+
+	partition Store = m
+		mode: import
+		source =
+			let
+			    Source = #table(
+			        type table [StoreID = Text.Type, StoreName = Text.Type, Region = Text.Type, Country = Text.Type],
+			        {
+				{"f2afc8f6-30a6-4010-a46f-e4d0f77d62ba", "Schoen - Nader Store", "North America", "Austria"},
+				{"9d5c6f7f-f455-4f7a-9669-fb6336bfcdf5", "Littel - Olson Store", "Asia Pacific", "Sint Maarten"},
+				{"054769fe-e29a-4a3b-a75f-5e5f2e62c7e0", "Volkman - Quitzon Store", "Latin America", "Turkey"},
+				{"b091264f-1e81-4540-8f6f-a9a84961133c", "Jenkins, West and Harber Store", "Latin America", "Oman"},
+				{"4dadc138-d659-4898-8f17-817da189d529", "Bergstrom and Sons Store", "North America", "Mozambique"},
+				{"77951a5e-4ea8-4fce-96a4-e9e944ba256a", "Kunze and Sons Store", "North America", "Liechtenstein"},
+				{"18bef122-d262-4c9f-a7ce-168607e2b8b9", "Toy and Sons Store", "Europe", "Slovenia"},
+				{"c8fd060d-aef4-4b68-97e6-3da7b7000750", "Raynor - Collins Store", "Europe", "Svalbard & Jan Mayen Islands"},
+				{"ff87ef02-8c47-4890-92cd-b30d246823e4", "Dibbert Group Store", "Asia Pacific", "South Sudan"},
+				{"cb561be3-f871-45bd-a8e8-d7caaa223f14", "Crooks - Schinner Store", "Latin America", "Iraq"},
+				{"6b42eff0-f285-4154-9023-3620e283edbd", "Hilpert - Cummings Store", "North America", "Panama"},
+				{"68866007-fe3d-4f3c-8883-6f30839c96e9", "McCullough - Legros Store", "Asia Pacific", "Seychelles"},
+				{"52d2ba20-53e0-4915-bfe3-7834b2a364ec", "Brekke and Sons Store", "Latin America", "Indonesia"},
+				{"75ed31a3-fe9d-428d-b062-e5fee35ece36", "Muller, Bernhard and Franey Store", "Asia Pacific", "Greece"},
+				{"7e2abfe0-6004-4899-bb5b-70c4312d09ce", "O'Reilly - Leffler Store", "North America", "Mayotte"},
+				{"7f0bbc03-e4f3-464a-a027-e1977b213970", "Stehr - Durgan Store", "Asia Pacific", "United States Minor Outlying Islands"},
+				{"db0496b0-523c-4d99-a1cc-3c88748c0f1f", "Waelchi - Kunde Store", "Europe", "New Zealand"},
+				{"874dd0d4-e1af-4e70-ab4a-1099c70a8d4b", "Hyatt Inc Store", "Latin America", "Puerto Rico"},
+				{"d29fc3f5-6e9a-4651-8da2-7bdb9b85623e", "Daugherty, Johnson and Moore Store", "Asia Pacific", "Israel"},
+				{"0738cca7-c6bc-481f-b74e-938feac6088b", "Bergstrom LLC Store", "North America", "Singapore"},
+				{"2901f686-3610-43b5-b79e-f43c4f371d71", "Yundt, Moore and Green Store", "Europe", "Bahamas"},
+				{"d5c7c30d-fa60-4cf5-8668-8fc83111d09c", "Rempel, Turner and Tremblay Store", "Asia Pacific", "Guatemala"},
+				{"5feebf59-95e1-4479-8203-21a08a87fbb1", "Reilly, Wolff and Marquardt Store", "Europe", "Finland"},
+				{"eee00002-6f5d-469e-8451-1f512510d8e6", "Batz - Balistreri Store", "Asia Pacific", "Hong Kong"},
+				{"a3cb8541-f9b8-4464-9993-8470f2e5d804", "Rohan, Ruecker and Mills Store", "Europe", "Slovakia"},
+				{"feee037e-3b7f-466b-93db-c199212de194", "Marks, Russel and Kuphal Store", "Europe", "Spain"},
+				{"9c410bb7-a72c-4fad-b3ad-ae51eac1fc40", "Rosenbaum LLC Store", "Europe", "Tajikistan"},
+				{"43019645-632c-43e3-b22f-7967fc017f01", "Mraz, Reichert and Prohaska Store", "Asia Pacific", "Uruguay"},
+				{"03bc5304-0841-41ae-b341-8e3ee0b4e580", "Monahan, Ledner and O'Conner Store", "Europe", "Bahamas"},
+				{"69b74c78-aa0c-4ebb-92e3-1af050cfa43e", "Hermann Group Store", "North America", "Japan"}
+			        }
+			    )
+			in
+			    Source

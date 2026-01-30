@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "PhantomRetail"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "38a8f2f3-37fa-4a5c-9d24-67e4ca536b52"
+  }
+}

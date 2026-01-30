@@ -58,6 +58,8 @@ export const generateRetailData = () => {
       productId: product.id,
       date,
       quantity,
+      quantityPL: Math.max(1, Math.round(quantity * (0.85 + rand() * 0.30))),
+      quantityPY: Math.max(1, Math.round(quantity * (0.75 + rand() * 0.35))),
       revenue,
       revenuePL: Math.round(revenue * (0.85 + rand() * 0.30) * 100) / 100,
       revenuePY: Math.round(revenue * (0.75 + rand() * 0.35) * 100) / 100,
@@ -65,6 +67,8 @@ export const generateRetailData = () => {
       profitPL: Math.round(profit * (0.85 + rand() * 0.30) * 100) / 100,
       profitPY: Math.round(profit * (0.75 + rand() * 0.35) * 100) / 100,
       discount,
+      discountPL: Math.round(discount * (0.85 + rand() * 0.30) * 100) / 100,
+      discountPY: Math.round(discount * (0.75 + rand() * 0.35) * 100) / 100,
     };
   });
 

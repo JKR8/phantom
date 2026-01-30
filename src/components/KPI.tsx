@@ -4,7 +4,8 @@ import { useFilteredSales } from '../store/useStore';
 
 /**
  * KPI Visual - matches Power BI KPI visual appearance from mokkup template
- * Shows: Title (purple), big indicator number, goal comparison with percentage
+ * Shows: big indicator number, goal comparison with percentage
+ * Note: Title is rendered by VisualContainer, not this component
  */
 
 const useStyles = makeStyles({

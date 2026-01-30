@@ -52,6 +52,8 @@ import {
 } from './portfolio';
 import { QuickShapeStrip } from './QuickShapeStrip';
 import { VariantPicker, VARIANT_PARENT_TYPES } from './VariantPicker';
+// Vega-Lite components for Power BI parity
+import { VegaBarChart, VegaLineChart } from '../vega';
 
 const GRID_COLS = 48;  // Balanced grid for good visual spacing
 const ROW_HEIGHT = 20;
@@ -112,6 +114,7 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
   const removeItem = useStore((state) => state.removeItem);
   const selectedItemId = useStore((state) => state.selectedItemId);
   const selectItem = useStore((state) => state.selectItem);
+  const useVegaRendering = useStore((state) => state.useVegaRendering);
   const [isDragOver, setIsDragOver] = useState(false);
   const [pendingDrop, setPendingDrop] = useState<{
     parentType: string;
@@ -179,15 +182,24 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
   const renderVisual = (item: any) => {
     switch (item.type) {
       case 'bar':
-        return <BarChart {...item.props} />;
+        // Use Vega-Lite rendering when enabled (for Power BI parity)
+        return useVegaRendering
+          ? <VegaBarChart {...item.props} horizontal={true} />
+          : <BarChart {...item.props} />;
       case 'column':
-        return <ClusteredColumnChart {...item.props} />;
+        // Use Vega-Lite rendering when enabled (vertical bars)
+        return useVegaRendering
+          ? <VegaBarChart {...item.props} horizontal={false} />
+          : <ClusteredColumnChart {...item.props} />;
       case 'stackedBar':
         return <StackedBarChart {...item.props} />;
       case 'stackedColumn':
         return <StackedColumnChart {...item.props} />;
       case 'line':
-        return <LineChart {...item.props} />;
+        // Use Vega-Lite rendering when enabled (for Power BI parity)
+        return useVegaRendering
+          ? <VegaLineChart {...item.props} />
+          : <LineChart {...item.props} />;
       case 'area':
         return <AreaChart {...item.props} />;
       case 'stackedArea':
@@ -211,7 +223,7 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
       case 'card':
         return <KPICard {...item.props} />;
       case 'kpi':
-        return <KPI title={item.title} {...item.props} />;
+        return <KPI {...item.props} />;
       case 'multiRowCard':
         return <MultiRowCard {...item.props} />;
       case 'table':

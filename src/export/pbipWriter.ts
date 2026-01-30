@@ -50,6 +50,30 @@ const DEFAULT_THEME_COLORS = [
   '#6F9FB0',
 ];
 
+// Mokkup brand color palette for multi-series charts
+const MOKKUP_BRAND_COLORS = {
+  primary: '#342BC2',     // Bars, funnel, data points, heatmap max
+  secondary: '#6F67F1',   // Second data series
+  tertiary: '#9993FF',    // Third data series
+  quaternary: '#417ED9',  // Fourth data series
+  quinary: '#2565C3',     // Fifth data series
+  lineAccent: '#44B0AB',  // Combo chart line (teal)
+  success: '#93BF35',     // KPI distance positive
+  textPrimary: '#252423', // KPI indicator, status colors
+  textSecondary: '#808080', // Goal text, secondary labels
+  title: '#342BC2',       // Visual titles
+  background: '#FFFFFF',  // White backgrounds
+};
+
+// Array of series colors for multi-series charts
+const MOKKUP_SERIES_COLORS = [
+  MOKKUP_BRAND_COLORS.primary,
+  MOKKUP_BRAND_COLORS.secondary,
+  MOKKUP_BRAND_COLORS.tertiary,
+  MOKKUP_BRAND_COLORS.quaternary,
+  MOKKUP_BRAND_COLORS.quinary,
+];
+
 const buildBaseThemeJson = (colors?: string[]) => JSON.stringify({
   version: '5.50',
   name: 'CY25SU12',
@@ -318,6 +342,8 @@ const buildScenarioTables = (scenario: Scenario, data: ExportData, schema: PBISc
       StoreID: sale.storeId,
       ProductID: sale.productId,
       Quantity: sale.quantity,
+      QuantityPL: sale.quantityPL,
+      QuantityPY: sale.quantityPY,
       Revenue: sale.revenue,
       RevenuePL: sale.revenuePL,
       RevenuePY: sale.revenuePY,
@@ -325,6 +351,8 @@ const buildScenarioTables = (scenario: Scenario, data: ExportData, schema: PBISc
       ProfitPL: sale.profitPL,
       ProfitPY: sale.profitPY,
       Discount: sale.discount,
+      DiscountPL: sale.discountPL,
+      DiscountPY: sale.discountPY,
     }));
     tableRows.Store = data.stores.map((store) => ({
       StoreID: store.id,
@@ -571,22 +599,19 @@ const buildModelTMDL = (schema: PBISchema) => {
   return lines.join('\n');
 };
 
-const buildQueryProjection = (table: string, field: string, isMeasure: boolean) => {
-  if (isMeasure) {
-    return {
-      field: {
-        Measure: {
-          Expression: {
-            SourceRef: { Entity: table },
-          },
-          Property: field,
+const buildQueryProjection = (table: string, field: string, isMeasure: boolean, options?: { active?: boolean; displayName?: string }) => {
+  const base = isMeasure ? {
+    field: {
+      Measure: {
+        Expression: {
+          SourceRef: { Entity: table },
         },
+        Property: field,
       },
-      queryRef: `${table}.${field}`,
-      nativeQueryRef: field,
-    };
-  }
-  return {
+    },
+    queryRef: `${table}.${field}`,
+    nativeQueryRef: field,
+  } : {
     field: {
       Column: {
         Expression: {
@@ -598,7 +623,38 @@ const buildQueryProjection = (table: string, field: string, isMeasure: boolean) 
     queryRef: `${table}.${field}`,
     nativeQueryRef: field,
   };
+
+  // Add optional properties
+  if (options?.active) {
+    (base as any).active = true;
+  }
+  if (options?.displayName) {
+    (base as any).displayName = options.displayName;
+  }
+
+  return base;
 };
+
+// Helper to build sort definition for visuals
+const buildSortDefinition = (table: string, field: string, direction: 'Ascending' | 'Descending' = 'Descending') => ({
+  sort: [{
+    field: {
+      Aggregation: {
+        Expression: {
+          Column: {
+            Expression: {
+              SourceRef: { Entity: table },
+            },
+            Property: field,
+          },
+        },
+        Function: 0,
+      },
+    },
+    direction,
+  }],
+  isDefaultSort: true,
+});
 
 const getDefaultTableColumns = (scenario: ScenarioType) => {
   const fields = ScenarioFields[scenario] || [];
@@ -685,25 +741,47 @@ const buildQueryState = (item: DashboardItem, scenario: Scenario, measures: DAXM
     case 'bar':
     case 'column':
     case 'stackedBar':
-    case 'stackedColumn':
-    case 'line':
-    case 'area': {
-      const dimField = props.dimension || (item.type === 'line' || item.type === 'area' ? defaultTime : defaultCategory);
+    case 'stackedColumn': {
+      const dimField = props.dimension || defaultCategory;
       const dim = resolveColumn(dimField);
       const metric = resolveMeasure(props.metric);
-      if (dim) queryState.Category = { projections: [buildQueryProjection(dim.table, dim.column, false)] };
+      if (dim) queryState.Category = { projections: [buildQueryProjection(dim.table, dim.column, false, { active: true })] };
+      if (metric) {
+        queryState.Y = { projections: [buildQueryProjection(metric.table, metric.measure, true, { displayName: metric.measure })] };
+        // Add default sort
+        queryState._sortDefinition = { isDefaultSort: true };
+      }
+      break;
+    }
+    case 'line':
+    case 'area': {
+      const dimField = props.dimension || defaultTime;
+      const dim = resolveColumn(dimField);
+      const metric = resolveMeasure(props.metric);
+      if (dim) queryState.Category = { projections: [buildQueryProjection(dim.table, dim.column, false, { active: true })] };
       if (metric) queryState.Y = { projections: [buildQueryProjection(metric.table, metric.measure, true)] };
       break;
     }
     case 'pie':
     case 'donut':
-    case 'funnel':
     case 'treemap': {
       const dimField = props.dimension || defaultCategory;
       const dim = resolveColumn(dimField);
       const metric = resolveMeasure(props.metric);
-      if (dim) queryState.Category = { projections: [buildQueryProjection(dim.table, dim.column, false)] };
+      if (dim) queryState.Category = { projections: [buildQueryProjection(dim.table, dim.column, false, { active: true })] };
       if (metric) queryState.Y = { projections: [buildQueryProjection(metric.table, metric.measure, true)] };
+      break;
+    }
+    case 'funnel': {
+      const dimField = props.dimension || defaultCategory;
+      const dim = resolveColumn(dimField);
+      const metric = resolveMeasure(props.metric);
+      if (dim) queryState.Category = { projections: [buildQueryProjection(dim.table, dim.column, false, { active: true })] };
+      if (metric) {
+        queryState.Y = { projections: [buildQueryProjection(metric.table, metric.measure, true)] };
+        // Funnel needs sort definition to order by value descending
+        queryState._sortDefinition = buildSortDefinition(factTable, metric.measure.replace('Total ', ''));
+      }
       break;
     }
     case 'waterfall': {
@@ -726,13 +804,52 @@ const buildQueryState = (item: DashboardItem, scenario: Scenario, measures: DAXM
       }
       break;
     }
+    case 'kpi': {
+      // Power BI KPI visual: Indicator (main value), Goal (target), TrendLine (time column for sparkline)
+      const metric = resolveMeasure(props.metric);
+      if (metric) {
+        // Indicator: the main measure value
+        queryState.Indicator = { projections: [buildQueryProjection(metric.table, metric.measure, true)] };
+
+        // Goal: use PY measure for comparison (matches "vs prev" / "PY" goalText)
+        const pyMeasureName = getMeasureName(`${props.metric}PY`, operation);
+        const pyMeasure = resolveNamedMeasure(pyMeasureName);
+        if (pyMeasure) {
+          queryState.Goal = { projections: [buildQueryProjection(pyMeasure.table, pyMeasure.measure, true)] };
+        }
+
+        // TrendLine: bind to DateTable.Month for the sparkline (required for KPI to display properly)
+        queryState.TrendLine = { projections: [buildQueryProjection('DateTable', 'Month', false)] };
+      }
+      break;
+    }
     case 'scatter': {
       const x = resolveMeasure(props.xMetric);
       const y = resolveMeasure(props.yMetric);
+      const size = resolveMeasure(props.sizeMetric);
       const dim = resolveColumn(props.dimension);
-      if (dim) queryState.Category = { projections: [buildQueryProjection(dim.table, dim.column, false)] };
-      if (x) queryState.X = { projections: [buildQueryProjection(x.table, x.measure, true)] };
+      // Category is the bubble identity
+      if (dim) queryState.Category = { projections: [buildQueryProjection(dim.table, dim.column, false, { active: true })] };
+      // Series for color grouping (use dimension if available)
+      if (dim) queryState.Series = { projections: [buildQueryProjection(dim.table, dim.column, false)] };
+      // Size for bubble size
+      if (size) queryState.Size = { projections: [buildQueryProjection(size.table, size.measure, true)] };
+      // X axis measure
+      if (x) queryState.X = { projections: [buildQueryProjection(x.table, x.measure, true, { active: true })] };
+      // Y axis measure
       if (y) queryState.Y = { projections: [buildQueryProjection(y.table, y.measure, true)] };
+      break;
+    }
+    case 'combo': {
+      // Combo chart: Category (x-axis), Y (bars), Y2 (line)
+      const dimField = props.dimension || defaultTime;
+      const dim = resolveColumn(dimField);
+      const barMetric = resolveMeasure(props.barMetric || props.metric);
+      const lineMetric = resolveMeasure(props.lineMetric);
+      if (dim) queryState.Category = { projections: [buildQueryProjection(dim.table, dim.column, false, { active: true })] };
+      if (barMetric) queryState.Y = { projections: [buildQueryProjection(barMetric.table, barMetric.measure, true, { displayName: 'Bars' })] };
+      if (lineMetric) queryState.Y2 = { projections: [buildQueryProjection(lineMetric.table, lineMetric.measure, true, { displayName: 'Line' })] };
+      queryState._sortDefinition = { isDefaultSort: true };
       break;
     }
     case 'table': {
@@ -762,14 +879,14 @@ const buildQueryState = (item: DashboardItem, scenario: Scenario, measures: DAXM
       const row = resolveColumn(rowField);
       const col = resolveColumn(colField);
       const val = resolveMeasure(valField);
-      if (row) queryState.Rows = { projections: [buildQueryProjection(row.table, row.column, false)] };
-      if (col) queryState.Columns = { projections: [buildQueryProjection(col.table, col.column, false)] };
+      if (row) queryState.Rows = { projections: [buildQueryProjection(row.table, row.column, false, { active: true })] };
+      if (col) queryState.Columns = { projections: [buildQueryProjection(col.table, col.column, false, { active: true })] };
       if (val) queryState.Values = { projections: [buildQueryProjection(val.table, val.measure, true)] };
       break;
     }
     case 'slicer': {
       const dim = resolveColumn(props.dimension);
-      if (dim) queryState.Values = { projections: [buildQueryProjection(dim.table, dim.column, false)] };
+      if (dim) queryState.Values = { projections: [buildQueryProjection(dim.table, dim.column, false, { active: true })] };
       break;
     }
     // Card-like visuals - use same pattern as 'card'
@@ -887,7 +1004,7 @@ const buildVisualObjects = (item: DashboardItem, pbiType: string, scenario: Scen
         properties: {
           fontFamily: makeLiteral("'''Segoe UI Bold'', wf_segoe-ui_bold, helvetica, arial, sans-serif'"),
           fontSize: makeLiteral('28D'),
-          fontColor: makeSolidColor('#252423'),
+          fontColor: makeSolidColor(MOKKUP_BRAND_COLORS.textPrimary),
           horizontalAlignment: makeLiteral("'center'"),
           labelDisplayUnits: makeLiteral('1D'), // Auto display units (K, M)
         }
@@ -898,7 +1015,7 @@ const buildVisualObjects = (item: DashboardItem, pbiType: string, scenario: Scen
         properties: {
           fontFamily: makeLiteral("'''Segoe UI'', wf_segoe-ui_normal, helvetica, arial, sans-serif'"),
           fontSize: makeLiteral('12D'),
-          fontColor: makeSolidColor('#605E5C'),
+          fontColor: makeSolidColor(MOKKUP_BRAND_COLORS.textSecondary),
           position: makeLiteral("'aboveValue'"),
           show: makeLiteral('true'),
         }
@@ -917,7 +1034,7 @@ const buildVisualObjects = (item: DashboardItem, pbiType: string, scenario: Scen
       objects.divider = [{
         properties: {
           show: makeLiteral('true'),
-          color: makeSolidColor('#F0F0F0'),
+          color: makeSolidColor('#F0F0F0'), // Light gray divider
           width: makeLiteral('1D'),
         }
       }];
@@ -937,7 +1054,7 @@ const buildVisualObjects = (item: DashboardItem, pbiType: string, scenario: Scen
         properties: {
           fontFamily: makeLiteral("'''Segoe UI'', wf_segoe-ui_normal, helvetica, arial, sans-serif'"),
           fontSize: makeLiteral('11D'),
-          fontColor: makeSolidColor('#605E5C'),
+          fontColor: makeSolidColor(MOKKUP_BRAND_COLORS.textSecondary),
           show: makeLiteral('true'),
         }
       }];
@@ -947,7 +1064,7 @@ const buildVisualObjects = (item: DashboardItem, pbiType: string, scenario: Scen
         properties: {
           fontFamily: makeLiteral("'''Segoe UI'', wf_segoe-ui_normal, helvetica, arial, sans-serif'"),
           fontSize: makeLiteral('11D'),
-          fontColor: makeSolidColor('#605E5C'),
+          fontColor: makeSolidColor(MOKKUP_BRAND_COLORS.textSecondary),
           show: makeLiteral('true'),
         }
       }];
@@ -962,7 +1079,7 @@ const buildVisualObjects = (item: DashboardItem, pbiType: string, scenario: Scen
       // Card styling - accent bar effect via border
       objects.cardBackground = [{
         properties: {
-          color: makeSolidColor('#FFFFFF'),
+          color: makeSolidColor(MOKKUP_BRAND_COLORS.background),
           show: makeLiteral('true'),
         }
       }];
@@ -980,20 +1097,25 @@ const buildVisualObjects = (item: DashboardItem, pbiType: string, scenario: Scen
       return objects;
     }
 
-    // Legacy KPI visual styling (kept for backward compatibility)
+    // KPI visual styling - matches mokkup template
     if (pbiType === 'kpi') {
+      // Determine if this KPI should show distance (percentage) based on goalText
+      // "vs prev" style = show distance, specific number goal (like "10,000") = hide distance
+      const goalText = item.props?.goalText || 'vs prev';
+      const showDistance = goalText.toLowerCase().includes('vs') || goalText.toLowerCase().includes('prev') || goalText.toLowerCase() === 'py';
+
       objects.goals = [{
         properties: {
-          goalText: makeLiteral(`'PY'`),
+          goalText: makeLiteral(`'${goalText}'`),
           fontSize: makeLiteral('10D'),
           goalFontFamily: makeLiteral("'''Segoe UI'', wf_segoe-ui_normal, helvetica, arial, sans-serif'"),
-          goalFontColor: makeSolidColor('#808080'),
+          goalFontColor: makeSolidColor(MOKKUP_BRAND_COLORS.textSecondary),
           showGoal: makeLiteral('true'),
           direction: makeLiteral("'High is good'"),
           distanceLabel: makeLiteral("'Percent'"),
-          distanceFontColor: makeSolidColor('#107C10'),
+          distanceFontColor: makeSolidColor(MOKKUP_BRAND_COLORS.success),
           distanceFontFamily: makeLiteral("'''Segoe UI Semibold'', wf_segoe-ui_semibold, helvetica, arial, sans-serif'"),
-          showDistance: makeLiteral('true'),
+          showDistance: makeLiteral(showDistance ? 'true' : 'false'),
           titleFontSize: makeLiteral('10D'),
           titleBold: makeLiteral('false'),
           titleItalic: makeLiteral('false'),
@@ -1024,10 +1146,10 @@ const buildVisualObjects = (item: DashboardItem, pbiType: string, scenario: Scen
       }];
       objects.status = [{
         properties: {
-          direction: makeLiteral("'High is good'"),
-          goodColor: makeSolidColor('#107C10'),
-          neutralColor: makeSolidColor('#605E5C'),
-          badColor: makeSolidColor('#A4262C'),
+          direction: makeLiteral("'Negative'"), // Mokkup template uses 'Negative'
+          goodColor: makeSolidColor(MOKKUP_BRAND_COLORS.textPrimary),
+          neutralColor: makeSolidColor(MOKKUP_BRAND_COLORS.textPrimary),
+          badColor: makeSolidColor(MOKKUP_BRAND_COLORS.textPrimary),
         }
       }];
       objects.lastDate = [{
@@ -1051,13 +1173,13 @@ const buildVisualObjects = (item: DashboardItem, pbiType: string, scenario: Scen
       }];
       objects.items = [{
         properties: {
-          background: makeSolidColor('#FFFFFF'),
+          background: makeSolidColor(MOKKUP_BRAND_COLORS.background),
         }
       }];
       return objects;
     }
 
-    // Bar chart styling
+    // Bar chart styling (matches mokkup template)
     if (item.type === 'bar' || item.type === 'column') {
       objects.categoryAxis = [{
         properties: {
@@ -1071,6 +1193,7 @@ const buildVisualObjects = (item: DashboardItem, pbiType: string, scenario: Scen
         properties: {
           show: makeLiteral('false'),
           showAxisTitle: makeLiteral('false'),
+          end: makeLiteral('null'),
           invertAxis: makeLiteral('false'),
           gridlineShow: makeLiteral('true'),
         }
@@ -1090,20 +1213,60 @@ const buildVisualObjects = (item: DashboardItem, pbiType: string, scenario: Scen
           fontSize: makeLiteral('8D'),
         }
       }];
-      objects.dataPoint = [{
-        properties: {
-          fill: makeSolidColor(primaryColor),
-          fillTransparency: makeLiteral('0D'),
-        }
-      }];
-      objects.title = [{
+      objects.dataPoint = [
+        {
+          properties: {
+            fill: makeSolidColor(MOKKUP_BRAND_COLORS.primary),
+            fillTransparency: makeLiteral('0D'),
+          }
+        },
+        { properties: { fill: makeSolidColor(MOKKUP_BRAND_COLORS.primary) } },
+      ];
+      return objects;
+    }
+
+    // Stacked bar/column chart styling (with multi-series colors)
+    if (item.type === 'stackedBar' || item.type === 'stackedColumn') {
+      objects.categoryAxis = [{
         properties: {
           show: makeLiteral('true'),
-          text: makeLiteral(`'${(item.title || '').replace(/'/g, "''")}'`),
-          fontColor: makeSolidColor('#252423'),
-          fontSize: makeLiteral('12L'),
+          showAxisTitle: makeLiteral('false'),
+          innerPadding: makeLiteral('62.5L'),
+          preferredCategoryWidth: makeLiteral('20D'),
         }
       }];
+      objects.valueAxis = [{
+        properties: {
+          show: makeLiteral('false'),
+          showAxisTitle: makeLiteral('false'),
+          end: makeLiteral('null'),
+          invertAxis: makeLiteral('false'),
+          gridlineShow: makeLiteral('true'),
+        }
+      }];
+      objects.legend = [{
+        properties: {
+          show: makeLiteral('true'),
+          showGradientLegend: makeLiteral('false'),
+          position: makeLiteral("'Top'"),
+        }
+      }];
+      objects.labels = [{
+        properties: {
+          show: makeLiteral('true'),
+          labelPosition: makeLiteral("'InsideCenter'"),
+          enableTitleDataLabel: makeLiteral('false'),
+          fontSize: makeLiteral('8D'),
+        }
+      }];
+      // Multi-series colors for stacked charts
+      objects.dataPoint = MOKKUP_SERIES_COLORS.map((color, index) => ({
+        properties: {
+          fill: makeSolidColor(color),
+          fillTransparency: makeLiteral('0D'),
+        },
+        ...(index > 0 ? { selector: { data: [{ dataViewWildcard: { matchingOption: index } }] } } : {}),
+      }));
       return objects;
     }
 
@@ -1163,9 +1326,8 @@ const buildVisualObjects = (item: DashboardItem, pbiType: string, scenario: Scen
       return objects;
     }
 
-    // Combo chart styling
+    // Combo chart styling (matches mokkup template)
     if (item.type === 'combo') {
-      const secondaryColor = (themeColors && themeColors.length > 1) ? themeColors[1] : '#44B0AB';
       objects.categoryAxis = [{
         properties: {
           show: makeLiteral('true'),
@@ -1207,27 +1369,20 @@ const buildVisualObjects = (item: DashboardItem, pbiType: string, scenario: Scen
           markerSize: makeLiteral('4D'),
         }
       }];
+      // Mokkup colors: lineAccent for line, primary for bars
       objects.dataPoint = [
         {
-          properties: { fill: makeSolidColor(secondaryColor) },
+          properties: { fill: makeSolidColor(MOKKUP_BRAND_COLORS.lineAccent) }, // Line color (teal)
           selector: { metadata: `Sum(${getFactTableForScenario(scenario)}.${(item.props?.lineMetric || '').charAt(0).toUpperCase() + (item.props?.lineMetric || '').slice(1)})` }
         },
         {
-          properties: { fill: makeSolidColor(primaryColor) },
+          properties: { fill: makeSolidColor(MOKKUP_BRAND_COLORS.primary) }, // Bar color (brand purple)
         }
       ];
-      objects.title = [{
-        properties: {
-          show: makeLiteral('true'),
-          text: makeLiteral(`'${(item.title || '').replace(/'/g, "''")}'`),
-          fontColor: makeSolidColor('#252423'),
-          fontSize: makeLiteral('12L'),
-        }
-      }];
       return objects;
     }
 
-    // Pie/donut cleanup
+    // Pie/donut cleanup with multi-series colors
     if (item.type === 'pie' || item.type === 'donut') {
       objects.legend = [{
         properties: {
@@ -1244,8 +1399,142 @@ const buildVisualObjects = (item: DashboardItem, pbiType: string, scenario: Scen
         properties: {
           show: makeLiteral('true'),
           text: makeLiteral(`'${(item.title || '').replace(/'/g, "''")}'`),
-          fontColor: makeSolidColor('#252423'),
+          fontColor: makeSolidColor(MOKKUP_BRAND_COLORS.textPrimary),
           fontSize: makeLiteral('12L'),
+        }
+      }];
+      // Multi-series colors for pie/donut slices
+      objects.dataPoint = MOKKUP_SERIES_COLORS.map((color, index) => ({
+        properties: {
+          fill: makeSolidColor(color),
+        },
+        ...(index > 0 ? { selector: { data: [{ dataViewWildcard: { matchingOption: index } }] } } : {}),
+      }));
+      return objects;
+    }
+
+    // Funnel chart styling (matches mokkup template)
+    if (item.type === 'funnel') {
+      objects.percentBarLabel = [{
+        properties: { show: makeLiteral('false') }
+      }];
+      objects.labels = [{
+        properties: {
+          show: makeLiteral('false'),
+          labelPosition: makeLiteral("'InsideCenter'"),
+          labelDisplayUnits: makeLiteral('0D'),
+          labelPrecision: makeLiteral('2L'),
+        }
+      }];
+      objects.dataPoint = [
+        { properties: { showAllDataPoints: makeLiteral('true') } },
+        { properties: { fill: makeSolidColor(MOKKUP_BRAND_COLORS.primary) } },
+      ];
+      return objects;
+    }
+
+    // Scatter chart styling (matches mokkup template)
+    if (item.type === 'scatter') {
+      objects.trend = [{
+        properties: {
+          show: makeLiteral('false'),
+          displayName: makeLiteral("'Trend line'"),
+          width: makeLiteral('3D'),
+          style: makeLiteral("'solid'"),
+          combineSeries: makeLiteral('false'),
+        }
+      }];
+      objects.categoryAxis = [{
+        properties: {
+          show: makeLiteral('true'),
+          showAxisTitle: makeLiteral('true'),
+          gridlineShow: makeLiteral('false'),
+          gridlineTransparency: makeLiteral('0D'),
+          gridlineStyle: makeLiteral("'solid'"),
+        }
+      }];
+      objects.valueAxis = [{
+        properties: {
+          showAxisTitle: makeLiteral('true'),
+          start: makeLiteral('null'),
+          end: makeLiteral('null'),
+          gridlineShow: makeLiteral('false'),
+          gridlineStyle: makeLiteral("'solid'"),
+          gridlineTransparency: makeLiteral('0D'),
+        }
+      }];
+      objects.legend = [{
+        properties: {
+          show: makeLiteral('true'),
+          showGradientLegend: makeLiteral('true'),
+          position: makeLiteral("'Top'"),
+          showTitle: makeLiteral('false'),
+        }
+      }];
+      objects.dataPoint = [{
+        properties: { fill: makeSolidColor(MOKKUP_BRAND_COLORS.primary) }
+      }];
+      objects.bubbles = [{
+        properties: {
+          bubbleSize: makeLiteral('6.5L'),
+          markerShape: makeLiteral("'circle'"),
+        }
+      }];
+      objects.markers = [{
+        properties: {
+          borderShow: makeLiteral('true'),
+          transparency: makeLiteral('0D'),
+        }
+      }];
+      return objects;
+    }
+
+    // Matrix/pivotTable styling (matches mokkup heatmap template)
+    if (item.type === 'matrix') {
+      objects.subTotals = [{
+        properties: {
+          columnSubtotals: makeLiteral('false'),
+          rowSubtotals: makeLiteral('false'),
+        }
+      }];
+      objects.grid = [{
+        properties: {
+          textSize: makeLiteral('10D'),
+          rowPadding: makeLiteral('1D'),
+          gridVertical: makeLiteral('false'),
+          gridHorizontal: makeLiteral('false'),
+          outlineColor: makeSolidColor('#ffffff'),
+        }
+      }];
+      objects.columnHeaders = [{
+        properties: {
+          wordWrap: makeLiteral('false'),
+          alignment: makeLiteral("'Center'"),
+        }
+      }];
+      objects.rowHeaders = [{
+        properties: {
+          wordWrap: makeLiteral('false'),
+        }
+      }];
+      objects.columnFormatting = [{
+        properties: {
+          alignment: makeLiteral("'Center'"),
+        }
+      }];
+      // Heatmap gradient using FillRule with linearGradient2 for conditional formatting
+      // This creates a gradient from white (min) to purple (max)
+      const heatmapFillRule = {
+        linearGradient2: {
+          min: { color: { expr: { Literal: { Value: "'#FFFFFF'" } } } },
+          max: { color: { expr: { Literal: { Value: "'#342BC2'" } } } },
+        }
+      };
+      objects.values = [{
+        properties: {
+          backColorSecondary: makeSolidColor('#FFFFFF'),
+          backColor: { expr: { FillRule: heatmapFillRule } },
+          fontColor: { expr: { FillRule: heatmapFillRule } },
         }
       }];
       return objects;
@@ -1328,6 +1617,11 @@ const buildVisualObjects = (item: DashboardItem, pbiType: string, scenario: Scen
 const buildVisualJson = (item: DashboardItem, index: number, scenario: Scenario, measures: DAXMeasure[], themeColors?: string[]) => {
   const position = gridToPixels(item.layout);
   const queryState = buildQueryState(item, scenario, measures);
+
+  // Extract sortDefinition if present (used by funnel, bar charts)
+  const sortDefinition = queryState._sortDefinition;
+  delete queryState._sortDefinition;
+
   // Use new cardVisual for Retail cards (supports reference labels for ΔPY/ΔPL variance)
   // Use kpi visual only for explicit 'kpi' type
   const isRetailCard = scenario === 'Retail' && item.type === 'card';
@@ -1369,7 +1663,7 @@ const buildVisualJson = (item: DashboardItem, index: number, scenario: Scenario,
         background: [{
           properties: {
             show: makeLiteral('true'),
-            color: makeSolidColor('#FFFFFF'),
+            color: makeSolidColor(MOKKUP_BRAND_COLORS.background),
             transparency: makeLiteral('0D'),
           }
         }],
@@ -1387,7 +1681,7 @@ const buildVisualJson = (item: DashboardItem, index: number, scenario: Scenario,
             text: makeLiteral(`'${(item.title || '').replace(/'/g, "''")}'`),
             fontFamily: makeLiteral("'''Segoe UI Semibold'', wf_segoe-ui_semibold, helvetica, arial, sans-serif'"),
             fontSize: makeLiteral('12D'),
-            fontColor: makeSolidColor(primaryColor),
+            fontColor: makeSolidColor(MOKKUP_BRAND_COLORS.title),
             alignment: makeLiteral("'left'"),
             background: { solid: { color: makeLiteral("'None'") } },
           }
@@ -1415,18 +1709,33 @@ const buildVisualJson = (item: DashboardItem, index: number, scenario: Scenario,
         }],
         background: [{
           properties: {
-            color: makeSolidColor('#FFFFFF'),
+            color: makeSolidColor(MOKKUP_BRAND_COLORS.background),
           }
         }],
       };
-    } else if (item.type === 'bar' || item.type === 'column' || item.type === 'line' || item.type === 'area') {
+    } else if (item.type === 'bar' || item.type === 'column' || item.type === 'line' || item.type === 'area' || item.type === 'combo' || item.type === 'stackedBar' || item.type === 'stackedColumn' || item.type === 'stackedArea') {
+      // Charts: hidden header, visible tooltip, no border/background
       visualContainerObjects = {
         visualHeader: [{ properties: { show: makeLiteral('false') } }],
         visualTooltip: [{ properties: { show: makeLiteral('true') } }],
         border: [{ properties: { show: makeLiteral('false') } }],
+        subTitle: [{ properties: { show: makeLiteral('false') } }],
+        title: [{ properties: { show: makeLiteral('false') } }],
+        background: [{ properties: { show: makeLiteral('false') } }],
+      };
+    } else if (item.type === 'funnel' || item.type === 'scatter' || item.type === 'matrix') {
+      // Funnel, scatter, matrix: hidden title and background
+      visualContainerObjects = {
+        title: [{ properties: { show: makeLiteral('false') } }],
         background: [{ properties: { show: makeLiteral('false') } }],
       };
     }
+  }
+
+  // Build query object with optional sortDefinition
+  const queryObject: Record<string, any> = { queryState };
+  if (sortDefinition) {
+    queryObject.sortDefinition = sortDefinition;
   }
 
   return {
@@ -1442,9 +1751,7 @@ const buildVisualJson = (item: DashboardItem, index: number, scenario: Scenario,
     },
     visual: {
       visualType: pbiType,
-      query: {
-        queryState,
-      },
+      query: queryObject,
       objects: buildVisualObjects(item, pbiType, scenario, themeColors),
       ...(visualContainerObjects ? { visualContainerObjects } : {}),
       drillFilterOtherVisuals: true,

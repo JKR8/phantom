@@ -76,12 +76,13 @@ export function extractMetricBindings(items: DashboardItem[], scenario: Scenario
     }
 
     // Check for variance props (showVariance, PL/PY fields)
-    if (props.showVariance) {
+    // Also add PY variants for KPI items (needed for goal comparison)
+    if (props.showVariance || item.type === 'kpi') {
       // Add PL and PY variants
       if (metric) {
         const plKey = `${metric}PL_${operation}`;
         const pyKey = `${metric}PY_${operation}`;
-        
+
         const plColumn = `${metric.charAt(0).toUpperCase() + metric.slice(1)}PL`;
         const pyColumn = `${metric.charAt(0).toUpperCase() + metric.slice(1)}PY`;
 

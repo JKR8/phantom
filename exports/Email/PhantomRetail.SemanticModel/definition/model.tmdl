@@ -1,0 +1,42 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-AU
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 1
+
+annotation PBI_ProTooling = ["DevMode"]
+
+ref table Store
+ref table Product
+ref table Sales
+ref table DateTable
+
+ref cultureInfo en-US
+
+relationship 29a085c4-97f9-43ae-9699-02e0c75d4035
+	fromColumn: Sales.StoreID
+	toColumn: Store.StoreID
+	crossFilteringBehavior: oneDirection
+	fromCardinality: many
+	toCardinality: one
+	isActive: true
+
+relationship 21b99a5d-85ad-42bc-8b38-21cc7eefd71d
+	fromColumn: Sales.ProductID
+	toColumn: Product.ProductID
+	crossFilteringBehavior: oneDirection
+	fromCardinality: many
+	toCardinality: one
+	isActive: true
+
+relationship 624a1dab-62aa-4691-a0ff-304067a83dac
+	fromColumn: Sales.Date
+	toColumn: DateTable.Date
+	crossFilteringBehavior: oneDirection
+	fromCardinality: many
+	toCardinality: one
+	isActive: true

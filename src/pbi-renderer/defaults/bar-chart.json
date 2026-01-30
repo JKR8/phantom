@@ -1,0 +1,224 @@
+{
+  "visualType": "clusteredBarChart",
+  "version": "1.1",
+  "measuredDate": "2026-01-30",
+  "measuredFrom": "templates/mokkup_pbi_email.jpg (Power BI Desktop render of mokkup.pbip)",
+
+  "container": {
+    "padding": {
+      "top": 8,
+      "right": 8,
+      "bottom": 8,
+      "left": 8
+    },
+    "background": "#FFFFFF",
+    "border": "none"
+  },
+
+  "visualContainer": {
+    "border": {
+      "visible": false,
+      "color": "#CCCCCC",
+      "width": 1,
+      "radius": 0
+    },
+    "dropShadow": {
+      "visible": false,
+      "color": "rgba(0,0,0,0.15)",
+      "offsetX": 0,
+      "offsetY": 2,
+      "blur": 4
+    },
+    "background": {
+      "color": "#FFFFFF",
+      "transparency": 0
+    }
+  },
+
+  "title": {
+    "defaultVisible": false,
+    "text": "",
+    "font": {
+      "family": "'Segoe UI Semibold', wf_segoe-ui_semibold, 'Segoe UI', sans-serif",
+      "size": 14,
+      "color": "#342BC2",
+      "weight": 600
+    },
+    "alignment": "left",
+    "marginBottom": 4
+  },
+
+  "subTitle": {
+    "defaultVisible": false,
+    "text": "",
+    "font": {
+      "family": "'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif",
+      "size": 11,
+      "color": "#605E5C",
+      "weight": 400
+    },
+    "marginBottom": 8
+  },
+
+  "plotArea": {
+    "margin": {
+      "top": 10,
+      "right": 10,
+      "bottom": 0,
+      "left": 0
+    }
+  },
+
+  "categoryAxis": {
+    "width": 100,
+    "line": {
+      "visible": false,
+      "color": "#CCCCCC",
+      "width": 1
+    },
+    "ticks": {
+      "visible": false,
+      "length": 5,
+      "color": "#CCCCCC",
+      "width": 1
+    },
+    "labels": {
+      "font": {
+        "family": "'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif",
+        "size": 10,
+        "color": "#605E5C",
+        "weight": 400
+      },
+      "maxWidth": 100,
+      "truncation": "ellipsis",
+      "marginRight": 8
+    },
+    "title": {
+      "font": {
+        "family": "'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif",
+        "size": 11,
+        "color": "#605E5C",
+        "weight": 400
+      },
+      "marginRight": 8,
+      "alignment": "center"
+    }
+  },
+
+  "valueAxis": {
+    "height": 25,
+    "line": {
+      "visible": false,
+      "color": "#CCCCCC",
+      "width": 1
+    },
+    "ticks": {
+      "visible": false,
+      "length": 5,
+      "color": "#CCCCCC",
+      "width": 1
+    },
+    "labels": {
+      "font": {
+        "family": "'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif",
+        "size": 10,
+        "color": "#605E5C",
+        "weight": 400
+      },
+      "format": "auto",
+      "marginTop": 5
+    },
+    "title": {
+      "font": {
+        "family": "'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif",
+        "size": 11,
+        "color": "#605E5C",
+        "weight": 400
+      },
+      "rotation": -90,
+      "marginBottom": 8
+    },
+    "gridLines": {
+      "visible": true,
+      "color": "#E8E8E8",
+      "width": 1,
+      "dashArray": null
+    }
+  },
+
+  "bars": {
+    "layout": {
+      "widthRatio": 0.6,
+      "groupPadding": 0.2,
+      "barPadding": 0.1
+    },
+    "appearance": {
+      "cornerRadius": 0,
+      "strokeWidth": 0,
+      "strokeColor": null
+    },
+    "colors": {
+      "comment": "Mokkup theme palette from mokkup_pbi_email.jpg",
+      "palette": [
+        "#342BC2",
+        "#6F67F1",
+        "#9993FF",
+        "#44B0AB",
+        "#93BF35",
+        "#417ED9",
+        "#2565C3",
+        "#1897BF",
+        "#2DB7E2",
+        "#7CDBF9"
+      ],
+      "defaultPbiPalette": [
+        "#01B8AA",
+        "#374649",
+        "#FD625E",
+        "#F2C80F",
+        "#5F6B6D",
+        "#8AD4EB",
+        "#FE9666",
+        "#A66999",
+        "#3599B8",
+        "#DFBFBF"
+      ]
+    }
+  },
+
+  "dataLabels": {
+    "defaultVisible": false,
+    "position": "outsideEnd",
+    "font": {
+      "family": "'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif",
+      "size": 10,
+      "color": "#605E5C",
+      "weight": 400
+    },
+    "padding": 4,
+    "format": "auto"
+  },
+
+  "legend": {
+    "defaultVisible": true,
+    "position": "top",
+    "dimensions": {
+      "widthWhenSide": 100,
+      "heightWhenTopBottom": 24
+    },
+    "item": {
+      "marker": {
+        "shape": "circle",
+        "size": 8
+      },
+      "spacing": 16,
+      "font": {
+        "family": "'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif",
+        "size": 10,
+        "color": "#605E5C"
+      }
+    },
+    "padding": 8,
+    "marginFromPlot": 8
+  }
+}

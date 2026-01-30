@@ -1,0 +1,68 @@
+table Store
+	lineageTag: 92daf4ad-5896-4b4a-bf55-753a3f3823c3
+
+	column StoreID
+		dataType: string
+		lineageTag: aa79bd4a-615c-4205-8e1d-8e87a5a7bfdc
+		summarizeBy: none
+		sourceColumn: StoreID
+
+	column StoreName
+		dataType: string
+		lineageTag: 31ec6f39-3ae3-46e7-8a85-5f70c6bbd0b7
+		summarizeBy: none
+		sourceColumn: StoreName
+
+	column Region
+		dataType: string
+		lineageTag: ede82f38-53a0-4691-b0f9-8b83ecc842c6
+		summarizeBy: none
+		sourceColumn: Region
+
+	column Country
+		dataType: string
+		lineageTag: 483dbfb3-e5c7-4635-8ffc-e8ae1fceffca
+		summarizeBy: none
+		sourceColumn: Country
+
+	partition Store = m
+		mode: import
+		source =
+			let
+			    Source = #table(
+			        type table [StoreID = Text.Type, StoreName = Text.Type, Region = Text.Type, Country = Text.Type],
+			        {
+				{"9b0b8676-cba2-4f1c-a9ed-e3ecd88e593c", "Ratke - Halvorson Store", "Europe", "Northern Mariana Islands"},
+				{"c7db2be0-1b43-4eb6-8454-31546eac98c3", "Wilderman LLC Store", "Asia Pacific", "Bonaire, Sint Eustatius and Saba"},
+				{"9748b9b4-eeeb-41fa-abb0-420cba011bcb", "Schmidt LLC Store", "Latin America", "Zambia"},
+				{"bed14015-e60d-489d-a04b-db1cf4340d4b", "Crona - King Store", "Asia Pacific", "Mozambique"},
+				{"388ab4fb-798c-4bce-a8c9-0b8cb197c1b4", "Waelchi Inc Store", "Europe", "Bosnia and Herzegovina"},
+				{"9cee1c77-3dd9-442f-a1c7-d0e712ce7414", "Hand LLC Store", "Europe", "Iceland"},
+				{"75c4266b-8fe9-4abe-9982-ef0ec33bf7b7", "Stracke LLC Store", "Asia Pacific", "Macao"},
+				{"91a72286-1976-4fa9-885d-cdb051862f19", "Luettgen - Douglas Store", "Asia Pacific", "Marshall Islands"},
+				{"e0df39ab-c425-4ef1-b988-ead4e1eb43ab", "Turcotte, Rosenbaum and Shanahan Store", "Europe", "Samoa"},
+				{"fc73e18f-a5a4-40ee-89d1-5793ef98c26c", "Klocko LLC Store", "Latin America", "French Southern Territories"},
+				{"1f0eb76d-b9d1-47aa-9174-f98391729981", "Wilderman, Davis and Pouros Store", "North America", "Malawi"},
+				{"b440d905-f20d-48f3-b4fb-a75cf10a93ec", "Walter - Vandervort Store", "Europe", "Benin"},
+				{"726de9c5-100f-4ae0-a243-ba05c4ad5f17", "Lind - Hudson Store", "North America", "Greenland"},
+				{"91b16f72-c5e1-4c33-bbba-d16d4665d3a1", "Harvey - Schulist Store", "North America", "Northern Mariana Islands"},
+				{"f65335d9-4ecb-4b3e-87f0-c8f54a4613f1", "Crooks LLC Store", "Europe", "Belize"},
+				{"39489876-08d1-4c3e-aabb-d34e850458aa", "Crona, Gulgowski and Rice Store", "North America", "Spain"},
+				{"e05784b1-cf2a-4929-890f-9f285ba2d404", "Marquardt and Sons Store", "Europe", "Aruba"},
+				{"eb4ed7a8-4d56-464c-8f87-1887cb854772", "Schinner - Schmeler Store", "Asia Pacific", "Jordan"},
+				{"ea74a131-a976-4c20-b6d1-3d500b9ac7ea", "Dibbert - Strosin Store", "Latin America", "Cameroon"},
+				{"9cf1fe92-8209-4c7c-8d77-c0c3c7d110b6", "Cole and Sons Store", "Asia Pacific", "Ghana"},
+				{"4ca74422-fc42-4912-9884-edfe36c2ba4d", "Price - Gorczany Store", "North America", "Sierra Leone"},
+				{"72a5b652-fc3e-45a5-80d7-01750c7355b3", "Fritsch, Robel and Strosin Store", "Asia Pacific", "Nepal"},
+				{"10497013-1400-48c7-8771-29b3df0ba8cf", "Carter - Mitchell Store", "North America", "Bonaire, Sint Eustatius and Saba"},
+				{"51bc9385-3f69-47ed-a136-f1487f56b8b2", "Jacobson - Will Store", "North America", "Jamaica"},
+				{"0bc9a832-1cb1-4aac-8a4a-b701eb7e7fbd", "Wehner - D'Amore Store", "Europe", "Aruba"},
+				{"c5fcb042-b33a-4e7e-98d6-8b84e417cc6d", "McKenzie Inc Store", "North America", "Paraguay"},
+				{"c6b23b61-06da-4cc4-94cd-70b98312c356", "Bruen, Grant and Smith Store", "Asia Pacific", "Bhutan"},
+				{"78ab9d00-a211-4395-903f-1c0ce293657d", "Prosacco, Dare and Bayer Store", "Latin America", "Moldova"},
+				{"5e261b1c-8efb-4f5c-bb9f-a0be05c8ab95", "Goldner, Ward and Bartell Store", "North America", "Anguilla"},
+				{"6d799b74-a419-4ec5-ba2c-7867b6717d05", "Hane - Heaney Store", "North America", "Eswatini"}
+			        }
+			    )
+			in
+			    Source

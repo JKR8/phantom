@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "Report",
+    "displayName": "PhantomRetail"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "f5ec4848-c95c-44ca-bddb-2bfd1a218d11"
+  }
+}

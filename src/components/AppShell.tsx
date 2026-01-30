@@ -11,7 +11,9 @@ import {
   MenuTrigger,
   MenuList,
   MenuItem,
-  MenuPopover
+  MenuPopover,
+  Switch,
+  Tooltip,
 } from '@fluentui/react-components';
 import {
   HomeRegular,
@@ -200,6 +202,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
   const setLayoutMode = useStore((state) => state.setLayoutMode);
   const selectedArchetype = useStore((state) => state.selectedArchetype);
   const setArchetype = useStore((state) => state.setArchetype);
+  const useVegaRendering = useStore((state) => state.useVegaRendering);
+  const setUseVegaRendering = useStore((state) => state.setUseVegaRendering);
   const dashboardName = useStore((state) => state.dashboardName);
   const setDashboardMeta = useStore((state) => state.setDashboardMeta);
   const [showDataModel, setShowDataModel] = React.useState(false);
@@ -302,6 +306,14 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
                   </MenuList>
                 </MenuPopover>
               </Menu>
+              <Tooltip content="Use Vega-Lite rendering for Power BI parity" relationship="description">
+                <Switch
+                  checked={useVegaRendering}
+                  onChange={(_, data) => setUseVegaRendering(data.checked)}
+                  label={useVegaRendering ? "Vega" : "Recharts"}
+                  style={{ color: 'white', marginRight: '8px' }}
+                />
+              </Tooltip>
               <ExportButton />
             </>
           )}

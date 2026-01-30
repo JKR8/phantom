@@ -1,0 +1,163 @@
+# Power BI Bar Chart - Measured Specifications
+#
+# Measured from: templates/mokkup_pbi_email.jpg
+# This is a real Power BI Desktop render of the mokkup.pbip template.
+#
+# Reference PBIP: templates/mokkup/mokkup.Report/definition/pages/.../visuals/*/visual.json
+# Theme: templates/mokkup/mokkup.Report/StaticResources/RegisteredResources/Mokkup_theme.json
+#
+# Version: 1.1
+# Last Measured: 2026-01-30
+# Power BI Desktop Version: Latest (from mokkup_pbi_email.jpg)
+
+visual_type: clusteredBarChart
+
+# Reference visuals in screenshot:
+# - "Top Reasons to Unsubscribe" - horizontal bar chart with teal bars
+# - "Email to Conversion - Pipeline" - horizontal bar chart with purple bars
+
+reference_images:
+  - mokkup_pbi_reference.jpg  # Full dashboard screenshot
+
+# ============================================
+# MEASURED VALUES FROM REAL POWER BI OUTPUT
+# ============================================
+
+measured_values:
+
+  # Container styling
+  container:
+    background: "#FFFFFF"
+    padding:
+      top: 8
+      right: 8
+      bottom: 8
+      left: 8
+
+  # Section/visual titles (e.g., "Top Reasons to Unsubscribe")
+  title:
+    font_family: "'Segoe UI Semibold', wf_segoe-ui_semibold, 'Segoe UI', sans-serif"
+    font_size: 14
+    font_color: "#342BC2"  # Purple - matches Mokkup theme primary
+    font_weight: 600
+    alignment: left
+
+  # Category axis (Y-axis for horizontal bars)
+  category_axis:
+    # Labels like "Too Many Emails", "Not Interested", etc.
+    label:
+      font_family: "'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif"
+      font_size: 10
+      font_color: "#605E5C"  # Dark gray (Power BI's standard label color)
+      max_width: 100
+      truncation: "..."  # Labels truncated with ellipsis
+    line:
+      visible: false  # No axis line visible in screenshot
+      color: "#CCCCCC"
+      width: 1
+    ticks:
+      visible: false
+
+  # Value axis (X-axis for horizontal bars)
+  value_axis:
+    height: 25  # Space for axis labels
+    label:
+      font_family: "'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif"
+      font_size: 10
+      font_color: "#605E5C"
+    line:
+      visible: false  # No axis line visible
+    ticks:
+      visible: false
+    grid_lines:
+      visible: true
+      color: "#E8E8E8"  # Very light gray
+      width: 1
+
+  # Bars
+  bars:
+    width_ratio: 0.6  # Bars appear narrower than 70%
+    corner_radius: 0  # Sharp corners
+    gap_between: 0.4  # Significant gap between bars
+
+  # Colors (from Mokkup theme)
+  colors:
+    mokkup_palette:
+      - "#342BC2"   # Primary purple (used in Pipeline chart)
+      - "#6F67F1"   # Lighter purple
+      - "#9993FF"   # Even lighter purple
+      - "#44B0AB"   # Teal (used in Unsubscribe chart)
+      - "#93BF35"   # Green (for positive indicators)
+
+    # Standard Power BI default palette (for comparison)
+    pbi_default_palette:
+      - "#01B8AA"
+      - "#374649"
+      - "#FD625E"
+      - "#F2C80F"
+      - "#5F6B6D"
+
+  # Legend (visible in "Performance by Email Type" scatter chart)
+  legend:
+    position: top
+    marker_shape: circle  # Circles, not squares
+    marker_size: 8
+    item_spacing: 16
+    font:
+      family: "'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif"
+      size: 10
+      color: "#605E5C"
+
+  # Data labels (visible on KPI cards)
+  data_labels:
+    font_family: "'Segoe UI', wf_segoe-ui_normal, helvetica, arial, sans-serif"
+    font_size: 10
+    font_color: "#605E5C"
+
+  # KPI/Card values (e.g., "250K", "39K")
+  kpi_values:
+    font_family: "'Segoe UI Semibold', wf_segoe-ui_semibold, 'Segoe UI', sans-serif"
+    font_size: 28
+    font_color: "#252423"  # Nearly black
+
+  # KPI variance text (e.g., "+30%")
+  kpi_variance:
+    positive_color: "#44B0AB"  # Teal
+    negative_color: "#D64554"  # Red (from theme.bad)
+
+# ============================================
+# KEY OBSERVATIONS FROM SCREENSHOT
+# ============================================
+
+observations:
+  - "Axis lines are NOT visible by default"
+  - "Grid lines are very subtle (#E8E8E8)"
+  - "Labels use #605E5C (not pure gray #666666)"
+  - "Title color matches theme primary (#342BC2)"
+  - "Legend uses circles, not squares"
+  - "Bars have significant spacing (narrower than 70%)"
+  - "Font is consistently Segoe UI family"
+  - "Visual titles are 14px semibold"
+  - "Axis labels are 10px regular"
+
+# ============================================
+# PBIP STRUCTURE REFERENCE
+# ============================================
+
+pbip_object_names:
+  bar_chart:
+    - categoryAxis
+    - valueAxis
+    - legend
+    - labels
+    - dataPoint
+    - visualContainerObjects.title
+    - visualContainerObjects.border
+    - visualContainerObjects.background
+
+pbip_value_formats:
+  boolean: '"true"' or '"false"'
+  number_decimal: '"8D"' (D suffix)
+  number_long: '"62.5L"' (L suffix)
+  string: '"\\'#342BC2\\'"' (escaped single quotes)
+  enum: '"\\'InsideEnd\\'"'

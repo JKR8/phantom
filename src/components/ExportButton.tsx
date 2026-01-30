@@ -31,6 +31,7 @@ import {
 } from '@fluentui/react-icons';
 import html2canvas from 'html2canvas';
 import { useStore } from '../store/useStore';
+import { useThemeStore } from '../store/useThemeStore';
 import { downloadPBIPPackage, generateAllMeasures, getSchemaForScenario } from '../export';
 
 const useStyles = makeStyles({
@@ -72,6 +73,7 @@ export const ExportButton: React.FC = () => {
 
   const items = useStore((state) => state.items);
   const scenario = useStore((state) => state.scenario);
+  const activePalette = useThemeStore((state) => state.activePalette);
 
   const handlePBIExport = async () => {
     setIsExporting(true);
@@ -82,7 +84,7 @@ export const ExportButton: React.FC = () => {
 
       // Perform the export
       const state = useStore.getState();
-      await downloadPBIPPackage(items, scenario, state);
+      await downloadPBIPPackage(items, scenario, state, undefined, activePalette.colors);
 
       // Show success dialog with summary
       setExportSummary({

@@ -1,0 +1,119 @@
+table Product
+	lineageTag: e9225ed7-369f-43dd-a2f5-0c28cb149d32
+
+	column ProductID
+		dataType: string
+		lineageTag: c3a0d0b8-60a7-45ae-bcea-92f0ace57d21
+		summarizeBy: none
+		sourceColumn: ProductID
+
+	column ProductName
+		dataType: string
+		lineageTag: b290f951-2af8-4efb-9140-71d40bee8b31
+		summarizeBy: none
+		sourceColumn: ProductName
+
+	column Category
+		dataType: string
+		lineageTag: 9f4fdd08-e35a-46cb-815e-509fc007cf0b
+		summarizeBy: none
+		sourceColumn: Category
+
+	column Price
+		dataType: double
+		formatString: $#,0.00;($#,0.00);$#,0.00
+		lineageTag: 2c5993ce-c4b2-41fd-a972-117701f3818f
+		summarizeBy: none
+		sourceColumn: Price
+
+	partition Product = m
+		mode: import
+		source =
+			let
+			    Source = #table(
+			        type table [ProductID = Text.Type, ProductName = Text.Type, Category = Text.Type, Price = Number.Type],
+			        {
+				{"9fc08db6-b02c-413b-8529-a023b92b2b71", "Fantastic Ceramic Fish", "Books", 678.35},
+				{"186e0ccd-c29e-476b-b049-8e85edee70eb", "Bespoke Granite Sausages", "Toys", 62.35},
+				{"773cf9f0-4108-4c10-8973-2351aed0eb4f", "Intelligent Wooden Soap", "Beauty", 829.69},
+				{"abcda966-b269-4c0d-b0a7-f49711a375d4", "Sleek Steel Pizza", "Beauty", 24.79},
+				{"4ef52407-a17f-4eb7-bade-53b1433196b4", "Electronic Cotton Salad", "Sports", 915.25},
+				{"9e05654a-a63f-4b92-b0fe-5f190ebe0e86", "Handmade Marble Chips", "Beauty", 650},
+				{"1b2c652d-937d-49a7-8dbf-f415c9ed6bbf", "Recycled Granite Gloves", "Grocery", 312.89},
+				{"87672da3-86eb-44cf-a262-25b86b0b495c", "Small Plastic Soap", "Furniture", 595.65},
+				{"2b3ce54d-b5c6-4f5c-951b-700debd7cfd6", "Small Silk Cheese", "Home & Garden", 45.2},
+				{"d664b57b-13a7-4d48-8367-d08f3931b65d", "Intelligent Metal Fish", "Toys", 899.45},
+				{"27fef8c5-0b53-4898-abd8-bdf5a9a81170", "Soft Aluminum Chips", "Beauty", 488.05},
+				{"de5e34b7-e7ae-4500-b8b5-9afc000307b0", "Unbranded Metal Bacon", "Toys", 663.75},
+				{"5d6044cd-f23b-4368-a251-9f641124cec3", "Frozen Bronze Ball", "Home & Garden", 832.19},
+				{"9f4a591a-9d40-4d75-b781-4cbb3d409bb5", "Gorgeous Metal Car", "Electronics", 225.4},
+				{"b6447fd8-14d7-46c1-bd2e-7c8c64dcbf86", "Awesome Rubber Pizza", "Home & Garden", 186.29},
+				{"7cdf8c0f-c7f7-4be0-b616-3b596d7bcc4c", "Bespoke Marble Bike", "Home & Garden", 372.99},
+				{"76b118f8-a4b8-4770-98c6-a225818a9a67", "Bespoke Ceramic Bike", "Automotive", 308.79},
+				{"ec9b2a88-e13f-452b-b3c3-a92d4fae8a4f", "Unbranded Bamboo Tuna", "Furniture", 32.3},
+				{"726bb242-304f-4ca6-8dab-e68c3920dbb7", "Rustic Plastic Cheese", "Electronics", 45.99},
+				{"e5f30b20-8e27-415d-b7ad-cb9b427135f2", "Ergonomic Rubber Computer", "Sports", 219.15},
+				{"a9ee765c-6719-4435-ab5e-040f936220b5", "Elegant Bronze Ball", "Automotive", 67.7},
+				{"e62c1353-1c9a-4349-be64-4a3a4554cf8b", "Practical Silk Chair", "Automotive", 822.79},
+				{"035a1f03-766a-4a57-9b24-ada9c43ac8d0", "Fresh Silk Tuna", "Clothing", 219.05},
+				{"ccf5dc2b-96e0-489c-831d-d8d4eb4c567f", "Sleek Silk Pizza", "Books", 296.89},
+				{"142bf230-1d7a-464b-8601-35a68c02905e", "Soft Rubber Gloves", "Electronics", 600.4},
+				{"310800bd-4c6f-4a10-b5f7-b0f517d0af2a", "Handcrafted Wooden Soap", "Grocery", 751.89},
+				{"38e2658c-2b2f-4440-a2ec-74fafd0a2a74", "Bespoke Concrete Hat", "Grocery", 41.65},
+				{"8044832c-3065-4332-b277-40d2adc8405f", "Licensed Steel Ball", "Sports", 150.79},
+				{"f32c1391-ba3e-41f4-9059-81ec41a65c81", "Handcrafted Concrete Salad", "Grocery", 124.69},
+				{"5c5afff9-b761-47db-9f5e-14bfa9ccbc77", "Ergonomic Aluminum Shirt", "Toys", 151.99},
+				{"9c6df69b-2c37-4a6e-b00d-066fcce6c164", "Intelligent Rubber Soap", "Electronics", 890.89},
+				{"df2b8b26-3e1e-4848-8ee5-c1594cac251a", "Soft Granite Cheese", "Beauty", 768.29},
+				{"c34a4937-a7d3-4b5a-b42f-e01c720706e4", "Frozen Silk Hat", "Beauty", 838.51},
+				{"46c1264a-041f-4eec-b91a-78b3b99d7f80", "Refined Silk Shirt", "Toys", 158.59},
+				{"b9b63db0-8549-49be-a32e-01cc0aa6f526", "Fresh Bronze Tuna", "Grocery", 36.29},
+				{"f524cf21-e56e-4318-a56e-fc7cba1ab2f5", "Frozen Cotton Sausages", "Furniture", 238.99},
+				{"77498f8e-c704-420e-927a-59c0a71e6d7b", "Fantastic Steel Keyboard", "Clothing", 849.85},
+				{"729a099b-844f-4553-a68a-da0f015dc805", "Elegant Wooden Chicken", "Grocery", 21.59},
+				{"70b495c6-c7f4-4cdc-a2eb-1c956f0ab6b2", "Gorgeous Rubber Keyboard", "Beauty", 872.45},
+				{"d12217d6-b4f8-4702-bba8-c5fbd2d18419", "Electronic Silk Tuna", "Sports", 456.99},
+				{"0039fea8-4e1f-422f-8610-769e5eea91d0", "Oriental Concrete Table", "Home & Garden", 993.55},
+				{"e95f338e-8b28-4130-a6fc-9341792c450b", "Ergonomic Concrete Salad", "Toys", 150.09},
+				{"35352887-a274-4edc-ab51-82e97022dadd", "Fresh Ceramic Chair", "Furniture", 868.4},
+				{"2613312c-7a1c-43fe-89ec-b3ca8606ba6a", "Elegant Wooden Soap", "Home & Garden", 177.85},
+				{"86c55690-d011-46e4-bd5c-dc62efa6dfcf", "Luxurious Bamboo Table", "Home & Garden", 772.85},
+				{"51d9ca7e-3857-41d5-973a-830e554e7f69", "Modern Marble Ball", "Books", 604.75},
+				{"935cbffb-1124-4e2e-a034-3da4990c8dec", "Handmade Rubber Chicken", "Grocery", 711.05},
+				{"f130c0b2-3477-429a-9f97-ee559ff9ed54", "Intelligent Aluminum Shirt", "Home & Garden", 496.65},
+				{"afe6d1d2-c9cf-4aa1-ba60-69bc0724a893", "Rustic Marble Computer", "Automotive", 307.29},
+				{"73f5241d-e279-467c-bd6d-b56054181e43", "Small Metal Chair", "Furniture", 367.75},
+				{"f8ae8b3c-5953-4cda-bf48-780915731973", "Tasty Wooden Bacon", "Books", 864.75},
+				{"1b0851c9-6730-4216-99ae-d413861947c1", "Refined Marble Pants", "Furniture", 777.79},
+				{"99a0cc0f-d507-4c55-8abd-694db02f9432", "Recycled Ceramic Shoes", "Furniture", 25.69},
+				{"8c768ce7-c09a-46ca-9b7d-f430ff8630b9", "Bespoke Cotton Towels", "Sports", 656.29},
+				{"201d627b-106c-4dde-87eb-bf76779ee8a5", "Intelligent Bamboo Pizza", "Books", 860.69},
+				{"18692079-32f3-47af-b3c8-af72034aec3d", "Generic Metal Table", "Automotive", 872.09},
+				{"59f35043-e751-4466-a1b8-fe5901921a45", "Small Rubber Car", "Automotive", 250.99},
+				{"f5984a51-66c5-44c5-a03c-49c2cd90f3af", "Recycled Rubber Gloves", "Grocery", 641.89},
+				{"b560b070-68dd-4bdb-86d3-c1d3e6e1a864", "Small Bronze Salad", "Beauty", 955.33},
+				{"e4966312-50ea-4250-a961-6ddc266a244f", "Licensed Steel Cheese", "Electronics", 347.15},
+				{"02087f0f-39b5-4e19-8e47-1d3400154882", "Awesome Wooden Hat", "Home & Garden", 817.25},
+				{"5f33f439-d4e4-424f-ba0a-f02f98eb03e8", "Elegant Wooden Keyboard", "Sports", 693.99},
+				{"f091aab6-94f1-458c-a467-e732a8e5b609", "Practical Marble Chips", "Grocery", 410.75},
+				{"27a899fc-ec95-410a-bfad-dbc625eb6cde", "Modern Cotton Fish", "Grocery", 755.55},
+				{"8901cf05-76ed-4fdc-955b-22ce7a46de57", "Generic Steel Cheese", "Clothing", 318.6},
+				{"b3b4bcde-e8fe-450d-b938-0c5f8b6d7618", "Electronic Marble Keyboard", "Beauty", 136.8},
+				{"1d544f74-5725-45d2-818e-694d14d49cff", "Tasty Aluminum Chips", "Grocery", 286.23},
+				{"328dc213-100b-4a49-91ff-83390772b9b9", "Practical Gold Cheese", "Toys", 64.39},
+				{"8bf97bdf-d642-4c52-a557-44316c0455d0", "Luxurious Bamboo Chips", "Grocery", 462.55},
+				{"508290f2-bde6-4932-85bf-6236f3fa0768", "Luxurious Bronze Shirt", "Beauty", 450.75},
+				{"6bffb43c-02f9-4bf5-8f87-d215443168f9", "Fantastic Gold Fish", "Books", 903.29},
+				{"bb7f9262-8b58-46fc-b0f6-716e9b78e564", "Recycled Concrete Car", "Clothing", 679.89},
+				{"b25e2608-230e-4b16-8008-b2a11ccfde1b", "Incredible Steel Bacon", "Furniture", 622.39},
+				{"95993427-de1c-4e7b-a9db-2b9b3c6ccb0d", "Modern Metal Shirt", "Beauty", 951.19},
+				{"fce8c06d-5736-486b-a041-1a57ab12327d", "Recycled Wooden Salad", "Furniture", 952.79},
+				{"709ef5ce-f4f9-4d78-9e10-7c2cfe96d394", "Luxurious Cotton Towels", "Sports", 50},
+				{"a63dea14-37f2-4067-bdb6-71a6261d7777", "Luxurious Bamboo Computer", "Sports", 833.59},
+				{"a16f37f6-3ae6-4352-a684-1d64099246b3", "Gorgeous Silk Keyboard", "Automotive", 303.89},
+				{"3934b5ba-7815-446f-ad64-b6090530fafa", "Gorgeous Wooden Chicken", "Clothing", 308.79},
+				{"3e8879df-0ecc-439b-9e10-3afab6de49db", "Fantastic Wooden Keyboard", "Grocery", 145.75}
+			        }
+			    )
+			in
+			    Source

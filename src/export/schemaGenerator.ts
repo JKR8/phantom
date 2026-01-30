@@ -76,6 +76,8 @@ const retailSchema: PBISchema = {
         { name: 'ProductID', dataType: 'string', summarizeBy: 'none', isHidden: true },
         { name: 'Date', dataType: 'dateTime', summarizeBy: 'none' },
         { name: 'Quantity', dataType: 'int64', summarizeBy: 'sum' },
+        { name: 'QuantityPL', dataType: 'int64', summarizeBy: 'sum' },
+        { name: 'QuantityPY', dataType: 'int64', summarizeBy: 'sum' },
         { name: 'Revenue', dataType: 'double', summarizeBy: 'sum' },
         { name: 'RevenuePL', dataType: 'double', summarizeBy: 'sum' },
         { name: 'RevenuePY', dataType: 'double', summarizeBy: 'sum' },
@@ -83,6 +85,8 @@ const retailSchema: PBISchema = {
         { name: 'ProfitPL', dataType: 'double', summarizeBy: 'sum' },
         { name: 'ProfitPY', dataType: 'double', summarizeBy: 'sum' },
         { name: 'Discount', dataType: 'double', summarizeBy: 'sum' },
+        { name: 'DiscountPL', dataType: 'double', summarizeBy: 'sum' },
+        { name: 'DiscountPY', dataType: 'double', summarizeBy: 'sum' },
       ]
     },
     {

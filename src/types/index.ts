@@ -18,6 +18,8 @@ export interface Sale {
   productId: string;
   date: string;
   quantity: number;
+  quantityPL: number; // Plan
+  quantityPY: number; // Previous Year
   revenue: number;
   revenuePL: number; // Plan
   revenuePY: number; // Previous Year
@@ -25,6 +27,8 @@ export interface Sale {
   profitPL: number;
   profitPY: number;
   discount: number;
+  discountPL: number; // Plan
+  discountPY: number; // Previous Year
 }
 
 export interface Customer {
@@ -264,6 +268,9 @@ export interface DashboardState {
   shareId: string | null;
   isDirty: boolean;
   lastSavedAt: string | null;
+  // Vega-Lite rendering mode
+  useVegaRendering: boolean;
+  setUseVegaRendering: (use: boolean) => void;
   // Persistence actions
   setDashboardMeta: (meta: { id?: string | null; name?: string; isPublic?: boolean; shareId?: string | null }) => void;
   markDirty: () => void;

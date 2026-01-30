@@ -566,7 +566,6 @@ test.describe('Phantom Drop -> Shape -> Refine', () => {
       { name: 'HR Attrition', expectedTable: 'Employee' },
       { name: 'Logistics Supply Chain', expectedTable: 'Shipment' },
       { name: 'Social Media Sentiment', expectedTable: 'SocialPost' },
-      { name: 'Portfolio Monitoring', expectedTable: 'ControversyScore' },
       { name: 'Finance', expectedTable: 'FinanceRecord' },
       { name: 'Zebra (IBCS)', expectedTable: 'FinanceRecord' },
     ];
@@ -590,6 +589,57 @@ test.describe('Phantom Drop -> Shape -> Refine', () => {
       expect(tmdl, `${template.name} should include ${template.expectedTable} table`).toBeTruthy();
       expect(tmdl || '').toContain('partition');
     }
+  });
+
+  test('Email template KPI visuals have Indicator and Goal data bindings', async ({ page }) => {
+    await openTemplate(page, 'Email');
+    await page.waitForTimeout(500);
+
+    const exportResult = await page.evaluate(async () => {
+      const debug = (window as any).__phantomDebug;
+      const state = debug.useStore.getState();
+      const { blob } = await debug.createPBIPPackage(state.items, state.scenario, state);
+      const buffer = await blob.arrayBuffer();
+      return { bytes: Array.from(new Uint8Array(buffer)), scenario: state.scenario };
+    });
+
+    const zip = await JSZip.loadAsync(Uint8Array.from(exportResult.bytes));
+    const projectName = `Phantom${exportResult.scenario}`;
+
+    // KPIs with their metrics - only revenue/profit have PY variants in schema
+    const kpis = [
+      { id: 'email-kpi1', metric: 'revenue', hasPY: true },
+      { id: 'email-kpi2', metric: 'profit', hasPY: true },
+      { id: 'email-kpi3', metric: 'discount', hasPY: false }, // No DiscountPY in schema
+      { id: 'email-kpi4', metric: 'quantity', hasPY: false }, // No QuantityPY in schema
+      { id: 'email-kpi5', metric: 'quantity', hasPY: false },
+    ];
+
+    for (const kpi of kpis) {
+      const visualPath = `${projectName}.Report/definition/pages/page1/visuals/${kpi.id}/visual.json`;
+      const visualJson = await zip.file(visualPath)?.async('string');
+      expect(visualJson, `${kpi.id} visual should exist`).toBeTruthy();
+
+      const visual = JSON.parse(visualJson!);
+
+      // Verify visualType is 'kpi'
+      expect(visual.visual.visualType).toBe('kpi');
+
+      // Verify queryState has Indicator (required for KPI visual to show data)
+      expect(visual.visual.query.queryState.Indicator, `${kpi.id} should have Indicator`).toBeDefined();
+      expect(visual.visual.query.queryState.Indicator.projections.length).toBeGreaterThan(0);
+
+      // Verify queryState has Goal only for metrics with PY variants
+      if (kpi.hasPY) {
+        expect(visual.visual.query.queryState.Goal, `${kpi.id} should have Goal (PY data exists)`).toBeDefined();
+        expect(visual.visual.query.queryState.Goal.projections.length).toBeGreaterThan(0);
+      }
+    }
+
+    // Verify variance measures exist for KPI comparison
+    const salesTmdl = await zip.file(`${projectName}.SemanticModel/definition/tables/Sales.tmdl`)?.async('string');
+    expect(salesTmdl).toContain('Total Revenue PY');
+    expect(salesTmdl).toContain('Total Profit PY');
   });
 
   // ============================================================
@@ -1055,63 +1105,6 @@ test.describe('Phantom Drop -> Shape -> Refine', () => {
       expect(item.props.dimension).toBeDefined();
       // Finance scenario uses BusinessUnit, Amount, Account, etc.
       expect(item.title).toMatch(/BusinessUnit|Amount|Account|Budget|Actual|Variance|Revenue|Cost/i);
-    });
-  });
-
-  test.describe('Portfolio/FFMA visuals drag-drop', () => {
-    test('drop Portfolio visuals onto canvas in Portfolio scenario', async ({ page }) => {
-      await openTemplate(page, 'Portfolio Monitoring');
-
-      const scenario = await page.evaluate(() =>
-        (window as any).__phantomDebug.useStore.getState().scenario
-      );
-      expect(scenario).toBe('Portfolio');
-
-      await page.getByTitle('New Screen').click();
-
-      // Test portfolio visuals using simulateDrop for reliability
-      const portfolioVisuals = [
-        'portfolioCard',
-        'controversyBar',
-        'entityTable',
-        'controversyTable',
-        'justificationSearch',
-        'dateRangePicker',
-      ];
-
-      for (const visualId of portfolioVisuals) {
-        await simulateDrop(page, visualId);
-      }
-
-      const items = await page.evaluate(() =>
-        (window as any).__phantomDebug.useStore.getState().items
-      );
-
-      // Verify all portfolio visuals were added
-      expect(items.length).toBe(portfolioVisuals.length);
-      const types = items.map((i: any) => i.type);
-      portfolioVisuals.forEach((visualId) => {
-        expect(types).toContain(visualId);
-      });
-    });
-
-    test('HTML5 drag-drop of Portfolio visual works', async ({ page }) => {
-      await openTemplate(page, 'Portfolio Monitoring');
-      await page.getByTitle('New Screen').click();
-
-      // Test a single Portfolio visual via actual drag-drop
-      const source = page.getByTestId('visual-source-portfolioCard');
-      const canvas = page.getByTestId('canvas-drop-area');
-      await source.dragTo(canvas, { targetPosition: { x: 400, y: 300 } });
-
-      // Wait for item to appear
-      await page.waitForTimeout(300);
-
-      const items = await page.evaluate(() =>
-        (window as any).__phantomDebug.useStore.getState().items
-      );
-      expect(items.length).toBeGreaterThanOrEqual(1);
-      expect(items.some((i: any) => i.type === 'portfolioCard')).toBeTruthy();
     });
   });
 

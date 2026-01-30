@@ -30,6 +30,7 @@ export const VARIANT_MAP: Record<string, VariantOption[]> = {
   line: [
     { id: 'line', label: 'Line', icon: DataLineRegular },
     { id: 'area', label: 'Area', icon: DataAreaRegular },
+    { id: 'stackedArea', label: 'Stacked Area', icon: DataAreaRegular },
   ],
   pie: [
     { id: 'pie', label: 'Pie', icon: DataPieRegular },

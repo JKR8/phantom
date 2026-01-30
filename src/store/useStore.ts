@@ -45,6 +45,8 @@ export const useStore = create<DashboardState>((set, get) => ({
   shareId: null,
   isDirty: false,
   lastSavedAt: null,
+  useVegaRendering: false,
+  setUseVegaRendering: (use: boolean) => set({ useVegaRendering: use }),
   setScenario: (scenario: Scenario) => {
     const emptyState = { stores: [], products: [], sales: [], customers: [], subscriptions: [], employees: [], shipments: [], financeRecords: [], portfolioEntities: [], controversyScores: [], socialPosts: [], filters: {} };
     if (scenario === 'Retail') {
