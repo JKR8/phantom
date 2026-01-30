@@ -3,6 +3,7 @@ import { ScenarioType, ScenarioFields } from './semanticLayer';
 export interface BindingRecipe {
   dimension?: string;
   metric?: string;
+  metric2?: string;
   xMetric?: string;
   yMetric?: string;
   sizeMetric?: string;
@@ -140,6 +141,12 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
 
     case 'barbell':
     case 'diverging':
+      return {
+        dimension: primaryCategory,
+        metric: primaryMeasure,
+        metric2: secondaryMeasure,
+      };
+
     case 'slope':
       return {
         dimension: primaryCategory,

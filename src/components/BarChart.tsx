@@ -152,7 +152,7 @@ export const BarChart: React.FC<BarChartProps> = ({
     const maxVal = Math.max(...comparisonData.flatMap(d => [d.value1, d.value2]), 1);
 
     return (
-      <div style={{ width: '100%', height: '100%', padding: '8px 16px' }}>
+      <div style={{ width: '100%', height: '100%', padding: '16px' }}>
         {comparisonData.map((item) => {
           const val1 = item.value1;
           const val2 = item.value2;
@@ -164,7 +164,7 @@ export const BarChart: React.FC<BarChartProps> = ({
               display: 'flex',
               alignItems: 'center',
               height: `${100 / comparisonData.length}%`,
-              gap: '8px',
+              gap: '4px',
             }}>
               <div style={{
                 width: '72px',
@@ -178,7 +178,7 @@ export const BarChart: React.FC<BarChartProps> = ({
               </div>
               <div style={{
                 flex: 1,
-                height: '20px',
+                height: '100%',
                 position: 'relative',
               }}>
                 {/* Connecting line */}
@@ -187,7 +187,7 @@ export const BarChart: React.FC<BarChartProps> = ({
                   top: '50%',
                   left: `${minPct}%`,
                   width: `${maxPct - minPct}%`,
-                  height: '2px',
+                  height: '1.5px',
                   backgroundColor: getColor(0),
                   transform: 'translateY(-50%)',
                 }} />
@@ -196,8 +196,8 @@ export const BarChart: React.FC<BarChartProps> = ({
                   position: 'absolute',
                   top: '50%',
                   left: `${(val1 / maxVal) * 100}%`,
-                  width: '8px',
-                  height: '8px',
+                  width: '6px',
+                  height: '6px',
                   borderRadius: '50%',
                   backgroundColor: getColor(0),
                   transform: 'translate(-50%, -50%)',
@@ -207,8 +207,8 @@ export const BarChart: React.FC<BarChartProps> = ({
                   position: 'absolute',
                   top: '50%',
                   left: `${(val2 / maxVal) * 100}%`,
-                  width: '8px',
-                  height: '8px',
+                  width: '6px',
+                  height: '6px',
                   borderRadius: '50%',
                   backgroundColor: getColor(1),
                   transform: 'translate(-50%, -50%)',
@@ -222,54 +222,71 @@ export const BarChart: React.FC<BarChartProps> = ({
   }
 
   // ========== DIVERGING VARIANT ==========
+  // Layout: [Left Container (metric1)] [Dimension Label] [Right Container (metric2)]
+  // Uses shared scale so bars visually diverge/compare properly
   if (variant === 'diverging') {
-    const maxAbs = Math.max(...comparisonData.map(d => Math.abs(d.divergeValue)), 1);
+    const maxVal = Math.max(
+      ...comparisonData.map(d => d.value1),
+      ...comparisonData.map(d => d.value2),
+      1
+    );
 
     return (
-      <div style={{ width: '100%', height: '100%', padding: '8px 16px' }}>
+      <div style={{ width: '100%', height: '100%', padding: '16px' }}>
         {comparisonData.map((item) => {
-          const divergeVal = item.divergeValue;
-          const pct = (divergeVal / maxAbs) * 50; // 50% max on each side
+          const pct1 = (item.value1 / maxVal) * 100; // Left bar extends from right edge
+          const pct2 = (item.value2 / maxVal) * 100; // Right bar extends from left edge
 
           return (
             <div key={item.name} style={{
               display: 'flex',
               alignItems: 'center',
               height: `${100 / comparisonData.length}%`,
-              gap: '8px',
             }}>
+              {/* Left Container - metric1 bar extends from right to left */}
+              <div style={{
+                flex: 1,
+                height: '100%',
+                position: 'relative',
+              }}>
+                <div style={{
+                  position: 'absolute',
+                  top: '11.84%',
+                  bottom: '11.84%',
+                  right: 0,
+                  width: `${pct1}%`,
+                  backgroundColor: getColor(0),
+                }} />
+              </div>
+              {/* Center dimension label */}
               <div style={{
                 width: '72px',
                 fontSize: '12px',
+                lineHeight: '14px',
                 color: '#64748b',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
+                textAlign: 'center',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}>
                 {item.name}
               </div>
+              {/* Right Container - metric2 bar extends from left to right */}
               <div style={{
                 flex: 1,
-                height: '24px',
+                height: '100%',
                 position: 'relative',
               }}>
-                {/* Center line */}
                 <div style={{
                   position: 'absolute',
-                  top: 0,
-                  bottom: 0,
-                  left: '50%',
-                  width: '1px',
-                  backgroundColor: '#e2e8f0',
-                }} />
-                {/* Bar extending from center */}
-                <div style={{
-                  position: 'absolute',
-                  top: '15%',
-                  bottom: '15%',
-                  left: divergeVal >= 0 ? '50%' : `${50 + pct}%`,
-                  width: `${Math.abs(pct)}%`,
-                  backgroundColor: divergeVal >= 0 ? getColor(0) : getColor(1),
+                  top: '11.84%',
+                  bottom: '11.84%',
+                  left: 0,
+                  width: `${pct2}%`,
+                  backgroundColor: getColor(1),
                 }} />
               </div>
             </div>
