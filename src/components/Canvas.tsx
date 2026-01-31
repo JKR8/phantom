@@ -54,6 +54,10 @@ import { QuickShapeStrip } from './QuickShapeStrip';
 import { VariantPicker, VARIANT_PARENT_TYPES } from './VariantPicker';
 // Vega-Lite components for Power BI parity
 import { VegaBarChart, VegaLineChart } from '../vega';
+// Text/Layout components
+import { TextBox } from './TextBox';
+import { Banner } from './Banner';
+import { NudgeKPICard } from './NudgeKPICard';
 
 const GRID_COLS = 48;  // Balanced grid for good visual spacing
 const ROW_HEIGHT = 20;
@@ -115,6 +119,10 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
   const selectedItemId = useStore((state) => state.selectedItemId);
   const selectItem = useStore((state) => state.selectItem);
   const useVegaRendering = useStore((state) => state.useVegaRendering);
+  const canvasMode = useStore((state) => state.canvasMode);
+  const canvasZoom = useStore((state) => state.canvasZoom);
+  const canvasPanX = useStore((state) => state.canvasPanX);
+  const canvasPanY = useStore((state) => state.canvasPanY);
   const [isDragOver, setIsDragOver] = useState(false);
   const [pendingDrop, setPendingDrop] = useState<{
     parentType: string;
@@ -300,6 +308,13 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
         return <JustificationSearch />;
       case 'portfolioKPICards':
         return <PortfolioKPICards />;
+      // Text/Layout visuals
+      case 'textBox':
+        return <TextBox {...item.props} />;
+      case 'banner':
+        return <Banner {...item.props} />;
+      case 'nudgeKpi':
+        return <NudgeKPICard {...item.props} />;
       default:
         return <div>Unknown Visual</div>;
     }
@@ -350,11 +365,19 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
     let gridY = 0;
 
     if (rect && width > 0) {
-      const relX = e.clientX - rect.left - padding;
-      const relY = e.clientY - rect.top - GRID_PADDING[1];
+      let relX = e.clientX - rect.left - padding;
+      let relY = e.clientY - rect.top - GRID_PADDING[1];
+
+      // In whiteboard mode, account for zoom and pan
+      if (canvasMode === 'whiteboard') {
+        // Convert screen coordinates to canvas coordinates
+        relX = (e.clientX - rect.left - canvasPanX) / canvasZoom - padding;
+        relY = (e.clientY - rect.top - canvasPanY) / canvasZoom - GRID_PADDING[1];
+      }
+
       gridX = Math.max(0, Math.floor(relX / (colWidth + margin)));
       gridY = Math.max(0, Math.floor(relY / (ROW_HEIGHT + GRID_MARGIN[1])));
-      console.log('[handleCanvasDrop] Calculated grid:', { relX, relY, gridX, gridY, colWidth });
+      console.log('[handleCanvasDrop] Calculated grid:', { relX, relY, gridX, gridY, colWidth, canvasMode });
       // Clamp to grid bounds (only for Free mode; Standard mode snaps to slots)
       if (layoutMode !== 'Standard') {
         gridX = Math.min(gridX, GRID_COLS - 16);
@@ -486,6 +509,9 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
             rowHeight={ROW_HEIGHT}
             cols={GRID_COLS}
             margin={GRID_MARGIN}
+            zoom={canvasZoom}
+            panX={canvasPanX}
+            panY={canvasPanY}
         />
         <GridLayout
           className="layout"
@@ -515,7 +541,7 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
             }
             return (
               <div key={item.id} data-grid={{ x: item.layout.x, y: item.layout.y, w: item.layout.w, h: item.layout.h }}>
-                {item.type === 'portfolioHeader' || item.type === 'portfolioHeaderBar' || item.type === 'controversyBottomPanel' || item.type === 'portfolioKPICards' ? (
+                {item.type === 'portfolioHeader' || item.type === 'portfolioHeaderBar' || item.type === 'controversyBottomPanel' || item.type === 'portfolioKPICards' || item.type === 'banner' ? (
                   // These components render without visual container wrapper
                   renderVisual(item)
                 ) : (

@@ -20,6 +20,8 @@ import {
   ChartMultipleRegular,
   TargetArrowRegular,
   SlideMultipleRegular,
+  TextTRegular,
+  RectangleLandscapeRegular,
 } from '@fluentui/react-icons';
 
 const useStyles = makeStyles({
@@ -112,6 +114,9 @@ const visuals = [
   { id: 'matrix', icon: GridRegular, label: 'Matrix', tooltip: 'Matrix' },
   { id: 'waterfall', icon: DataHistogramRegular, label: 'Waterfall', tooltip: 'Waterfall Chart' },
   { id: 'slicer', icon: TextBulletListSquareRegular, label: 'Slicer', tooltip: 'Slicer' },
+  { id: 'textBox', icon: TextTRegular, label: 'Text', tooltip: 'Text Box for headers, descriptions, notes' },
+  { id: 'banner', icon: RectangleLandscapeRegular, label: 'Banner', tooltip: 'Banner for report headers, branding' },
+  { id: 'nudgeKpi', icon: NumberSymbolSquareRegular, label: 'Nudge KPI', tooltip: 'Nudge-style KPI card with variance indicators' },
 ];
 
 /**

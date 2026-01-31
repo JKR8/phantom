@@ -145,6 +145,22 @@ export interface SocialPost {
 export type Scenario = 'Retail' | 'SaaS' | 'HR' | 'Logistics' | 'Social' | 'Portfolio' | 'Finance';
 export type LayoutMode = 'Free' | 'Standard';
 export type Archetype = 'Executive' | 'Diagnostic' | 'Operational';
+export type CanvasMode = 'pbi' | 'whiteboard';
+
+/**
+ * Canvas annotation for whiteboard mode
+ */
+export interface CanvasAnnotation {
+  id: string;
+  type: 'sticky' | 'text' | 'arrow';
+  x: number;      // Canvas pixels (not grid)
+  y: number;
+  width: number;
+  height: number;
+  content: string;
+  color: string;  // Sticky note color
+  fontSize?: number;
+}
 
 export type VisualType =
   | 'bar'
@@ -201,7 +217,10 @@ export type VisualType =
   | 'ribbon'
   // Map variants
   | 'mapBubble'
-  | 'mapChoropleth';
+  | 'mapChoropleth'
+  // Text/Layout visuals
+  | 'textBox'
+  | 'banner';
 
 // Re-export visual props types
 export type {
@@ -278,6 +297,36 @@ export interface DashboardItem<T extends VisualType = VisualType> {
     : Record<string, unknown>;
   /** Runtime validation state (populated by store on prop changes) */
   _validation?: ValidationResult;
+  /**
+   * Four Questions notes - freeform text documenting:
+   * 1. Is it good or bad? (polarity, thresholds)
+   * 2. By how much? (variance, comparison basis)
+   * 3. Why? (drivers, drill paths)
+   * 4. What action? (triggers, owner)
+   */
+  fourQuestionsNotes?: string;
+}
+
+/**
+ * Dashboard specification - captures requirements and context
+ */
+export interface DashboardSpecification {
+  /** Business questions this dashboard answers */
+  businessQuestions?: string;
+  /** Data granularity level */
+  grain?: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
+  /** Source systems for the data */
+  sourceSystems?: string;
+  /** How often data refreshes */
+  refreshCadence?: 'real-time' | 'daily' | 'weekly' | 'monthly' | 'on-demand';
+  /** Who will use this dashboard */
+  audience?: string;
+  /** Distribution method */
+  distribution?: string;
+  /** Current sign-off status */
+  signOffStatus?: 'draft' | 'in-review' | 'approved';
+  /** Build notes for developers */
+  buildNotes?: string;
 }
 
 export interface DashboardSnapshot {
@@ -286,6 +335,10 @@ export interface DashboardSnapshot {
   filters: Record<string, any>;
   layoutMode: LayoutMode;
   themePalette: string;
+  /** Dashboard specification and requirements */
+  specification?: DashboardSpecification;
+  /** Annotations for whiteboard mode */
+  annotations?: CanvasAnnotation[];
 }
 
 export interface DbDashboard {
@@ -301,6 +354,8 @@ export interface DbDashboard {
   share_id: string | null;
   created_at: string;
   updated_at: string;
+  /** Dashboard specification (stored as JSON) */
+  specification?: DashboardSpecification;
 }
 
 export interface HighlightState {
@@ -341,7 +396,11 @@ export interface DashboardState {
   selectItem: (id: string | null) => void;
   updateItemProps: (id: string, props: any) => void;
   updateItemTitle: (id: string, title: string) => void;
+  updateItemNotes: (id: string, notes: string) => void;
   clearCanvas: () => void;
+  // Specification
+  specification: DashboardSpecification;
+  updateSpecification: (spec: Partial<DashboardSpecification>) => void;
   // Persistence fields
   dashboardId: string | null;
   dashboardName: string;
@@ -355,6 +414,22 @@ export interface DashboardState {
   // Cross-filtering toggle
   crossFilterEnabled: boolean;
   setCrossFilterEnabled: (enabled: boolean) => void;
+  // Whiteboard mode state
+  canvasMode: CanvasMode;
+  canvasZoom: number;        // 0.25 to 2.0 (25% to 200%)
+  canvasPanX: number;        // Horizontal offset in pixels
+  canvasPanY: number;        // Vertical offset in pixels
+  annotations: CanvasAnnotation[];
+  selectedAnnotationId: string | null;
+  // Whiteboard mode actions
+  setCanvasMode: (mode: CanvasMode) => void;
+  setCanvasZoom: (zoom: number) => void;
+  setCanvasPan: (x: number, y: number) => void;
+  resetCanvasView: () => void;
+  addAnnotation: (annotation: CanvasAnnotation) => void;
+  updateAnnotation: (id: string, updates: Partial<CanvasAnnotation>) => void;
+  removeAnnotation: (id: string) => void;
+  selectAnnotation: (id: string | null) => void;
   // Persistence actions
   setDashboardMeta: (meta: { id?: string | null; name?: string; isPublic?: boolean; shareId?: string | null }) => void;
   markDirty: () => void;

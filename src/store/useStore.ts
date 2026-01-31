@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { DashboardState, Scenario, DashboardItem, LayoutMode, Archetype, DbDashboard } from '../types';
+import { DashboardState, Scenario, DashboardItem, LayoutMode, Archetype, DbDashboard, DashboardSpecification, CanvasAnnotation } from '../types';
 import { generateRetailData, generateSaaSData, generateHRData, generateLogisticsData, generatePortfolioData, generateSocialData, generateFinanceData } from '../engine/dataGenerator';
 import { useThemeStore, PALETTES, DEFAULT_PALETTE } from './useThemeStore';
 import { validateVisualProps } from '../validation/visual-props-validator';
@@ -50,6 +50,47 @@ export const useStore = create<DashboardState>((set, get) => ({
   setUseVegaRendering: (use: boolean) => set({ useVegaRendering: use }),
   crossFilterEnabled: true,
   setCrossFilterEnabled: (enabled: boolean) => set({ crossFilterEnabled: enabled }),
+  // Whiteboard mode state
+  canvasMode: 'pbi' as const,
+  canvasZoom: 1,
+  canvasPanX: 0,
+  canvasPanY: 0,
+  annotations: [],
+  selectedAnnotationId: null,
+  // Whiteboard mode actions
+  setCanvasMode: (mode: 'pbi' | 'whiteboard') => set({
+    canvasMode: mode,
+    // Reset zoom/pan when switching to PBI mode
+    ...(mode === 'pbi' ? { canvasZoom: 1, canvasPanX: 0, canvasPanY: 0, selectedAnnotationId: null } : {}),
+  }),
+  setCanvasZoom: (zoom: number) => set({ canvasZoom: Math.min(2, Math.max(0.25, zoom)) }),
+  setCanvasPan: (x: number, y: number) => set({ canvasPanX: x, canvasPanY: y }),
+  resetCanvasView: () => set({ canvasZoom: 1, canvasPanX: 0, canvasPanY: 0 }),
+  addAnnotation: (annotation: CanvasAnnotation) => set((state) => ({
+    annotations: [...state.annotations, annotation],
+    isDirty: true,
+  })),
+  updateAnnotation: (id: string, updates: Partial<CanvasAnnotation>) => set((state) => ({
+    annotations: state.annotations.map((a) =>
+      a.id === id ? { ...a, ...updates } : a
+    ),
+    isDirty: true,
+  })),
+  removeAnnotation: (id: string) => set((state) => ({
+    annotations: state.annotations.filter((a) => a.id !== id),
+    selectedAnnotationId: state.selectedAnnotationId === id ? null : state.selectedAnnotationId,
+    isDirty: true,
+  })),
+  selectAnnotation: (id: string | null) => set({ selectedAnnotationId: id, selectedItemId: null }),
+  // Specification
+  specification: {
+    signOffStatus: 'draft',
+  } as DashboardSpecification,
+  updateSpecification: (spec: Partial<DashboardSpecification>) =>
+    set((state) => ({
+      specification: { ...state.specification, ...spec },
+      isDirty: true,
+    })),
   setScenario: (scenario: Scenario) => {
     const emptyState = { stores: [], products: [], sales: [], customers: [], subscriptions: [], employees: [], shipments: [], financeRecords: [], portfolioEntities: [], controversyScores: [], socialPosts: [], filters: {} };
     if (scenario === 'Retail') {
@@ -133,7 +174,7 @@ export const useStore = create<DashboardState>((set, get) => ({
       });
       return { items: newItems, isDirty: true };
     }),
-  selectItem: (id: string | null) => set({ selectedItemId: id }),
+  selectItem: (id: string | null) => set({ selectedItemId: id, selectedAnnotationId: null }),
   updateItemProps: (id: string, props: any) =>
     set((state) => {
       const item = state.items.find(i => i.id === id);
@@ -153,6 +194,13 @@ export const useStore = create<DashboardState>((set, get) => ({
     set((state) => ({
       items: state.items.map((item) =>
         item.id === id ? { ...item, title } : item
+      ),
+      isDirty: true,
+    })),
+  updateItemNotes: (id: string, notes: string) =>
+    set((state) => ({
+      items: state.items.map((item) =>
+        item.id === id ? { ...item, fourQuestionsNotes: notes } : item
       ),
       isDirty: true,
     })),
@@ -222,6 +270,7 @@ export const useStore = create<DashboardState>((set, get) => ({
       shareId: db.share_id,
       isDirty: false,
       lastSavedAt: db.updated_at,
+      specification: db.specification || { signOffStatus: 'draft' },
     });
   },
   getSerializableState: () => {
@@ -232,6 +281,8 @@ export const useStore = create<DashboardState>((set, get) => ({
       filters: state.filters,
       layoutMode: state.layoutMode,
       themePalette: useThemeStore.getState().activePalette.name,
+      specification: state.specification,
+      annotations: state.annotations,
     };
   },
   resetToNew: () => {
@@ -250,6 +301,14 @@ export const useStore = create<DashboardState>((set, get) => ({
       shareId: null,
       isDirty: false,
       lastSavedAt: null,
+      specification: { signOffStatus: 'draft' },
+      // Reset whiteboard state
+      canvasMode: 'pbi',
+      canvasZoom: 1,
+      canvasPanX: 0,
+      canvasPanY: 0,
+      annotations: [],
+      selectedAnnotationId: null,
     });
     useThemeStore.getState().setPalette(DEFAULT_PALETTE);
   },

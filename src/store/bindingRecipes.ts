@@ -186,6 +186,13 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
         goalText: 'vs prev',
       };
 
+    case 'nudgeKpi':
+      return {
+        metricName: primaryMeasure || 'Revenue',
+        metric: primaryMeasure,
+        operation: 'sum',
+      };
+
     case 'multiRowCard':
       return {
         fields: getRoles('Measure').slice(0, 3)
@@ -250,6 +257,12 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
     case 'entityTable':
     case 'controversyTable':
       return { maxRows: 10 };
+
+    // Text/Layout visuals
+    case 'textBox':
+      return { title: 'Text Box' };
+    case 'banner':
+      return { title: 'Report Title' };
 
     default:
       return {};
@@ -367,6 +380,12 @@ export const generateSmartTitle = (
 
     case 'gantt':
       return dim ? `${dim} Timeline` : 'Timeline';
+
+    // Text/Layout visuals
+    case 'textBox':
+      return recipe.title || 'Text Box';
+    case 'banner':
+      return recipe.title || 'Report Title';
 
     default:
       return visualType.charAt(0).toUpperCase() + visualType.slice(1);

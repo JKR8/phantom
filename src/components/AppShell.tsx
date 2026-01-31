@@ -24,10 +24,13 @@ import {
   ResizeImageRegular,
   MathFormulaRegular,
   DesignIdeasRegular,
+  ClipboardTextEditRegular,
+  WhiteboardRegular,
 } from '@fluentui/react-icons';
 import { FieldsPane } from './FieldsPane';
 import { VisualizationsPane } from './VisualizationsPane';
 import { PropertiesPanel } from './PropertiesPanel';
+import { SpecificationPanel } from './SpecificationPanel';
 import { DataModelPanel } from './DataModelPanel';
 import { DataModelPane } from './DataModelPane';
 import { StatisticalPane } from './StatisticalPane';
@@ -36,6 +39,11 @@ import { UserMenu } from './UserMenu';
 import { SaveDashboardButton } from './SaveDashboardDialog';
 import { ShareButton } from './ShareDialog';
 import { ExportButton } from './ExportButton';
+import { CanvasViewport } from './CanvasViewport';
+import { AnnotationsLayer } from './AnnotationsLayer';
+import { ZoomControls } from './ZoomControls';
+import { Minimap } from './Minimap';
+import { WhiteboardToolbar } from './WhiteboardToolbar';
 import { useStore } from '../store/useStore';
 import { Templates } from '../store/templates';
 import { useAuth } from '../auth/useAuth';
@@ -125,6 +133,15 @@ const useStyles = makeStyles({
     position: 'relative',
     ...shorthands.padding('20px'),
   },
+  canvasAreaWhiteboard: {
+    flex: 1,
+    backgroundColor: '#F0F4F8',
+    backgroundImage: 'radial-gradient(circle, #CBD5E1 1px, transparent 1px)',
+    backgroundSize: '20px 20px',
+    overflowY: 'auto',
+    position: 'relative',
+    ...shorthands.padding('20px'),
+  },
   bottomPane: {
     height: '110px',
     borderTop: `1px solid ${tokens.colorNeutralStroke2}`,
@@ -207,12 +224,18 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
   const setArchetype = useStore((state) => state.setArchetype);
   const useVegaRendering = useStore((state) => state.useVegaRendering);
   const setUseVegaRendering = useStore((state) => state.setUseVegaRendering);
+  const canvasMode = useStore((state) => state.canvasMode);
+  const setCanvasMode = useStore((state) => state.setCanvasMode);
+  const canvasZoom = useStore((state) => state.canvasZoom);
+  const canvasPanX = useStore((state) => state.canvasPanX);
+  const canvasPanY = useStore((state) => state.canvasPanY);
   const dashboardName = useStore((state) => state.dashboardName);
   const setDashboardMeta = useStore((state) => state.setDashboardMeta);
   const [showDataModelPane, setShowDataModelPane] = React.useState(false);
   const [showDataModelFull, setShowDataModelFull] = React.useState(false);
   const [showStatistical, setShowStatistical] = React.useState(false);
   const [showPBIUiKit, setShowPBIUiKit] = React.useState(false);
+  const [showSpec, setShowSpec] = React.useState(false);
   const [editingTitle, setEditingTitle] = React.useState(false);
   const [titleDraft, setTitleDraft] = React.useState(dashboardName);
 
@@ -319,6 +342,35 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
                   style={{ color: 'white', marginRight: '8px' }}
                 />
               </Tooltip>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '8px', paddingLeft: '8px', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>
+                <Tooltip content="Toggle between PBI mode (fixed canvas) and Whiteboard mode (zoom, pan, annotations)" relationship="description">
+                  <Button
+                    appearance={canvasMode === 'pbi' ? 'primary' : 'subtle'}
+                    size="small"
+                    onClick={() => setCanvasMode('pbi')}
+                    style={{
+                      color: canvasMode === 'pbi' ? 'white' : 'rgba(255,255,255,0.7)',
+                      minWidth: '60px',
+                    }}
+                  >
+                    Report
+                  </Button>
+                </Tooltip>
+                <Tooltip content="Whiteboard mode: zoom, pan, and add sticky notes" relationship="description">
+                  <Button
+                    appearance={canvasMode === 'whiteboard' ? 'primary' : 'subtle'}
+                    size="small"
+                    icon={<WhiteboardRegular />}
+                    onClick={() => setCanvasMode('whiteboard')}
+                    style={{
+                      color: canvasMode === 'whiteboard' ? 'white' : 'rgba(255,255,255,0.7)',
+                      minWidth: '100px',
+                    }}
+                  >
+                    Whiteboard
+                  </Button>
+                </Tooltip>
+              </div>
               <ExportButton />
             </>
           )}
@@ -365,8 +417,15 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
               icon={<DesignIdeasRegular />}
               appearance="subtle"
               style={showPBIUiKit ? navBtnActiveStyle : navBtnStyle}
-              onClick={() => { setShowPBIUiKit(!showPBIUiKit); setShowStatistical(false); setShowDataModelPane(false); }}
+              onClick={() => { setShowPBIUiKit(!showPBIUiKit); setShowStatistical(false); setShowDataModelPane(false); setShowSpec(false); }}
               title="PBI UI Kit 2.0"
+            />
+            <Button
+              icon={<ClipboardTextEditRegular />}
+              appearance="subtle"
+              style={showSpec ? navBtnActiveStyle : navBtnStyle}
+              onClick={() => { setShowSpec(!showSpec); setShowPBIUiKit(false); setShowStatistical(false); setShowDataModelPane(false); }}
+              title="Dashboard Specification"
             />
           </nav>
         )}
@@ -385,6 +444,11 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
             <PBIUiKitPane />
           </div>
         )}
+        {showSpec && !readOnly && !showDataModelFull && !showDataModelPane && (
+          <div className={styles.ffmaPane}>
+            <SpecificationPanel />
+          </div>
+        )}
         {showDataModelFull && !readOnly ? (
           /* Full-screen data model view */
           <div className={styles.dataModelView}>
@@ -394,8 +458,18 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
           /* Normal canvas view */
           <>
             <div className={styles.centerArea}>
-              <main className={styles.canvasArea}>
-                {children}
+              <main className={canvasMode === 'whiteboard' ? styles.canvasAreaWhiteboard : styles.canvasArea}>
+                <CanvasViewport
+                  annotationsLayer={
+                    <AnnotationsLayer
+                      zoom={canvasZoom}
+                      panX={canvasPanX}
+                      panY={canvasPanY}
+                    />
+                  }
+                >
+                  {children}
+                </CanvasViewport>
               </main>
               {!readOnly && (
                 <div className={styles.bottomPane}>
@@ -409,6 +483,14 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
                   {selectedItemId ? <PropertiesPanel /> : <FieldsPane />}
                 </div>
               </div>
+            )}
+            {/* Whiteboard mode controls */}
+            {!readOnly && canvasMode === 'whiteboard' && (
+              <>
+                <WhiteboardToolbar />
+                <ZoomControls />
+                <Minimap />
+              </>
             )}
           </>
         )}

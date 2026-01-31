@@ -11,6 +11,7 @@ import {
   Select,
   Divider,
   Checkbox,
+  Textarea,
 } from '@fluentui/react-components';
 import { AddRegular, DeleteRegular, WarningRegular, ErrorCircleRegular } from '@fluentui/react-icons';
 import { useStore } from '../store/useStore';
@@ -120,6 +121,17 @@ const useStyles = makeStyles({
     ...shorthands.border('1px', 'solid', '#FDE68A'),
     color: '#92400E',
   },
+  notesTextarea: {
+    width: '100%',
+    minHeight: '80px',
+    fontSize: '12px',
+  },
+  notesHint: {
+    fontSize: '10px',
+    color: '#8A8886',
+    marginTop: '4px',
+    lineHeight: '1.4',
+  },
 });
 
 // OPERATION_OPTIONS imported from property-inputs
@@ -129,6 +141,11 @@ const useStyles = makeStyles({
  * All 29+ chart types from docs/power-bi-chart-css.md
  */
 const VISUAL_TYPE_LABELS: Record<string, string> = {
+  // Layout & Text
+  banner: 'Report Banner',
+  textBox: 'Text Box',
+  // KPI Cards
+  nudgeKpi: 'Nudge KPI Card',
   // Bar & Column Charts
   bar: 'Clustered Bar Chart',
   stackedBar: 'Stacked Bar Chart',
@@ -207,6 +224,7 @@ export const PropertiesPanel: React.FC = () => {
   const items = useStore((s) => s.items);
   const updateItemProps = useStore((s) => s.updateItemProps);
   const updateItemTitle = useStore((s) => s.updateItemTitle);
+  const updateItemNotes = useStore((s) => s.updateItemNotes);
   const scenario = useStore((s) => s.scenario) as ScenarioType;
 
   const item = items.find((i) => i.id === selectedItemId);
@@ -223,6 +241,13 @@ export const PropertiesPanel: React.FC = () => {
       if (selectedItemId) updateItemTitle(selectedItemId, title);
     },
     [selectedItemId, updateItemTitle]
+  );
+
+  const onNotesChange = useCallback(
+    (notes: string) => {
+      if (selectedItemId) updateItemNotes(selectedItemId, notes);
+    },
+    [selectedItemId, updateItemNotes]
   );
 
   if (!item) {
@@ -274,6 +299,8 @@ export const PropertiesPanel: React.FC = () => {
   const showKpiGoalText = type === 'kpi';
   const showTarget = type === 'gauge';
   const showMaxRows = type === 'table';
+  const showBannerSettings = type === 'banner';
+  const showNudgeKpiSettings = type === 'nudgeKpi';
   const showManualData = ['bar', 'column', 'stackedBar', 'stackedColumn', 'line', 'area', 'pie', 'donut', 'treemap', 'funnel', 'waterfall'].includes(type);
   const showTopN = TOP_N_TYPES.includes(type);
   const showSort = TOP_N_TYPES.includes(type);
@@ -734,6 +761,149 @@ export const PropertiesPanel: React.FC = () => {
           </div>
         )}
 
+        {/* Banner Settings */}
+        {showBannerSettings && (
+          <>
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Banner Text</Label>
+              <Input
+                size="small"
+                value={props.title || 'Report Title'}
+                onChange={(_, d) => onPropChange('title', d.value)}
+              />
+            </div>
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Subtitle</Label>
+              <Input
+                size="small"
+                value={props.subtitle || ''}
+                placeholder="Optional subtitle"
+                onChange={(_, d) => onPropChange('subtitle', d.value)}
+              />
+            </div>
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Style</Label>
+              <Select
+                size="small"
+                value={props.variant || 'thinLine'}
+                onChange={(_, d) => onPropChange('variant', d.value)}
+              >
+                <option value="thinLine">Thin Line (default)</option>
+                <option value="subtle">Subtle Background</option>
+                <option value="gradient">Gradient</option>
+                <option value="filled">Filled (classic)</option>
+              </Select>
+            </div>
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Accent Color</Label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="color"
+                  value={props.accentColor || '#0078D4'}
+                  onChange={(e) => onPropChange('accentColor', e.target.value)}
+                  style={{ width: '32px', height: '24px', padding: '0', border: '1px solid #E1DFDD', borderRadius: '4px', cursor: 'pointer' }}
+                />
+                <Input
+                  size="small"
+                  value={props.accentColor || '#0078D4'}
+                  onChange={(_, d) => onPropChange('accentColor', d.value)}
+                  style={{ width: '80px' }}
+                />
+              </div>
+            </div>
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Title Size</Label>
+              <Input
+                size="small"
+                type="number"
+                value={String(props.titleFontSize || 20)}
+                onChange={(_, d) => onPropChange('titleFontSize', Number(d.value) || 20)}
+              />
+            </div>
+            <div className={styles.fieldRow}>
+              <Checkbox
+                checked={props.showLogo === true}
+                onChange={(_, d) => onPropChange('showLogo', !!d.checked)}
+                label="Show logo"
+              />
+            </div>
+            <div className={styles.fieldRow}>
+              <Checkbox
+                checked={props.showAccentBar === true}
+                onChange={(_, d) => onPropChange('showAccentBar', !!d.checked)}
+                label="Show left accent bar"
+              />
+            </div>
+          </>
+        )}
+
+        {/* Nudge KPI Settings */}
+        {showNudgeKpiSettings && (
+          <>
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Metric Name</Label>
+              <Input
+                size="small"
+                value={props.metricName || 'Total Revenue'}
+                onChange={(_, d) => onPropChange('metricName', d.value)}
+                placeholder="Display name for the metric"
+              />
+            </div>
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Metric</Label>
+              <Select
+                size="small"
+                value={resolveOptionValue(metricOptions, props.metric)}
+                onChange={(_, d) => onPropChange('metric', d.value)}
+              >
+                {metricOptions.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </Select>
+            </div>
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Operation</Label>
+              <ConstrainedSelect
+                options={OPERATION_OPTIONS}
+                value={props.operation || 'sum'}
+                onChange={(value) => onPropChange('operation', value)}
+              />
+            </div>
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Target Value</Label>
+              <Input
+                size="small"
+                type="number"
+                value={String(props.targetValue || '')}
+                placeholder="Optional target"
+                onChange={(_, d) => onPropChange('targetValue', d.value ? Number(d.value) : undefined)}
+              />
+            </div>
+            <Divider style={{ margin: '8px 0' }} />
+            <div className={styles.fieldRow}>
+              <Checkbox
+                checked={props.showPreviousPeriod !== false}
+                onChange={(_, d) => onPropChange('showPreviousPeriod', !!d.checked)}
+                label="Show Previous Period comparison"
+              />
+            </div>
+            <div className={styles.fieldRow}>
+              <Checkbox
+                checked={props.showTarget !== false}
+                onChange={(_, d) => onPropChange('showTarget', !!d.checked)}
+                label="Show Target comparison"
+              />
+            </div>
+            <div className={styles.fieldRow}>
+              <Checkbox
+                checked={props.showYoY !== false}
+                onChange={(_, d) => onPropChange('showYoY', !!d.checked)}
+                label="Show Year-over-Year"
+              />
+            </div>
+          </>
+        )}
+
         {/* Statistical Visual Settings */}
         {showWhiskerMethod && (
           <>
@@ -898,6 +1068,27 @@ export const PropertiesPanel: React.FC = () => {
           </>
         )}
 
+      </div>
+
+      {/* Four Questions Notes */}
+      <Divider />
+      <div className={styles.section}>
+        <Text className={styles.sectionHeader}>Four Questions</Text>
+        <div className={styles.fieldRow}>
+          <Textarea
+            className={styles.notesTextarea}
+            placeholder="Document answers to the four questions..."
+            value={item.fourQuestionsNotes || ''}
+            onChange={(_, d) => onNotesChange(d.value)}
+            resize="vertical"
+          />
+          <Text className={styles.notesHint}>
+            1. Is it good or bad? (polarity, thresholds){'\n'}
+            2. By how much? (variance, comparison){'\n'}
+            3. Why? (drivers, drill paths){'\n'}
+            4. What action? (triggers, owner)
+          </Text>
+        </div>
       </div>
 
       {/* Validation Details */}
