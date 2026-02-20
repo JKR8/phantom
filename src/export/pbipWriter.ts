@@ -634,11 +634,6 @@ const buildVisualJson = (item: DashboardItem, index: number, scenario: Scenario,
             color: makeSolidColor(accentColor),
             radius: makeLiteral('2D'),
             width: makeLiteral('4D'),
-            // Apply border only on left side
-            topWidth: makeLiteral('0D'),
-            rightWidth: makeLiteral('0D'),
-            bottomWidth: makeLiteral('0D'),
-            leftWidth: makeLiteral('4D'),
           }
         }],
         background: [{

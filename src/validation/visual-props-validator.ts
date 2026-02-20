@@ -280,7 +280,7 @@ export function validateVisualProps(
   }
 
   // Scatter-specific
-  if (type === 'scatter' || type === 'regressionScatter') {
+  if (type === 'scatter') {
     if ('xMetric' in p) {
       const { error, warning } = validateMetric(p.xMetric, 'xMetric', scenario);
       if (error) errors.push(error);

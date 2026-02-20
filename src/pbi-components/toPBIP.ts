@@ -308,10 +308,6 @@ export function cardToVisualContainerObjects(props: PBICardProps): Record<string
         color: makeSolidColor(props.accentColor),
         radius: makeDecimalLiteral(2),
         width: makeDecimalLiteral(4),
-        topWidth: makeDecimalLiteral(0),
-        rightWidth: makeDecimalLiteral(0),
-        bottomWidth: makeDecimalLiteral(0),
-        leftWidth: makeDecimalLiteral(4),
       },
     }];
   }

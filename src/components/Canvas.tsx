@@ -535,13 +535,13 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
         >
           {items.map((item) => {
             // Hide menu for slicers and search controls in Portfolio scenario
-            const hideMenu = scenario === 'Portfolio' && (item.type === 'slicer' || item.type === 'justificationSearch');
+            const hideMenu = false;
             if (item.layout.y > 0) {
               console.log('[render] Item with y>0:', item.id, 'y=', item.layout.y);
             }
             return (
               <div key={item.id} data-grid={{ x: item.layout.x, y: item.layout.y, w: item.layout.w, h: item.layout.h }}>
-                {item.type === 'portfolioHeader' || item.type === 'portfolioHeaderBar' || item.type === 'controversyBottomPanel' || item.type === 'portfolioKPICards' || item.type === 'banner' ? (
+                {item.type === 'banner' ? (
                   // These components render without visual container wrapper
                   renderVisual(item)
                 ) : (

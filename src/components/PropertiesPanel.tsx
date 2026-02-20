@@ -289,9 +289,9 @@ export const PropertiesPanel: React.FC = () => {
   };
 
   // Determine which fields to show based on visual type
-  const showDimension = ['bar', 'column', 'stackedBar', 'stackedColumn', 'pie', 'donut', 'treemap', 'funnel', 'waterfall', 'slicer', 'boxplot', 'violin', 'stackedArea', 'combo'].includes(type);
-  const showMetric = ['bar', 'column', 'stackedBar', 'stackedColumn', 'line', 'area', 'pie', 'donut', 'treemap', 'funnel', 'waterfall', 'card', 'kpi', 'gauge', 'boxplot', 'histogram', 'violin', 'stackedArea', 'map'].includes(type);
-  const showScatterMetrics = type === 'scatter' || type === 'regressionScatter';
+  const showDimension = ['bar', 'column', 'stackedBar', 'stackedColumn', 'pie', 'donut', 'treemap', 'funnel', 'waterfall', 'slicer', 'stackedArea', 'combo'].includes(type);
+  const showMetric = ['bar', 'column', 'stackedBar', 'stackedColumn', 'line', 'area', 'pie', 'donut', 'treemap', 'funnel', 'waterfall', 'card', 'kpi', 'gauge', 'stackedArea', 'map'].includes(type);
+  const showScatterMetrics = type === 'scatter';
   const showComboMetrics = type === 'combo';
   const showMapSettings = type === 'map';
   const showOperation = type === 'card' || type === 'kpi';
@@ -307,11 +307,11 @@ export const PropertiesPanel: React.FC = () => {
   const showShowOther = TOP_N_TYPES.includes(type) && props.topN && props.topN !== 'All';
   const showComparison = COMPARISON_TYPES.includes(type);
   const showTimeGrain = TIME_GRAIN_TYPES.includes(type);
-  // Statistical visual specific settings
-  const showWhiskerMethod = type === 'boxplot';
-  const showBinMethod = type === 'histogram';
-  const showKernelSettings = type === 'violin';
-  const showRegressionType = type === 'regressionScatter';
+  // Statistical visual specific settings (removed — no longer supported)
+  const showWhiskerMethod = false;
+  const showBinMethod = false;
+  const showKernelSettings = false;
+  const showRegressionType = false;
 
   const scenarioFields = ScenarioFields[scenario] || [];
   const recDims = RecommendedDimensions[scenario] || [];

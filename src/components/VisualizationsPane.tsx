@@ -15,7 +15,6 @@ import {
   DataAreaRegular,
   GlobeRegular,
   GaugeRegular,
-  CalendarLtrRegular,
   ArrowTrendingLinesRegular,
   ChartMultipleRegular,
   TargetArrowRegular,
@@ -142,10 +141,6 @@ export const pbiUiKitVisuals = [
   { id: 'diverging', icon: DataBarHorizontalRegular, label: 'Diverging', tooltip: '12. Diverging Chart' },
   { id: 'slope', icon: ArrowTrendingLinesRegular, label: 'Slope', tooltip: '26. Slope Chart' },
 
-  // === STATISTICAL (CSS #8, 16) ===
-  { id: 'boxplot', icon: DataAreaRegular, label: 'Boxplot', tooltip: '8. Boxplot Chart' },
-  { id: 'histogram', icon: DataHistogramRegular, label: 'Histogram', tooltip: '16. Histogram Chart' },
-
   // === KPI & GAUGE (CSS #9, 10, 15) ===
   { id: 'bullet', icon: TargetArrowRegular, label: 'Bullet', tooltip: '9. Bullet Chart' },
   { id: 'card', icon: NumberSymbolSquareRegular, label: 'Card/KPI', tooltip: '10. Card/KPI' },
@@ -154,9 +149,7 @@ export const pbiUiKitVisuals = [
   // === COMBINATION (CSS #11) ===
   { id: 'combo', icon: ChartMultipleRegular, label: 'Combo', tooltip: '11. Combination Chart' },
 
-  // === SPECIALIZED (CSS #13, 14, 24) ===
-  { id: 'dotStrip', icon: DataScatterRegular, label: 'Dot Strip', tooltip: '13. Dot Strip Chart' },
-  { id: 'gantt', icon: CalendarLtrRegular, label: 'Gantt', tooltip: '14. Gantt Chart' },
+  // === SPECIALIZED (CSS #24) ===
   { id: 'ribbon', icon: SlideMultipleRegular, label: 'Ribbon', tooltip: '24. Ribbon Chart' },
 
   // === LINE CHARTS (CSS #17-19) ===

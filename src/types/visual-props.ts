@@ -248,6 +248,22 @@ export interface CardPhantomProps {
 }
 
 /**
+ * Nudge KPI card props
+ */
+export interface NudgeKpiPhantomProps extends CardPhantomProps {
+  /** Main metric title displayed on the card */
+  metricName?: string;
+  /** Show previous period comparison */
+  showPreviousPeriod?: boolean;
+  /** Show target comparison */
+  showTarget?: boolean;
+  /** Target value for comparison */
+  targetValue?: number;
+  /** Show year-over-year comparison */
+  showYoY?: boolean;
+}
+
+/**
  * Multi-Row Card props
  */
 export interface MultiRowCardPhantomProps {
@@ -461,6 +477,52 @@ export interface PortfolioHeaderPhantomProps {
   text?: string;
 }
 
+/**
+ * TextBox props - for section headers, descriptions, notes
+ */
+export interface TextBoxPhantomProps {
+  /** Text content */
+  text?: string;
+  /** Font size in pixels */
+  fontSize?: number;
+  /** Font family */
+  fontFamily?: PBIFontFamily;
+  /** Text color */
+  fontColor?: PBIHexColor;
+  /** Bold text */
+  bold?: boolean;
+  /** Text alignment */
+  alignment?: PBIAlignment;
+  /** Background color */
+  backgroundColor?: PBIHexColor;
+  /** Padding in pixels */
+  padding?: number;
+}
+
+/**
+ * Banner props - for report headers, branding strips
+ */
+export interface BannerPhantomProps {
+  /** Banner title */
+  title?: string;
+  /** Subtitle text */
+  subtitle?: string;
+  /** Background color */
+  backgroundColor?: PBIHexColor;
+  /** Text color */
+  fontColor?: PBIHexColor;
+  /** Title font size */
+  titleFontSize?: number;
+  /** Subtitle font size */
+  subtitleFontSize?: number;
+  /** Vertical padding */
+  paddingY?: number;
+  /** Horizontal padding */
+  paddingX?: number;
+  /** Show logo placeholder */
+  showLogo?: boolean;
+}
+
 // ============================================================================
 // Type mapping utilities
 // ============================================================================
@@ -481,6 +543,7 @@ export interface PhantomPropsMap {
   donut: PieChartPhantomProps;
   card: CardPhantomProps;
   kpi: CardPhantomProps;
+  nudgeKpi: NudgeKpiPhantomProps;
   multiRowCard: MultiRowCardPhantomProps;
   slicer: SlicerPhantomProps;
   table: TablePhantomProps;
@@ -491,21 +554,9 @@ export interface PhantomPropsMap {
   funnel: FunnelPhantomProps;
   waterfall: WaterfallPhantomProps;
   map: MapPhantomProps;
-  boxplot: StatisticalChartPhantomProps;
-  histogram: StatisticalChartPhantomProps;
-  violin: StatisticalChartPhantomProps;
-  regressionScatter: ScatterPhantomProps;
-  // Portfolio-specific
-  controversyBar: ControversyBarPhantomProps;
-  entityTable: PortfolioTablePhantomProps;
-  controversyTable: PortfolioTablePhantomProps;
-  portfolioCard: PortfolioCardPhantomProps;
-  portfolioHeader: PortfolioHeaderPhantomProps;
-  dateRangePicker: DateSlicerPhantomProps;
-  portfolioHeaderBar: PortfolioHeaderPhantomProps;
-  controversyBottomPanel: PortfolioTablePhantomProps;
-  justificationSearch: SlicerPhantomProps;
-  portfolioKPICards: PortfolioCardPhantomProps;
+  // Text/Layout visuals
+  textBox: TextBoxPhantomProps;
+  banner: BannerPhantomProps;
 }
 
 /**
@@ -525,23 +576,19 @@ export type PhantomVisualProps =
   | { type: 'combo'; props: ComboChartPhantomProps }
   | { type: 'pie' | 'donut'; props: PieChartPhantomProps }
   | { type: 'card' | 'kpi'; props: CardPhantomProps }
+  | { type: 'nudgeKpi'; props: NudgeKpiPhantomProps }
   | { type: 'multiRowCard'; props: MultiRowCardPhantomProps }
   | { type: 'slicer'; props: SlicerPhantomProps }
   | { type: 'table'; props: TablePhantomProps }
   | { type: 'matrix'; props: MatrixPhantomProps }
-  | { type: 'scatter' | 'regressionScatter'; props: ScatterPhantomProps }
+  | { type: 'scatter'; props: ScatterPhantomProps }
   | { type: 'gauge'; props: GaugePhantomProps }
   | { type: 'treemap'; props: TreemapPhantomProps }
   | { type: 'funnel'; props: FunnelPhantomProps }
   | { type: 'waterfall'; props: WaterfallPhantomProps }
   | { type: 'map'; props: MapPhantomProps }
-  | { type: 'boxplot' | 'histogram' | 'violin'; props: StatisticalChartPhantomProps }
-  | { type: 'controversyBar'; props: ControversyBarPhantomProps }
-  | { type: 'entityTable' | 'controversyTable' | 'controversyBottomPanel'; props: PortfolioTablePhantomProps }
-  | { type: 'portfolioCard' | 'portfolioKPICards'; props: PortfolioCardPhantomProps }
-  | { type: 'portfolioHeader' | 'portfolioHeaderBar'; props: PortfolioHeaderPhantomProps }
-  | { type: 'dateRangePicker'; props: DateSlicerPhantomProps }
-  | { type: 'justificationSearch'; props: SlicerPhantomProps };
+  | { type: 'textBox'; props: TextBoxPhantomProps }
+  | { type: 'banner'; props: BannerPhantomProps };
 
 /**
  * Union of all phantom props types
@@ -553,6 +600,7 @@ export type AnyPhantomProps =
   | ComboChartPhantomProps
   | PieChartPhantomProps
   | CardPhantomProps
+  | NudgeKpiPhantomProps
   | MultiRowCardPhantomProps
   | SlicerPhantomProps
   | DateSlicerPhantomProps
@@ -568,7 +616,9 @@ export type AnyPhantomProps =
   | PortfolioCardPhantomProps
   | PortfolioTablePhantomProps
   | PortfolioHeaderPhantomProps
-  | ControversyBarPhantomProps;
+  | ControversyBarPhantomProps
+  | TextBoxPhantomProps
+  | BannerPhantomProps;
 
 /**
  * Default props for visual types
@@ -582,6 +632,7 @@ export const DEFAULT_PHANTOM_PROPS: Partial<Record<VisualType, AnyPhantomProps>>
   donut: { operation: 'sum', innerRadius: 50 },
   card: { operation: 'sum' },
   kpi: { operation: 'sum', goalText: 'vs prev' },
+  nudgeKpi: { operation: 'sum', showPreviousPeriod: true, showTarget: true, showYoY: true },
   slicer: { mode: 'Dropdown', multiSelect: false },
   table: { maxRows: 100 },
   scatter: { showTrendLine: false },
@@ -589,4 +640,6 @@ export const DEFAULT_PHANTOM_PROPS: Partial<Record<VisualType, AnyPhantomProps>>
   treemap: { operation: 'sum' },
   funnel: { operation: 'sum' },
   waterfall: { operation: 'sum', showTotal: true },
+  textBox: { fontSize: 14, bold: false, alignment: 'left' },
+  banner: { titleFontSize: 24, subtitleFontSize: 14, paddingY: 16, paddingX: 24, backgroundColor: '#0078D4', fontColor: '#FFFFFF' },
 };

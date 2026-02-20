@@ -101,7 +101,23 @@ export function buildSortDefinition(
   table: string,
   field: string,
   direction: 'Ascending' | 'Descending' = 'Descending'
-): Record<string, unknown> {
+): {
+  sort: Array<{
+    field: {
+      Aggregation: {
+        Expression: {
+          Column: {
+            Expression: { SourceRef: { Entity: string } };
+            Property: string;
+          };
+        };
+        Function: number;
+      };
+    };
+    direction: 'Ascending' | 'Descending';
+  }>;
+  isDefaultSort: boolean;
+} {
   return {
     sort: [
       {
@@ -217,9 +233,10 @@ export function mapToPBIPQueryState(
   const operation = (props.operation || 'sum').toString().toLowerCase();
   const factTable = getFactTableForScenario(scenario);
   const scenarioFields = ScenarioFields[scenario as ScenarioType] || [];
-  const defaultCategory = scenarioFields.find(
-    (f) => f.role === 'Category' || f.role === 'Entity' || f.role === 'Geography'
-  )?.name;
+  const defaultCategory =
+    scenarioFields.find((f) => f.role === 'Category')?.name ||
+    scenarioFields.find((f) => f.role === 'Entity')?.name ||
+    scenarioFields.find((f) => f.role === 'Geography')?.name;
   const defaultTime = scenarioFields.find((f) => f.role === 'Time')?.name;
 
   const queryState: Record<string, unknown> = {};
@@ -267,11 +284,8 @@ export function mapToPBIPQueryState(
   switch (item.type) {
     case 'bar':
     case 'column':
-    case 'stackedBar':
-    case 'stackedColumn':
     case 'groupedBar':
-    case 'lollipop':
-    case 'gantt': {
+    case 'lollipop': {
       const dimField = props.dimension || defaultCategory;
       const dim = resolveColumn(dimField, scenario);
       const metric = resolveMeasure(props.metric, operation, measures, factTable);
@@ -286,6 +300,36 @@ export function mapToPBIPQueryState(
           ],
         };
         (queryState as Record<string, unknown>)._sortDefinition = { isDefaultSort: true };
+      }
+      break;
+    }
+
+    case 'stackedBar':
+    case 'stackedColumn': {
+      // Stacked charts require a Series field to create the stacked segments
+      const dimField = props.dimension || defaultCategory;
+      const dim = resolveColumn(dimField, scenario);
+      const metric = resolveMeasure(props.metric, operation, measures, factTable);
+      const seriesField = props.series;
+      const series = resolveColumn(seriesField, scenario);
+
+      if (dim)
+        queryState.Category = {
+          projections: [buildQueryProjection(dim.table, dim.column, false, { active: true })],
+        };
+      if (metric) {
+        queryState.Y = {
+          projections: [
+            buildQueryProjection(metric.table, metric.measure, true, { displayName: metric.measure }),
+          ],
+        };
+        (queryState as Record<string, unknown>)._sortDefinition = { isDefaultSort: true };
+      }
+      // Series field creates the stacked segments (Legend in PBI terminology)
+      if (series) {
+        queryState.Series = {
+          projections: [buildQueryProjection(series.table, series.column, false)],
+        };
       }
       break;
     }
@@ -308,7 +352,18 @@ export function mapToPBIPQueryState(
     }
 
     case 'pie':
-    case 'donut':
+    case 'donut': {
+      const dimField = props.dimension || defaultCategory;
+      const dim = resolveColumn(dimField, scenario);
+      const metric = resolveMeasure(props.metric, operation, measures, factTable);
+      if (dim)
+        queryState.Legend = {
+          projections: [buildQueryProjection(dim.table, dim.column, false, { active: true })],
+        };
+      if (metric) queryState.Y = { projections: [buildQueryProjection(metric.table, metric.measure, true)] };
+      break;
+    }
+
     case 'treemap':
     case 'ribbon': {
       const dimField = props.dimension || defaultCategory;
@@ -379,9 +434,8 @@ export function mapToPBIPQueryState(
       break;
     }
 
-    case 'scatter':
-    case 'regressionScatter':
-    case 'dotStrip': {
+    case 'scatter': {
+      // Scatter plots use xMetric and yMetric
       const x = resolveMeasure(props.xMetric, operation, measures, factTable);
       const y = resolveMeasure(props.yMetric, operation, measures, factTable);
       const size = resolveMeasure(props.sizeMetric, operation, measures, factTable);
@@ -411,14 +465,22 @@ export function mapToPBIPQueryState(
         queryState.Category = {
           projections: [buildQueryProjection(dim.table, dim.column, false, { active: true })],
         };
-      if (barMetric)
-        queryState.Y = {
-          projections: [buildQueryProjection(barMetric.table, barMetric.measure, true, { displayName: 'Bars' })],
-        };
-      if (lineMetric)
-        queryState.Y2 = {
-          projections: [buildQueryProjection(lineMetric.table, lineMetric.measure, true, { displayName: 'Line' })],
-        };
+      if (barMetric) {
+        const barProjection = buildQueryProjection(barMetric.table, barMetric.measure, true, {
+          displayName: 'Bars',
+        });
+        queryState.ColumnY = { projections: [barProjection] };
+        // Backward compatibility for any downstream consumers expecting legacy slots.
+        queryState.Y = { projections: [barProjection] };
+      }
+      if (lineMetric) {
+        const lineProjection = buildQueryProjection(lineMetric.table, lineMetric.measure, true, {
+          displayName: 'Line',
+        });
+        queryState.LineY = { projections: [lineProjection] };
+        // Backward compatibility for any downstream consumers expecting legacy slots.
+        queryState.Y2 = { projections: [lineProjection] };
+      }
       (queryState as Record<string, unknown>)._sortDefinition = { isDefaultSort: true };
       break;
     }
@@ -461,10 +523,8 @@ export function mapToPBIPQueryState(
       break;
     }
 
-    case 'slicer':
-    case 'dateRangePicker':
-    case 'justificationSearch': {
-      const dim = resolveColumn(props.dimension || (item.type === 'dateRangePicker' ? 'Date' : undefined), scenario);
+    case 'slicer': {
+      const dim = resolveColumn(props.dimension, scenario);
       if (dim)
         queryState.Values = {
           projections: [buildQueryProjection(dim.table, dim.column, false, { active: true })],
@@ -472,9 +532,7 @@ export function mapToPBIPQueryState(
       break;
     }
 
-    case 'multiRowCard':
-    case 'portfolioCard':
-    case 'portfolioKPICards': {
+    case 'multiRowCard': {
       const dimField = props.dimension || defaultCategory;
       const dim = resolveColumn(dimField, scenario);
       const metric = resolveMeasure(props.metric, operation, measures, factTable);
@@ -489,41 +547,8 @@ export function mapToPBIPQueryState(
       break;
     }
 
-    case 'entityTable':
-    case 'controversyTable':
-    case 'controversyBottomPanel': {
-      const columns =
-        props.columns && props.columns.length > 0
-          ? props.columns
-          : getDefaultTableColumns(scenario as ScenarioType);
-      const projections: Record<string, unknown>[] = [];
-
-      columns.forEach((col: string) => {
-        const dimension = resolveColumn(col, scenario);
-        if (dimension) {
-          projections.push(buildQueryProjection(dimension.table, dimension.column, false));
-          return;
-        }
-        const measure = resolveMeasure(col, operation, measures, factTable);
-        if (measure) projections.push(buildQueryProjection(measure.table, measure.measure, true));
-      });
-
-      if (projections.length > 0) queryState.Values = { projections };
-      break;
-    }
-
-    case 'controversyBar': {
-      const dimField = props.dimension || defaultCategory;
-      const dim = resolveColumn(dimField, scenario);
-      const metric = resolveMeasure(props.metric, operation, measures, factTable);
-
-      if (dim) queryState.Category = { projections: [buildQueryProjection(dim.table, dim.column, false)] };
-      if (metric) queryState.Y = { projections: [buildQueryProjection(metric.table, metric.measure, true)] };
-      break;
-    }
-
-    case 'portfolioHeader':
-    case 'portfolioHeaderBar':
+    case 'textBox':
+    case 'banner':
       // Text visuals - no query state needed
       break;
 
@@ -563,21 +588,6 @@ export function mapToPBIPQueryState(
       break;
     }
 
-    case 'boxplot':
-    case 'histogram': {
-      // Statistical visuals use dimension + metric
-      const dimField = props.dimension || defaultCategory;
-      const dim = resolveColumn(dimField, scenario);
-      const metric = resolveMeasure(props.metric, operation, measures, factTable);
-
-      if (dim)
-        queryState.Category = {
-          projections: [buildQueryProjection(dim.table, dim.column, false, { active: true })],
-        };
-      if (metric) queryState.Y = { projections: [buildQueryProjection(metric.table, metric.measure, true)] };
-      break;
-    }
-
     default:
       // Unknown type - return empty query state
       break;
@@ -602,10 +612,81 @@ export function mapToPBIPVisualObjects(
   const objects: Record<string, unknown[]> = {};
   const primaryColor = themeColors && themeColors.length > 0 ? themeColors[0] : '#118DFF';
 
-  // Special handling for textbox visuals
+  // Special handling for textbox visuals (textBox and banner)
   if (pbiType === 'textbox') {
     const propsAny = (item.props || {}) as Record<string, any>;
-    const textContent = item.title || propsAny.title || propsAny.text || '';
+
+    // Banner has title + subtitle
+    if (item.type === 'banner') {
+      const title = propsAny.title || item.title || 'Report Title';
+      const subtitle = propsAny.subtitle || '';
+      const backgroundColor = propsAny.backgroundColor || '#0078D4';
+      const fontColor = propsAny.fontColor || '#FFFFFF';
+      const titleFontSize = propsAny.titleFontSize || 24;
+      const subtitleFontSize = propsAny.subtitleFontSize || 14;
+
+      const textRuns: any[] = [
+        {
+          value: title,
+          textStyle: {
+            fontFamily: 'Segoe UI Semibold',
+            fontSize: `${titleFontSize}px`,
+            fontWeight: 'bold',
+            color: fontColor,
+          },
+        },
+      ];
+
+      if (subtitle) {
+        textRuns.push({
+          value: '\n' + subtitle,
+          textStyle: {
+            fontFamily: 'Segoe UI',
+            fontSize: `${subtitleFontSize}px`,
+            color: fontColor,
+          },
+        });
+      }
+
+      objects.general = [
+        {
+          properties: {
+            paragraphs: {
+              expr: {
+                Literal: {
+                  Value: JSON.stringify([
+                    {
+                      textRuns,
+                      horizontalTextAlignment: 'left',
+                    },
+                  ]),
+                },
+              },
+            },
+          },
+        },
+      ];
+
+      objects.background = [
+        {
+          properties: {
+            color: makeSolidColor(backgroundColor),
+            show: makeLiteral('true'),
+          },
+        },
+      ];
+
+      return objects;
+    }
+
+    // TextBox - simple text content
+    const textContent = propsAny.text || item.title || 'Text Box';
+    const fontSize = propsAny.fontSize || 14;
+    const fontColor = propsAny.fontColor || '#252423';
+    const bold = propsAny.bold || false;
+    const alignment = propsAny.alignment || 'left';
+    const backgroundColor = propsAny.backgroundColor;
+
     objects.general = [
       {
         properties: {
@@ -619,12 +700,13 @@ export function mapToPBIPVisualObjects(
                         value: textContent,
                         textStyle: {
                           fontFamily: 'Segoe UI',
-                          fontSize: '14px',
-                          fontWeight: 'bold',
+                          fontSize: `${fontSize}px`,
+                          fontWeight: bold ? 'bold' : 'normal',
+                          color: fontColor,
                         },
                       },
                     ],
-                    horizontalTextAlignment: 'left',
+                    horizontalTextAlignment: alignment,
                   },
                 ]),
               },
@@ -633,6 +715,18 @@ export function mapToPBIPVisualObjects(
         },
       },
     ];
+
+    if (backgroundColor && backgroundColor !== 'transparent') {
+      objects.background = [
+        {
+          properties: {
+            color: makeSolidColor(backgroundColor),
+            show: makeLiteral('true'),
+          },
+        },
+      ];
+    }
+
     return objects;
   }
 
@@ -1086,7 +1180,6 @@ function buildDefaultVisualObjects(
     'stackedArea',
     'waterfall',
     'scatter',
-    'controversyBar',
   ];
   if (axisTypes.includes(item.type)) {
     objects.categoryAxis = [

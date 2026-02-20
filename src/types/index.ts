@@ -142,6 +142,24 @@ export interface SocialPost {
   sentimentScore: number; // -1 to 1
 }
 
+export type SemanticRole = 'Time' | 'Entity' | 'Geography' | 'Category' | 'Measure' | 'Identifier';
+
+/**
+ * Represents a field in a data model, with its semantic role.
+ */
+export interface Field {
+  /** The name of the field (e.g., "revenue", "store_name") */
+  name: string;
+  /** The semantic role of the field */
+  role: SemanticRole;
+  /** The data type of the field */
+  dataType: 'string' | 'number' | 'Date' | 'boolean';
+  /** Optional: A description for the field */
+  description?: string;
+  /** Optional: The DAX expression for a measure */
+  expression?: string;
+}
+
 export type Scenario = 'Retail' | 'SaaS' | 'HR' | 'Logistics' | 'Social' | 'Portfolio' | 'Finance';
 export type LayoutMode = 'Free' | 'Standard';
 export type Archetype = 'Executive' | 'Diagnostic' | 'Operational';
@@ -180,27 +198,12 @@ export type VisualType =
   | 'gauge'
   | 'card'
   | 'kpi'
+  | 'nudgeKpi'
   | 'multiRowCard'
   | 'table'
   | 'matrix'
   | 'waterfall'
   | 'slicer'
-  // Statistical visuals
-  | 'boxplot'
-  | 'histogram'
-  | 'violin'
-  | 'regressionScatter'
-  // Portfolio-specific visuals
-  | 'controversyBar'
-  | 'entityTable'
-  | 'controversyTable'
-  | 'portfolioCard'
-  | 'portfolioHeader'
-  | 'dateRangePicker'
-  | 'portfolioHeaderBar'
-  | 'controversyBottomPanel'
-  | 'justificationSearch'
-  | 'portfolioKPICards'
   // Bar chart variants
   | 'groupedBar'
   | 'lollipop'
@@ -212,8 +215,6 @@ export type VisualType =
   | 'lineStepped'
   // Specialized visuals
   | 'bullet'
-  | 'dotStrip'
-  | 'gantt'
   | 'ribbon'
   // Map variants
   | 'mapBubble'
@@ -234,6 +235,7 @@ export type {
   ComboChartPhantomProps,
   PieChartPhantomProps,
   CardPhantomProps,
+  NudgeKpiPhantomProps,
   SlicerPhantomProps,
   TablePhantomProps,
   MatrixPhantomProps,

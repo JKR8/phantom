@@ -36,28 +36,12 @@ export const PBI_VISUAL_TYPES: Record<VisualType, string> = {
   gauge: 'gauge',
   card: 'cardVisual', // New card visual with reference labels (GA Nov 2025)
   kpi: 'kpi', // Legacy KPI visual (still used for some scenarios)
+  nudgeKpi: 'cardVisual',
   multiRowCard: 'cardVisual', // New cardVisual supports multiple values
   table: 'tableEx',
   matrix: 'pivotTable',
   waterfall: 'waterfallChart',
   slicer: 'slicer',
-  // Statistical visuals - reference custom visual (PhantomStatisticalVisual)
-  // Users need to install phantom-stats-pbiviz for these to render in Power BI
-  boxplot: 'PhantomStatisticalVisual',
-  histogram: 'PhantomStatisticalVisual',
-  violin: 'PhantomStatisticalVisual',
-  regressionScatter: 'PhantomStatisticalVisual',
-  // Portfolio-specific visuals map to closest PBI equivalents
-  controversyBar: 'clusteredBarChart',
-  entityTable: 'tableEx',
-  controversyTable: 'tableEx',
-  portfolioCard: 'card',
-  portfolioHeader: 'textbox',
-  dateRangePicker: 'slicer',
-  portfolioHeaderBar: 'textbox',
-  controversyBottomPanel: 'tableEx',
-  justificationSearch: 'slicer',
-  portfolioKPICards: 'multiRowCard',
   // Bar chart variants - map to clustered bar
   groupedBar: 'clusteredBarChart',
   lollipop: 'clusteredBarChart',
@@ -69,12 +53,13 @@ export const PBI_VISUAL_TYPES: Record<VisualType, string> = {
   lineStepped: 'lineChart',
   // Specialized visuals mapped to closest PBI equivalents
   bullet: 'gauge',
-  dotStrip: 'scatterChart',
-  gantt: 'PhantomStatisticalVisual',
   ribbon: 'ribbonChart',
   // Map variants
   mapBubble: 'filledMap',
   mapChoropleth: 'filledMap',
+  // Text/Layout visuals
+  textBox: 'textbox',
+  banner: 'textbox', // Banner uses textbox with custom styling
 };
 
 export interface PBIPosition {
@@ -403,40 +388,6 @@ function generateProjections(visual: PBIVisualConfig, scenario: Scenario): objec
       }
       break;
 
-    // Statistical visuals
-    case 'boxplot':
-    case 'violin':
-      if (props.dimension) {
-        const dimRef = toColumnRef(props.dimension);
-        if (dimRef) projections['Category'] = [{ queryRef: dimRef }];
-      }
-      if (props.metric) {
-        const metricRef = toColumnRef(props.metric); // Raw values, not aggregated
-        if (metricRef) projections['Values'] = [{ queryRef: metricRef }];
-      }
-      break;
-
-    case 'histogram':
-      if (props.metric) {
-        const metricRef = toColumnRef(props.metric); // Raw values for binning
-        if (metricRef) projections['Values'] = [{ queryRef: metricRef }];
-      }
-      break;
-
-    case 'regressionScatter':
-      if (props.dimension) {
-        const dimRef = toColumnRef(props.dimension);
-        if (dimRef) projections['Category'] = [{ queryRef: dimRef }];
-      }
-      if (props.xMetric) {
-        const xRef = toAggregateRef(props.xMetric);
-        if (xRef) projections['X'] = [{ queryRef: xRef }];
-      }
-      if (props.yMetric) {
-        const yRef = toAggregateRef(props.yMetric);
-        if (yRef) projections['Y'] = [{ queryRef: yRef }];
-      }
-      break;
   }
 
   return projections;

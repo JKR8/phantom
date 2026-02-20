@@ -1,9 +1,11 @@
-import { ScenarioType, ScenarioFields } from './semanticLayer';
+import { ScenarioType, ScenarioFields, RecommendedMeasures, RecommendedDimensions } from './semanticLayer';
 
 export interface BindingRecipe {
   dimension?: string;
   metric?: string;
+  metricName?: string;
   metric2?: string;
+  series?: string; // For stacked/grouped charts - creates segments
   xMetric?: string;
   yMetric?: string;
   sizeMetric?: string;
@@ -37,33 +39,52 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
   const fields = ScenarioFields[scenario];
   if (!fields) return {};
 
-  const getRole = (role: string) => fields.find(f => f.role === role)?.name;
-  const getRoles = (role: string) => fields.filter(f => f.role === role).map(f => f.name);
-  const getRoleFallback = (roles: string[]) => {
-    for (const r of roles) {
-      const field = fields.find(f => f.role === r);
-      if (field) return field.name;
-    }
-    return undefined;
-  };
+  const fieldNames = new Set(fields.map(f => f.name));
 
-  const primaryMeasure = getRole('Measure');
-  const secondaryMeasure = fields.filter(f => f.role === 'Measure')[1]?.name || primaryMeasure;
-  const tertiaryMeasure = fields.filter(f => f.role === 'Measure')[2]?.name || secondaryMeasure;
+  // Find the first available measures from the recommended list
+  const availableMeasures = RecommendedMeasures[scenario].filter(m => fieldNames.has(m));
+  const coreMeasures = availableMeasures.filter((m) => !m.endsWith('PL') && !m.endsWith('PY'));
+  const rankedMeasures = coreMeasures.length > 0 ? coreMeasures : availableMeasures;
+  const primaryMeasure = rankedMeasures[0];
+  const secondaryMeasure = rankedMeasures[1] || primaryMeasure;
+  const tertiaryMeasure = rankedMeasures[2] || secondaryMeasure;
 
-  const primaryCategory = getRoleFallback(['Category', 'Entity', 'Geography']);
-  const timeDimension = getRole('Time');
+  // Find the first available dimensions from the recommended list
+  const availableDimensions = RecommendedDimensions[scenario].filter(d => fieldNames.has(d));
+  const primaryCategory = availableDimensions[0];
+
+  // Find the time dimension by its role, as it's usually unique
+  const timeDimension = fields.find(f => f.role === 'Time')?.name;
+  
+  // Find a geo dimension by its role
+  const geoDimension = fields.find(f => f.role === 'Geography')?.name;
+
+  // Find a secondary category for stacking/grouping that is different from the primary
+  const secondaryCategory = availableDimensions.find(d => d !== primaryCategory && d !== timeDimension);
+  
+  const allMeasures = rankedMeasures.length > 0
+    ? rankedMeasures
+    : fields.filter(f => f.role === 'Measure').map(f => f.name);
 
   switch (visualType) {
     case 'bar':
     case 'column':
-    case 'stackedBar':
-    case 'stackedColumn':
     case 'groupedBar':
     case 'lollipop':
       return {
         dimension: primaryCategory,
         metric: primaryMeasure,
+        topN: 5,
+        sort: 'desc',
+        showOther: true,
+      };
+
+    case 'stackedBar':
+    case 'stackedColumn':
+      return {
+        dimension: primaryCategory,
+        metric: primaryMeasure,
+        series: secondaryCategory, // Required for stacked segments
         topN: 5,
         sort: 'desc',
         showOther: true,
@@ -82,8 +103,9 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
 
     case 'stackedArea':
       return {
-        dimension: primaryCategory,
+        dimension: timeDimension || primaryCategory,
         metric: primaryMeasure,
+        series: secondaryCategory,
         timeGrain: 'month',
       };
 
@@ -91,7 +113,7 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
       return {
         dimension: primaryCategory,
         barMetric: primaryMeasure,
-        lineMetric: secondaryMeasure,
+        lineMetric: availableMeasures[1] || secondaryMeasure,
         topN: 5,
         sort: 'desc',
       };
@@ -99,7 +121,7 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
     case 'map':
     case 'mapChoropleth':
       return {
-        geoDimension: getRole('Geography') || primaryCategory,
+        geoDimension: geoDimension || primaryCategory,
         metric: primaryMeasure,
         mapType: 'us',
         displayMode: 'choropleth',
@@ -107,7 +129,7 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
 
     case 'mapBubble':
       return {
-        geoDimension: getRole('Geography') || primaryCategory,
+        geoDimension: geoDimension || primaryCategory,
         metric: primaryMeasure,
         mapType: 'us',
         displayMode: 'bubble',
@@ -153,18 +175,6 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
         metric: primaryMeasure,
       };
 
-    case 'dotStrip':
-      return {
-        dimension: primaryCategory,
-        metric: primaryMeasure,
-      };
-
-    case 'gantt':
-      return {
-        dimension: primaryCategory,
-        metric: primaryMeasure,
-      };
-
     case 'scatter':
       return {
         xMetric: primaryMeasure,
@@ -177,7 +187,6 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
     case 'card':
     case 'kpi':
     case 'gauge':
-    case 'portfolioCard':
     case 'bullet':
       return {
         metric: primaryMeasure,
@@ -195,14 +204,14 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
 
     case 'multiRowCard':
       return {
-        fields: getRoles('Measure').slice(0, 3)
+        fields: allMeasures.slice(0, 3)
       };
 
     case 'table':
       return {
         columns: [
             primaryCategory,
-            ...getRoles('Measure').slice(0, 3)
+            ...allMeasures.slice(0, 3)
         ].filter(Boolean) as string[],
         maxRows: 25
       };
@@ -224,39 +233,6 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
       return {
         dimension: primaryCategory
       };
-
-    // Statistical visuals
-    case 'boxplot':
-      return {
-        dimension: primaryCategory,
-        metric: primaryMeasure,
-      };
-
-    case 'histogram':
-      return {
-        metric: primaryMeasure,
-        dimension: primaryCategory, // Optional: for filtering
-      };
-
-    case 'violin':
-      return {
-        dimension: primaryCategory,
-        metric: primaryMeasure,
-      };
-
-    case 'regressionScatter':
-      return {
-        xMetric: primaryMeasure,
-        yMetric: secondaryMeasure,
-        dimension: primaryCategory,
-      };
-
-    // Portfolio-specific visuals
-    case 'controversyBar':
-      return { dimension: 'Group' };
-    case 'entityTable':
-    case 'controversyTable':
-      return { maxRows: 10 };
 
     // Text/Layout visuals
     case 'textBox':
@@ -324,7 +300,6 @@ export const generateSmartTitle = (
     case 'card':
     case 'kpi':
     case 'gauge':
-    case 'portfolioCard':
     case 'bullet':
       return met ? `Total ${met}` : 'KPI';
 
@@ -354,32 +329,11 @@ export const generateSmartTitle = (
     case 'slicer':
       return dim ? `Filter by ${dim}` : 'Slicer';
 
-    // Statistical visuals
-    case 'boxplot':
-      return met && dim ? `${met} by ${dim}` : 'Boxplot';
-
-    case 'histogram':
-      return met ? `${met} Distribution` : 'Histogram';
-
-    case 'violin':
-      return met && dim ? `${met} by ${dim}` : 'Violin';
-
-    case 'regressionScatter':
-      return recipe.xMetric && recipe.yMetric
-        ? `${recipe.xMetric} vs ${recipe.yMetric} (Regression)`
-        : 'Regression';
-
     // Comparison charts
     case 'barbell':
     case 'diverging':
     case 'slope':
       return met ? `${met} Comparison` : 'Comparison';
-
-    case 'dotStrip':
-      return met && dim ? `${met} by ${dim}` : 'Dot Strip';
-
-    case 'gantt':
-      return dim ? `${dim} Timeline` : 'Timeline';
 
     // Text/Layout visuals
     case 'textBox':

@@ -22,7 +22,6 @@ import {
   DocumentRegular,
   GridRegular,
   ResizeImageRegular,
-  MathFormulaRegular,
   DesignIdeasRegular,
   ClipboardTextEditRegular,
   WhiteboardRegular,
@@ -33,7 +32,6 @@ import { PropertiesPanel } from './PropertiesPanel';
 import { SpecificationPanel } from './SpecificationPanel';
 import { DataModelPanel } from './DataModelPanel';
 import { DataModelPane } from './DataModelPane';
-import { StatisticalPane } from './StatisticalPane';
 import { PBIUiKitPane } from './PBIUiKitPane';
 import { UserMenu } from './UserMenu';
 import { SaveDashboardButton } from './SaveDashboardDialog';
@@ -233,7 +231,6 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
   const setDashboardMeta = useStore((state) => state.setDashboardMeta);
   const [showDataModelPane, setShowDataModelPane] = React.useState(false);
   const [showDataModelFull, setShowDataModelFull] = React.useState(false);
-  const [showStatistical, setShowStatistical] = React.useState(false);
   const [showPBIUiKit, setShowPBIUiKit] = React.useState(false);
   const [showSpec, setShowSpec] = React.useState(false);
   const [editingTitle, setEditingTitle] = React.useState(false);
@@ -397,8 +394,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
               onClick={() => {
                 setShowDataModelPane(!showDataModelPane);
                 setShowDataModelFull(false);
-                setShowStatistical(false);
-                setShowPBIUiKit(false);
+                               setShowPBIUiKit(false);
               }}
               onDoubleClick={() => {
                 setShowDataModelFull(!showDataModelFull);
@@ -407,24 +403,17 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
               title="Data Model (double-click for schema view)"
             />
             <Button
-              icon={<MathFormulaRegular />}
-              appearance="subtle"
-              style={showStatistical ? navBtnActiveStyle : navBtnStyle}
-              onClick={() => { setShowStatistical(!showStatistical); setShowPBIUiKit(false); setShowDataModelPane(false); }}
-              title="Statistical Visuals"
-            />
-            <Button
               icon={<DesignIdeasRegular />}
               appearance="subtle"
               style={showPBIUiKit ? navBtnActiveStyle : navBtnStyle}
-              onClick={() => { setShowPBIUiKit(!showPBIUiKit); setShowStatistical(false); setShowDataModelPane(false); setShowSpec(false); }}
+              onClick={() => { setShowPBIUiKit(!showPBIUiKit); setShowDataModelPane(false); setShowSpec(false); }}
               title="PBI UI Kit 2.0"
             />
             <Button
               icon={<ClipboardTextEditRegular />}
               appearance="subtle"
               style={showSpec ? navBtnActiveStyle : navBtnStyle}
-              onClick={() => { setShowSpec(!showSpec); setShowPBIUiKit(false); setShowStatistical(false); setShowDataModelPane(false); }}
+              onClick={() => { setShowSpec(!showSpec); setShowPBIUiKit(false); setShowDataModelPane(false); }}
               title="Dashboard Specification"
             />
           </nav>
@@ -432,11 +421,6 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
         {showDataModelPane && !readOnly && !showDataModelFull && (
           <div className={styles.ffmaPane}>
             <DataModelPane />
-          </div>
-        )}
-        {showStatistical && !readOnly && !showDataModelFull && !showDataModelPane && (
-          <div className={styles.ffmaPane}>
-            <StatisticalPane />
           </div>
         )}
         {showPBIUiKit && !readOnly && !showDataModelFull && !showDataModelPane && (
