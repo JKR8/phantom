@@ -137,7 +137,6 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
 
   const finalizeDrop = (visualType: string, gridX: number, gridY: number, w: number, h: number) => {
     const id = `visual-${Date.now()}`;
-    console.log('[finalizeDrop] Adding item:', { visualType, gridX, gridY, w, h });
 
     const recipe = getRecipeForVisual(visualType, scenario as ScenarioType);
     const props = { ...recipe };
@@ -156,8 +155,6 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
   const findSlotForPosition = (dropX: number, dropY: number) => {
     const slots = SlotLayouts[selectedArchetype];
 
-    console.log('[findSlotForPosition] Input:', { dropX, dropY, archetype: selectedArchetype });
-
     // First check if we dropped directly inside a slot
     const hitSlot = slots.find(s =>
       dropX >= s.x && dropX < s.x + s.w &&
@@ -165,7 +162,6 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
     );
 
     if (hitSlot) {
-      console.log('[findSlotForPosition] Hit slot:', hitSlot.name, 'at y=', hitSlot.y);
       return hitSlot;
     }
 
@@ -183,7 +179,6 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
         closest = s;
       }
     });
-    console.log('[findSlotForPosition] Closest slot:', closest.name);
     return closest;
   };
 
@@ -335,12 +330,6 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
   };
 
   const onLayoutChange = (layout: any) => {
-    const y0Items = layout.filter((l: any) => l.y === 0);
-    const yPositiveItems = layout.filter((l: any) => l.y > 0);
-    console.log('[onLayoutChange] y=0 items:', y0Items.length, 'y>0 items:', yPositiveItems.length);
-    if (yPositiveItems.length > 0) {
-      console.log('[onLayoutChange] y>0 items:', JSON.stringify(yPositiveItems.map((l: any) => ({ i: l.i, y: l.y }))));
-    }
     if (mounted) {
       updateLayout(layout);
     }
@@ -352,11 +341,8 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
     e.preventDefault();
     e.stopPropagation();
 
-    console.log('[handleCanvasDrop] Called');
-
     // Guard against double handling (both handleDrop and handleCanvasDrop firing)
     if (dropHandledRef.current) {
-      console.log('[handleCanvasDrop] Skipping - already handled');
       dropHandledRef.current = false;
       return;
     }
@@ -391,7 +377,6 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
 
       gridX = Math.max(0, Math.floor(relX / (colWidth + margin)));
       gridY = Math.max(0, Math.floor(relY / (ROW_HEIGHT + GRID_MARGIN[1])));
-      console.log('[handleCanvasDrop] Calculated grid:', { relX, relY, gridX, gridY, colWidth, canvasMode });
       // Clamp to grid bounds (only for Free mode; Standard mode snaps to slots)
       if (layoutMode !== 'Standard') {
         gridX = Math.min(gridX, GRID_COLS - 16);
@@ -407,12 +392,10 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
     if (layoutMode === 'Standard') {
       try {
         const slot = findSlotForPosition(gridX, gridY);
-        console.log('[handleCanvasDrop] Slot found:', slot);
         gridX = slot.x;
         gridY = slot.y;
         finalW = slot.w;
         finalH = slot.h;
-        console.log('[handleCanvasDrop] After snap:', { gridX, gridY, finalW, finalH });
       } catch (err) {
         console.error('[handleCanvasDrop] Error during snap:', err);
       }
@@ -550,9 +533,6 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
           {items.map((item) => {
             // Hide menu for slicers and search controls in Portfolio scenario
             const hideMenu = false;
-            if (item.layout.y > 0) {
-              console.log('[render] Item with y>0:', item.id, 'y=', item.layout.y);
-            }
             return (
               <div key={item.id} data-grid={{ x: item.layout.x, y: item.layout.y, w: item.layout.w, h: item.layout.h }}>
                 <VisualContainer
