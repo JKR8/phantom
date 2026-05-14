@@ -6,7 +6,7 @@ import { GridLayout, useContainerWidth, getCompactor } from 'react-grid-layout';
 const noCompactor = getCompactor(null);
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
-import { makeStyles, shorthands } from '@fluentui/react-components';
+import { makeStyles, mergeClasses, shorthands } from '@fluentui/react-components';
 import { useStore } from '../store/useStore';
 import { VisualContainer } from './VisualContainer';
 import { dragState } from './VisualizationsPane';
@@ -19,7 +19,6 @@ import { Slicer } from './Slicer';
 import { LineChart } from './LineChart';
 import { StackedBarChart } from './StackedBarChart';
 import { StackedColumnChart } from './StackedColumnChart';
-import { ClusteredColumnChart } from './ClusteredColumnChart';
 import { AreaChart } from './AreaChart';
 import { StackedAreaChart } from './StackedAreaChart';
 import { ComboChart } from './ComboChart';
@@ -54,6 +53,7 @@ import { QuickShapeStrip } from './QuickShapeStrip';
 import { VariantPicker, VARIANT_PARENT_TYPES } from './VariantPicker';
 // Vega-Lite components for Power BI parity
 import { VegaBarChart, VegaLineChart } from '../vega';
+import { ObservableBarChart, ObservableDonutChart, ObservableKPICard, ObservableLineChart, ObservableScatterChart } from './visuals';
 // Text/Layout components
 import { TextBox } from './TextBox';
 import { Banner } from './Banner';
@@ -190,15 +190,14 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
   const renderVisual = (item: any) => {
     switch (item.type) {
       case 'bar':
-        // Use Vega-Lite rendering when enabled (for Power BI parity)
+        // Default renderer is the upgraded Observable Plot visual system.
         return useVegaRendering
           ? <VegaBarChart {...item.props} horizontal={true} />
-          : <BarChart {...item.props} />;
+          : <ObservableBarChart {...item.props} horizontal={true} />;
       case 'column':
-        // Use Vega-Lite rendering when enabled (vertical bars)
         return useVegaRendering
           ? <VegaBarChart {...item.props} horizontal={false} />
-          : <ClusteredColumnChart {...item.props} />;
+          : <ObservableBarChart {...item.props} horizontal={false} />;
       case 'stackedBar':
         return <StackedBarChart {...item.props} />;
       case 'stackedColumn':
@@ -206,14 +205,17 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
       case 'groupedBar':
         return <BarChart {...item.props} variant="grouped" />;
       case 'lollipop':
-        return <BarChart {...item.props} variant="lollipop" />;
+        return useVegaRendering
+          ? <BarChart {...item.props} variant="lollipop" />
+          : <ObservableBarChart {...item.props} horizontal={true} variant="lollipop" />;
       case 'line':
-        // Use Vega-Lite rendering when enabled (for Power BI parity)
         return useVegaRendering
           ? <VegaLineChart {...item.props} />
-          : <LineChart {...item.props} />;
+          : <ObservableLineChart {...item.props} />;
       case 'area':
-        return <AreaChart {...item.props} />;
+        return useVegaRendering
+          ? <AreaChart {...item.props} />
+          : <ObservableLineChart {...item.props} mode="area" />;
       case 'stackedArea':
         return <StackedAreaChart {...item.props} />;
       case 'combo':
@@ -221,11 +223,17 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
       case 'map':
         return <MapChart {...item.props} />;
       case 'scatter':
-        return <ScatterChart {...item.props} />;
+        return useVegaRendering
+          ? <ScatterChart {...item.props} />
+          : <ObservableScatterChart {...item.props} />;
       case 'pie':
-        return <PieChart {...item.props} />;
+        return useVegaRendering
+          ? <PieChart {...item.props} />
+          : <ObservableDonutChart {...item.props} donut={false} />;
       case 'donut':
-        return <DonutChart {...item.props} />;
+        return useVegaRendering
+          ? <DonutChart {...item.props} />
+          : <ObservableDonutChart {...item.props} donut={true} />;
       case 'funnel':
         return <FunnelChart {...item.props} />;
       case 'treemap':
@@ -233,7 +241,9 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
       case 'gauge':
         return <GaugeChart {...item.props} />;
       case 'card':
-        return <KPICard {...item.props} />;
+        return useVegaRendering
+          ? <KPICard {...item.props} />
+          : <ObservableKPICard {...item.props} />;
       case 'kpi':
         return <KPI {...item.props} />;
       case 'multiRowCard':
@@ -248,9 +258,13 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
         return <Slicer {...item.props} />;
       // Line variants (from PBI CSS spec)
       case 'lineForecast':
-        return <LineChart {...item.props} showForecast={true} />;
+        return useVegaRendering
+          ? <LineChart {...item.props} showForecast={true} />
+          : <ObservableLineChart {...item.props} showForecast={true} />;
       case 'lineStepped':
-        return <LineChart {...item.props} stepped={true} />;
+        return useVegaRendering
+          ? <LineChart {...item.props} stepped={true} />
+          : <ObservableLineChart {...item.props} stepped={true} />;
 
       // Map variants (from PBI CSS spec)
       case 'mapChoropleth':
@@ -478,7 +492,7 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
 
   return (
     <div
-      className={`${styles.canvas}${isDragOver ? ` ${styles.canvasDragOver}` : ''}`}
+      className={mergeClasses(styles.canvas, isDragOver ? styles.canvasDragOver : undefined)}
       data-testid="canvas-drop-area"
       ref={containerRef as React.RefObject<HTMLDivElement>}
       onClick={handleCanvasClick}
@@ -541,21 +555,16 @@ export const Canvas: React.FC<CanvasProps> = ({ readOnly: _readOnly }) => {
             }
             return (
               <div key={item.id} data-grid={{ x: item.layout.x, y: item.layout.y, w: item.layout.w, h: item.layout.h }}>
-                {item.type === 'banner' ? (
-                  // These components render without visual container wrapper
-                  renderVisual(item)
-                ) : (
-                  <VisualContainer
-                    title={item.title}
-                    onRemove={() => removeItem(item.id)}
-                    hideMenu={hideMenu}
-                    isSelected={selectedItemId === item.id}
-                    onSelect={() => selectItem(item.id)}
-                    itemId={item.id}
-                  >
-                    {renderVisual(item)}
-                  </VisualContainer>
-                )}
+                <VisualContainer
+                  title={item.title}
+                  onRemove={() => removeItem(item.id)}
+                  hideMenu={hideMenu}
+                  isSelected={selectedItemId === item.id}
+                  onSelect={() => selectItem(item.id)}
+                  itemId={item.id}
+                >
+                  {renderVisual(item)}
+                </VisualContainer>
               </div>
             );
           })}

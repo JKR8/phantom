@@ -187,7 +187,7 @@ export const generateHRData = () => {
       office,
       hireDate: hireDate.toISOString(),
       salary,
-      salaryPL: Math.round(salary * (1 + (rand() - 0.5) * 0.1)),  // ±5% variance from plan
+      salaryPL: Math.round(salary * (1 + (rand() - 0.5) * 0.1)),  // \u00b15% variance from plan
       salaryPY: Math.round(salary * (0.92 + rand() * 0.08)),       // 92-100% of current (raises)
       rating,
       ratingPL: Math.round((clamp(rating + (rand() > 0.5 ? 0.2 : -0.2), 1, 5)) * 10) / 10,
@@ -225,7 +225,7 @@ export const generateLogisticsData = () => {
       destination: cities[Math.floor(rand() * cities.length)],
       carrier: carriers[Math.floor(rand() * carriers.length)],
       cost,
-      costPL: Math.round(cost * (1 + (rand() - 0.5) * 0.15) * 100) / 100,  // ±7.5% variance
+      costPL: Math.round(cost * (1 + (rand() - 0.5) * 0.15) * 100) / 100,  // \u00b17.5% variance
       costPY: Math.round(cost * (1.05 + rand() * 0.1) * 100) / 100,         // 5-15% higher (cost increases)
       weight,
       weightPL: weight,  // Weight planned same as actual
@@ -368,10 +368,10 @@ export const generateSocialData = () => {
       platform: platforms[Math.floor(rand() * platforms.length)],
       sentiment,
       engagements,
-      engagementsPL: Math.round(engagements * (1 + (rand() - 0.5) * 0.2)),  // ±10% variance
+      engagementsPL: Math.round(engagements * (1 + (rand() - 0.5) * 0.2)),  // \u00b110% variance
       engagementsPY: Math.round(engagements * (0.7 + rand() * 0.4)),         // Growth trend (70-110% of current)
       mentions,
-      mentionsPL: Math.round(mentions * (1 + (rand() - 0.5) * 0.15)),        // ±7.5% variance
+      mentionsPL: Math.round(mentions * (1 + (rand() - 0.5) * 0.15)),        // \u00b17.5% variance
       mentionsPY: Math.round(mentions * (0.8 + rand() * 0.3)),               // Growth trend (80-110% of current)
       sentimentScore: parseFloat(baseScore.toFixed(2)),
     };
@@ -389,12 +389,12 @@ export const generateFinanceData = () => {
 
   // Variance bands per account type (from research)
   const varianceBands: Record<string, { minPct: number; maxPct: number }> = {
-    Revenue: { minPct: -0.05, maxPct: 0.05 },       // ±3-5% tight
-    COGS: { minPct: -0.10, maxPct: 0.10 },           // ±10%
+    Revenue: { minPct: -0.05, maxPct: 0.05 },       // \u00b13-5% tight
+    COGS: { minPct: -0.10, maxPct: 0.10 },           // \u00b110%
     'Operating Expenses': { minPct: -0.05, maxPct: 0.05 },
-    Marketing: { minPct: -0.30, maxPct: 0.30 },      // ±15-30% variable
+    Marketing: { minPct: -0.30, maxPct: 0.30 },      // \u00b115-30% variable
     'R&D': { minPct: -0.10, maxPct: 0.10 },
-    'G&A': { minPct: -0.05, maxPct: 0.05 },          // ±0-5% fixed
+    'G&A': { minPct: -0.05, maxPct: 0.05 },          // \u00b10-5% fixed
   };
 
   // Base amounts per account

@@ -31,7 +31,7 @@ const useStyles = makeStyles({
     flexDirection: 'column',
   },
   header: {
-    ...shorthands.padding('8px', '12px'),
+    ...shorthands.padding('8px', '12px', '4px'),
     borderBottom: '1px solid #E1DFDD',
     fontWeight: '600',
     fontSize: '12px',
@@ -43,7 +43,7 @@ const useStyles = makeStyles({
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
-    ...shorthands.padding('8px', '12px'),
+    ...shorthands.padding('8px', '12px', '10px'),
     flexWrap: 'wrap',
   },
   visualButton: {
@@ -95,46 +95,42 @@ const useStyles = makeStyles({
 });
 
 /**
- * ORIGINAL VISUALS - Bottom bar (restored)
+ * Universal report-building controls used by the main Visuals pane.
  */
-const visuals = [
-  { id: 'bar', icon: DataBarHorizontalRegular, label: 'Bar', tooltip: 'Bar Chart (pick variant on drop)' },
-  { id: 'column', icon: DataHistogramRegular, label: 'Column', tooltip: 'Column Chart (pick variant on drop)' },
-  { id: 'line', icon: DataLineRegular, label: 'Line', tooltip: 'Line / Area / Stacked Area (pick variant on drop)' },
-  { id: 'combo', icon: ChartMultipleRegular, label: 'Combo', tooltip: 'Combo Chart (Line + Column)' },
-  { id: 'scatter', icon: DataScatterRegular, label: 'Scatter', tooltip: 'Scatter Chart' },
-  { id: 'pie', icon: DataPieRegular, label: 'Pie', tooltip: 'Pie / Donut (pick variant on drop)' },
-  { id: 'funnel', icon: DataFunnelRegular, label: 'Funnel', tooltip: 'Funnel Chart' },
-  { id: 'treemap', icon: DataTreemapRegular, label: 'Treemap', tooltip: 'Treemap' },
-  { id: 'map', icon: GlobeRegular, label: 'Map', tooltip: 'Filled Map' },
-  { id: 'card', icon: NumberSymbolSquareRegular, label: 'Card', tooltip: 'Card (pick variant on drop)' },
-  { id: 'kpi', icon: NumberSymbolSquareRegular, label: 'KPI', tooltip: 'KPI Visual (Power BI style)' },
-  { id: 'table', icon: TableRegular, label: 'Table', tooltip: 'Table' },
-  { id: 'matrix', icon: GridRegular, label: 'Matrix', tooltip: 'Matrix' },
-  { id: 'waterfall', icon: DataHistogramRegular, label: 'Waterfall', tooltip: 'Waterfall Chart' },
-  { id: 'slicer', icon: TextBulletListSquareRegular, label: 'Slicer', tooltip: 'Slicer' },
-  { id: 'textBox', icon: TextTRegular, label: 'Text', tooltip: 'Text Box for headers, descriptions, notes' },
-  { id: 'banner', icon: RectangleLandscapeRegular, label: 'Banner', tooltip: 'Banner for report headers, branding' },
-  { id: 'nudgeKpi', icon: NumberSymbolSquareRegular, label: 'Nudge KPI', tooltip: 'Nudge-style KPI card with variance indicators' },
+export const universalVisuals = [
+  { id: 'table', icon: TableRegular, label: 'Table', tooltip: 'Sortable data table' },
+  { id: 'matrix', icon: GridRegular, label: 'Matrix', tooltip: 'Matrix / pivot table' },
+  { id: 'slicer', icon: TextBulletListSquareRegular, label: 'Filter', tooltip: 'Slicer / filter dropdown' },
+  { id: 'textBox', icon: TextTRegular, label: 'Text', tooltip: 'Text box for headers, descriptions, and notes' },
+  { id: 'banner', icon: RectangleLandscapeRegular, label: 'Title', tooltip: 'Banner / title box for report headers' },
 ];
 
 /**
- * PBI UI KIT 2.0 - All 29 chart types from CSS spec (docs/power-bi-chart-css.md)
- * These are shown in the PBIUiKitPane (left sidebar)
+ * Visuals pane - analytical chart types first.
  *
- * Note: Some charts (Bar, Line, Pie, Scatter, Table, Treemap, Waterfall, Combo, Card)
- * are also in the bottom bar for quick access.
+ * Universal objects such as tables, matrixes, slicers, text boxes, and banners
+ * are rendered in the same main Visuals pane.
  */
 export const pbiUiKitVisuals = [
+  // === SEABORN / OBSERVABLE CORE ===
+  { id: 'bar', icon: DataBarHorizontalRegular, label: 'Ranked Bar', tooltip: 'Ranked bar chart with polished Plot defaults' },
+  { id: 'column', icon: DataHistogramRegular, label: 'Column', tooltip: 'Column chart with compact labels' },
+  { id: 'line', icon: DataLineRegular, label: 'Line', tooltip: 'Line chart with reference and comparison layers' },
+  { id: 'area', icon: DataAreaRegular, label: 'Area', tooltip: 'Area chart with restrained analytical styling' },
+  { id: 'scatter', icon: DataScatterRegular, label: 'Scatter', tooltip: 'Scatter plot with trend and reference lines' },
+  { id: 'histogram', icon: DataHistogramRegular, label: 'Histogram', tooltip: 'Distribution histogram' },
+  { id: 'boxplot', icon: DataHistogramRegular, label: 'Boxplot', tooltip: 'Distribution boxplot' },
+  { id: 'violin', icon: DataHistogramRegular, label: 'Violin', tooltip: 'Distribution violin chart' },
+  { id: 'regressionScatter', icon: DataScatterRegular, label: 'Regression', tooltip: 'Regression scatter plot' },
+  { id: 'lollipop', icon: DataBarHorizontalRegular, label: 'Lollipop', tooltip: 'Lollipop ranking chart' },
+
   // === AREA CHARTS (CSS #1-2) ===
-  { id: 'area', icon: DataAreaRegular, label: 'Area', tooltip: '1. Area Chart (Layered)' },
   { id: 'stackedArea', icon: DataAreaRegular, label: 'Stk Area', tooltip: '2. Area Chart (Stacked)' },
 
   // === BAR CHARTS (CSS #3-6) ===
-  { id: 'bar', icon: DataBarHorizontalRegular, label: 'Bar', tooltip: '3. Bar Chart' },
   { id: 'groupedBar', icon: DataBarHorizontalRegular, label: 'Grouped', tooltip: '4. Bar Chart (Grouped)' },
-  { id: 'lollipop', icon: DataBarHorizontalRegular, label: 'Lollipop', tooltip: '5. Bar Chart (Lollipop)' },
   { id: 'stackedBar', icon: DataBarHorizontalRegular, label: 'Stk Bar', tooltip: '6. Bar Chart (Stacked)' },
+  { id: 'stackedColumn', icon: DataHistogramRegular, label: 'Stk Col', tooltip: 'Stacked Column Chart' },
 
   // === COMPARISON CHARTS (CSS #7, 12, 26) ===
   { id: 'barbell', icon: DataBarHorizontalRegular, label: 'Barbell', tooltip: '7. Barbell Chart' },
@@ -144,6 +140,7 @@ export const pbiUiKitVisuals = [
   // === KPI & GAUGE (CSS #9, 10, 15) ===
   { id: 'bullet', icon: TargetArrowRegular, label: 'Bullet', tooltip: '9. Bullet Chart' },
   { id: 'card', icon: NumberSymbolSquareRegular, label: 'Card/KPI', tooltip: '10. Card/KPI' },
+  { id: 'kpi', icon: NumberSymbolSquareRegular, label: 'KPI', tooltip: 'KPI Visual' },
   { id: 'gauge', icon: GaugeRegular, label: 'Gauge', tooltip: '15. Gauge Chart' },
 
   // === COMBINATION (CSS #11) ===
@@ -153,11 +150,11 @@ export const pbiUiKitVisuals = [
   { id: 'ribbon', icon: SlideMultipleRegular, label: 'Ribbon', tooltip: '24. Ribbon Chart' },
 
   // === LINE CHARTS (CSS #17-19) ===
-  { id: 'line', icon: DataLineRegular, label: 'Line', tooltip: '17. Line Chart' },
   { id: 'lineForecast', icon: ArrowTrendingLinesRegular, label: 'Forecast', tooltip: '18. Line Chart (Forecast)' },
   { id: 'lineStepped', icon: DataLineRegular, label: 'Stepped', tooltip: '19. Line Chart (Stepped)' },
 
   // === MAPS (CSS #20-21) ===
+  { id: 'map', icon: GlobeRegular, label: 'Map', tooltip: 'Map Chart' },
   { id: 'mapBubble', icon: GlobeRegular, label: 'Bubble Map', tooltip: '20. Map Chart (Bubble)' },
   { id: 'mapChoropleth', icon: GlobeRegular, label: 'Choropleth', tooltip: '21. Map Chart (Choropleth)' },
 
@@ -165,11 +162,8 @@ export const pbiUiKitVisuals = [
   { id: 'pie', icon: DataPieRegular, label: 'Pie', tooltip: '22. Pie Chart' },
   { id: 'donut', icon: DataPieRegular, label: 'Donut', tooltip: '23. Pie Chart (Donut)' },
 
-  // === SCATTER (CSS #25) ===
-  { id: 'scatter', icon: DataScatterRegular, label: 'Scatter', tooltip: '25. Scatter Plot Chart' },
-
-  // === TABLE (CSS #27) ===
-  { id: 'table', icon: TableRegular, label: 'Table', tooltip: '27. Table' },
+  // === FUNNEL ===
+  { id: 'funnel', icon: DataFunnelRegular, label: 'Funnel', tooltip: 'Funnel Chart' },
 
   // === TREEMAP (CSS #28) ===
   { id: 'treemap', icon: DataTreemapRegular, label: 'Treemap', tooltip: '28. Treemap Chart' },
@@ -240,7 +234,7 @@ export const VisualizationsPane: React.FC = () => {
     <div className={styles.container}>
       <div className={styles.header}>Visualizations</div>
       <div className={styles.content}>
-        {visuals.map((visual) => (
+        {universalVisuals.map((visual) => (
           <VisualButton key={visual.id} visual={visual} styles={styles} />
         ))}
       </div>

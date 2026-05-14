@@ -6,7 +6,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
   Cell,
   ComposedChart,
   Scatter,
@@ -14,6 +13,7 @@ import {
 import { useStore, useFilteredSales, useHighlight, useSetHighlight } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
 import { formatMetricValue, getDimensionValue, getMetricValue } from '../utils/chartUtils';
+import { StableResponsiveContainer } from './StableResponsiveContainer';
 
 interface BarChartProps {
   dimension: string;
@@ -106,18 +106,35 @@ export const BarChart: React.FC<BarChartProps> = ({
       aggregation2[key] = (aggregation2[key] || 0) + getMetricValue(sale, metric2 || metric);
     });
 
-    return Object.keys(aggregation1).map((name) => ({
+    let result = Object.keys(aggregation1).map((name) => ({
       name,
       value1: Math.round(aggregation1[name] || 0),
       value2: Math.round(aggregation2[name] || 0),
       divergeValue: Math.round(aggregation1[name] || 0) - Math.round(aggregation2[name] || 0),
-    })).slice(0, topN && topN !== 'All' ? Number(topN) : undefined);
-  }, [filteredSales, dimension, metric, metric2, stores, products, customers, topN]);
+    }));
+
+    if (sort === 'asc') {
+      result.sort((a, b) => a.value1 - b.value1);
+    } else if (sort === 'alpha') {
+      result.sort((a, b) => a.name.localeCompare(b.name));
+    } else {
+      result.sort((a, b) => b.value1 - a.value1);
+    }
+
+    const limit = topN && topN !== 'All' ? Number(topN) : 5;
+    if (!Number.isNaN(limit) && result.length > limit) {
+      result = result.slice(0, limit);
+    }
+
+    return result;
+  }, [filteredSales, dimension, metric, metric2, stores, products, customers, topN, sort]);
+
+  const comparisonMetric = metric2 || metric;
 
   // ========== LOLLIPOP VARIANT ==========
   if (variant === 'lollipop') {
     return (
-      <ResponsiveContainer width="100%" height="100%">
+      <StableResponsiveContainer>
         <ComposedChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#F3F2F1" />
           <XAxis type="number" hide />
@@ -143,7 +160,7 @@ export const BarChart: React.FC<BarChartProps> = ({
             }}
           />
         </ComposedChart>
-      </ResponsiveContainer>
+      </StableResponsiveContainer>
     );
   }
 
@@ -152,7 +169,18 @@ export const BarChart: React.FC<BarChartProps> = ({
     const maxVal = Math.max(...comparisonData.flatMap(d => [d.value1, d.value2]), 1);
 
     return (
-      <div style={{ width: '100%', height: '100%', padding: '16px' }}>
+      <div style={{ width: '100%', height: '100%', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '14px', fontSize: '10px', color: '#475569' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: getColor(0), display: 'inline-block' }} />
+            {metric}
+          </span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: getColor(1), display: 'inline-block' }} />
+            {comparisonMetric}
+          </span>
+        </div>
+        <div style={{ flex: 1, minHeight: 0 }}>
         {comparisonData.map((item) => {
           const val1 = item.value1;
           const val2 = item.value2;
@@ -164,12 +192,12 @@ export const BarChart: React.FC<BarChartProps> = ({
               display: 'flex',
               alignItems: 'center',
               height: `${100 / comparisonData.length}%`,
-              gap: '4px',
+              gap: '8px',
             }}>
               <div style={{
-                width: '72px',
-                fontSize: '12px',
-                color: '#64748b',
+                width: '92px',
+                fontSize: '11px',
+                color: '#334155',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
@@ -181,14 +209,22 @@ export const BarChart: React.FC<BarChartProps> = ({
                 height: '100%',
                 position: 'relative',
               }}>
+                <div style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  top: '50%',
+                  borderTop: '1px solid #E2E8F0',
+                  transform: 'translateY(-50%)',
+                }} />
                 {/* Connecting line */}
                 <div style={{
                   position: 'absolute',
                   top: '50%',
                   left: `${minPct}%`,
                   width: `${maxPct - minPct}%`,
-                  height: '1.5px',
-                  backgroundColor: getColor(0),
+                  height: '2px',
+                  backgroundColor: '#94A3B8',
                   transform: 'translateY(-50%)',
                 }} />
                 {/* Start dot */}
@@ -196,10 +232,11 @@ export const BarChart: React.FC<BarChartProps> = ({
                   position: 'absolute',
                   top: '50%',
                   left: `${(val1 / maxVal) * 100}%`,
-                  width: '6px',
-                  height: '6px',
+                  width: '8px',
+                  height: '8px',
                   borderRadius: '50%',
                   backgroundColor: getColor(0),
+                  border: '1px solid #FFFFFF',
                   transform: 'translate(-50%, -50%)',
                 }} />
                 {/* End dot */}
@@ -207,16 +244,22 @@ export const BarChart: React.FC<BarChartProps> = ({
                   position: 'absolute',
                   top: '50%',
                   left: `${(val2 / maxVal) * 100}%`,
-                  width: '6px',
-                  height: '6px',
+                  width: '8px',
+                  height: '8px',
                   borderRadius: '50%',
                   backgroundColor: getColor(1),
+                  border: '1px solid #FFFFFF',
                   transform: 'translate(-50%, -50%)',
                 }} />
+              </div>
+              <div style={{ width: '112px', display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '10px', color: '#475569', fontVariantNumeric: 'tabular-nums' }}>
+                <span>{formatMetricValue(metric, val1, true)}</span>
+                <span>{formatMetricValue(comparisonMetric, val2, true)}</span>
               </div>
             </div>
           );
         })}
+        </div>
       </div>
     );
   }
@@ -232,7 +275,13 @@ export const BarChart: React.FC<BarChartProps> = ({
     );
 
     return (
-      <div style={{ width: '100%', height: '100%', padding: '16px' }}>
+      <div style={{ width: '100%', height: '100%', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 92px 1fr', alignItems: 'center', fontSize: '10px', color: '#475569' }}>
+          <span style={{ justifySelf: 'end' }}>{metric}</span>
+          <span />
+          <span>{comparisonMetric}</span>
+        </div>
+        <div style={{ flex: 1, minHeight: 0 }}>
         {comparisonData.map((item) => {
           const pct1 = (item.value1 / maxVal) * 100; // Left bar extends from right edge
           const pct2 = (item.value2 / maxVal) * 100; // Right bar extends from left edge
@@ -242,6 +291,7 @@ export const BarChart: React.FC<BarChartProps> = ({
               display: 'flex',
               alignItems: 'center',
               height: `${100 / comparisonData.length}%`,
+              gap: '8px',
             }}>
               {/* Left Container - metric1 bar extends from right to left */}
               <div style={{
@@ -289,9 +339,14 @@ export const BarChart: React.FC<BarChartProps> = ({
                   backgroundColor: getColor(1),
                 }} />
               </div>
+              <div style={{ width: '96px', display: 'flex', justifyContent: 'space-between', gap: '8px', fontSize: '10px', color: '#475569', fontVariantNumeric: 'tabular-nums' }}>
+                <span>{formatMetricValue(metric, item.value1, true)}</span>
+                <span>{formatMetricValue(comparisonMetric, item.value2, true)}</span>
+              </div>
             </div>
           );
         })}
+        </div>
       </div>
     );
   }
@@ -350,7 +405,7 @@ export const BarChart: React.FC<BarChartProps> = ({
   // ========== DEFAULT / GROUPED VARIANT ==========
   // Grouped would need multiple data series - for now, show as clustered bars
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <StableResponsiveContainer>
       <ReBarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="#F3F2F1" />
         <XAxis type="number" hide />
@@ -379,6 +434,6 @@ export const BarChart: React.FC<BarChartProps> = ({
           })}
         </Bar>
       </ReBarChart>
-    </ResponsiveContainer>
+    </StableResponsiveContainer>
   );
 };

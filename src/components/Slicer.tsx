@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Dropdown, Option, useId, makeStyles, shorthands } from '@fluentui/react-components';
 import { useStore } from '../store/useStore';
+import { normalizeDimensionName, ScenarioType } from '../store/semanticLayer';
 
 interface SlicerProps {
   dimension: string;
@@ -51,18 +52,20 @@ export const Slicer: React.FC<SlicerProps> = ({ dimension, title }) => {
   
   const setFilter = useStore((state) => state.setFilter);
   const activeFilters = useStore((state) => state.filters);
+  const filterDimension = normalizeDimensionName(scenario as ScenarioType, dimension) || dimension;
 
   // Get unique options for the selected dimension
   const options = useMemo(() => {
     let rawOptions: string[] = [];
+    const normalizedDimension = normalizeDimensionName(scenario as ScenarioType, dimension) || dimension;
 
     // Retail
     if (scenario === 'Retail') {
-        if (dimension === 'Store') rawOptions = stores.map(s => s.name);
-        else if (dimension === 'Region') rawOptions = Array.from(new Set(stores.map(s => s.region)));
-        else if (dimension === 'Product') rawOptions = products.map(p => p.name);
-        else if (dimension === 'Category') rawOptions = Array.from(new Set(products.map(p => p.category)));
-        else if (dimension === 'Month' || dimension === 'Date') {
+        if (normalizedDimension === 'store_name') rawOptions = stores.map(s => s.name);
+        else if (normalizedDimension === 'region') rawOptions = Array.from(new Set(stores.map(s => s.region)));
+        else if (normalizedDimension === 'product_name') rawOptions = products.map(p => p.name);
+        else if (normalizedDimension === 'category') rawOptions = Array.from(new Set(products.map(p => p.category)));
+        else if (normalizedDimension === 'date') {
           const sales = useStore.getState().sales;
           rawOptions = Array.from(new Set(sales.map(s => {
             const d = new Date(s.date as any);
@@ -73,47 +76,52 @@ export const Slicer: React.FC<SlicerProps> = ({ dimension, title }) => {
     } 
     // SaaS
     else if (scenario === 'SaaS') {
-        if (dimension === 'Region') rawOptions = Array.from(new Set(customers.map(c => c.region)));
-        else if (dimension === 'Tier' || dimension === 'tier') rawOptions = Array.from(new Set(customers.map(c => c.tier)));
+        if (normalizedDimension === 'region') rawOptions = Array.from(new Set(customers.map(c => c.region)));
+        else if (normalizedDimension === 'tier') rawOptions = Array.from(new Set(customers.map(c => c.tier)));
+        else if (normalizedDimension === 'industry') rawOptions = Array.from(new Set(customers.map(c => c.industry)));
+        else if (normalizedDimension === 'name') rawOptions = Array.from(new Set(customers.map(c => c.name)));
     }
     // HR
     else if (scenario === 'HR') {
-        if (dimension === 'Department') rawOptions = Array.from(new Set(employees.map(e => e.department)));
-        else if (dimension === 'Role') rawOptions = Array.from(new Set(employees.map(e => e.role)));
+        if (normalizedDimension === 'department') rawOptions = Array.from(new Set(employees.map(e => e.department)));
+        else if (normalizedDimension === 'role') rawOptions = Array.from(new Set(employees.map(e => e.role)));
+        else if (normalizedDimension === 'office') rawOptions = Array.from(new Set(employees.map(e => e.office)));
+        else if (normalizedDimension === 'name') rawOptions = Array.from(new Set(employees.map(e => e.name)));
     }
     // Logistics
     else if (scenario === 'Logistics') {
-        if (dimension === 'Carrier' || dimension === 'carrier') rawOptions = Array.from(new Set(shipments.map(s => s.carrier)));
-        else if (dimension === 'Status' || dimension === 'status') rawOptions = Array.from(new Set(shipments.map(s => s.status)));
-        else if (dimension === 'Origin') rawOptions = Array.from(new Set(shipments.map(s => s.origin)));
-        else if (dimension === 'Destination') rawOptions = Array.from(new Set(shipments.map(s => s.destination)));
+        if (normalizedDimension === 'carrier') rawOptions = Array.from(new Set(shipments.map(s => s.carrier)));
+        else if (normalizedDimension === 'status') rawOptions = Array.from(new Set(shipments.map(s => s.status)));
+        else if (normalizedDimension === 'origin') rawOptions = Array.from(new Set(shipments.map(s => s.origin)));
+        else if (normalizedDimension === 'destination') rawOptions = Array.from(new Set(shipments.map(s => s.destination)));
     }
     // Social
     else if (scenario === 'Social') {
-        if (dimension === 'Platform') rawOptions = Array.from(new Set(socialPosts.map(p => p.platform)));
-        else if (dimension === 'Sentiment') rawOptions = Array.from(new Set(socialPosts.map(p => p.sentiment)));
-        else if (dimension === 'Location') rawOptions = Array.from(new Set(socialPosts.map(p => p.location)));
-        else if (dimension === 'User') rawOptions = Array.from(new Set(socialPosts.map(p => p.user)));
+        if (normalizedDimension === 'platform') rawOptions = Array.from(new Set(socialPosts.map(p => p.platform)));
+        else if (normalizedDimension === 'sentiment') rawOptions = Array.from(new Set(socialPosts.map(p => p.sentiment)));
+        else if (normalizedDimension === 'location') rawOptions = Array.from(new Set(socialPosts.map(p => p.location)));
+        else if (normalizedDimension === 'user') rawOptions = Array.from(new Set(socialPosts.map(p => p.user)));
     }
     // Finance
     else if (scenario === 'Finance') {
         const financeRecords = useStore.getState().financeRecords;
-        if (dimension === 'Account') rawOptions = Array.from(new Set(financeRecords.map(r => r.account)));
-        else if (dimension === 'Region') rawOptions = Array.from(new Set(financeRecords.map(r => r.region)));
-        else if (dimension === 'BusinessUnit') rawOptions = Array.from(new Set(financeRecords.map(r => r.businessUnit)));
-        else if (dimension === 'Scenario') rawOptions = Array.from(new Set(financeRecords.map(r => r.scenario)));
+        if (normalizedDimension === 'account') rawOptions = Array.from(new Set(financeRecords.map(r => r.account)));
+        else if (normalizedDimension === 'region') rawOptions = Array.from(new Set(financeRecords.map(r => r.region)));
+        else if (normalizedDimension === 'businessUnit') rawOptions = Array.from(new Set(financeRecords.map(r => r.businessUnit)));
+        else if (normalizedDimension === 'scenario') rawOptions = Array.from(new Set(financeRecords.map(r => r.scenario)));
     }
     // Portfolio
     else if (scenario === 'Portfolio') {
         const portfolioEntities = useStore.getState().portfolioEntities;
         const controversyScores = useStore.getState().controversyScores;
-        if (dimension === 'Region') rawOptions = Array.from(new Set(portfolioEntities.map(e => e.region)));
-        else if (dimension === 'Sector') rawOptions = Array.from(new Set(portfolioEntities.map(e => e.sector)));
-        else if (dimension === 'Category') rawOptions = Array.from(new Set(controversyScores.map(c => c.category)));
+        if (normalizedDimension === 'region') rawOptions = Array.from(new Set(portfolioEntities.map(e => e.region)));
+        else if (normalizedDimension === 'sector') rawOptions = Array.from(new Set(portfolioEntities.map(e => e.sector)));
+        else if (normalizedDimension === 'entityName') rawOptions = Array.from(new Set(portfolioEntities.map(e => e.name)));
+        else if (normalizedDimension === 'source') rawOptions = Array.from(new Set(portfolioEntities.map(e => e.source)));
+        else if (normalizedDimension === 'category') rawOptions = Array.from(new Set(controversyScores.map(c => c.category)));
         else if (dimension === 'Score') rawOptions = ['1', '2', '3', '4', '5'];
         else if (dimension === 'ChangeDirection') rawOptions = ['Increase', 'Decrease', 'No Change'];
-        else if (dimension === 'Source') rawOptions = Array.from(new Set(portfolioEntities.map(e => e.source)));
-        else if (dimension === 'Group') rawOptions = Array.from(new Set(controversyScores.map(c => c.group)));
+        else if (normalizedDimension === 'group') rawOptions = Array.from(new Set(controversyScores.map(c => c.group)));
     }
 
     if (rawOptions.length === 0) {
@@ -126,9 +134,9 @@ export const Slicer: React.FC<SlicerProps> = ({ dimension, title }) => {
          else if (scenario === 'Social') source = socialPosts;
          else if (scenario === 'Finance') source = useStore.getState().financeRecords;
 
-         const key = dimension.toLowerCase();
-         // @ts-ignore
-         const values = source.map(i => i[key] || i[dimension]).filter(v => v !== undefined);
+         const key = normalizedDimension.toLowerCase();
+          // @ts-ignore
+         const values = source.map(i => i[key] || i[normalizedDimension] || i[dimension]).filter(v => v !== undefined);
          rawOptions = Array.from(new Set(values));
     }
 
@@ -140,7 +148,7 @@ export const Slicer: React.FC<SlicerProps> = ({ dimension, title }) => {
      // Fluent UI Dropdown typically supports clearing via selection or a separate mechanism.
      // For this MVP, selecting a value sets the filter. 
      // We might need a way to clear it. For now, assuming standard behavior.
-     setFilter(dimension, data.optionValue || null);
+     setFilter(filterDimension, data.optionValue || null);
   };
 
   return (
@@ -149,7 +157,7 @@ export const Slicer: React.FC<SlicerProps> = ({ dimension, title }) => {
       <Dropdown
         aria-labelledby={dropdownId}
         placeholder="All"
-        value={activeFilters[dimension] || ''}
+        value={activeFilters[filterDimension] || activeFilters[dimension] || ''}
         onOptionSelect={handleSelect}
         clearable
         size="small"

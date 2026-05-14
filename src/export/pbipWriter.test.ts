@@ -10,7 +10,7 @@
  * - References to removed visual types
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import JSZip from 'jszip';
 import { createPBIPPackage } from './pbipWriter';
 import { PBI_VISUAL_TYPES } from './layoutConverter';
@@ -181,20 +181,6 @@ async function extractAllFiles(blob: Blob): Promise<Record<string, string>> {
 // ============================================================================
 // Recursive Validation Helpers
 // ============================================================================
-
-/** Validate that a literal expression has correct structure */
-function isValidLiteral(obj: any): boolean {
-  if (!obj || typeof obj !== 'object') return false;
-  if (!obj.expr || !obj.expr.Literal || typeof obj.expr.Literal.Value === 'undefined') return false;
-  return true;
-}
-
-/** Validate that a solid color expression has correct structure */
-function isValidSolidColor(obj: any): boolean {
-  if (!obj || typeof obj !== 'object') return false;
-  if (!obj.solid || !obj.solid.color) return false;
-  return isValidLiteral(obj.solid.color);
-}
 
 /** Check if a value looks like a PBI literal value string */
 function isValidLiteralValue(value: string): boolean {

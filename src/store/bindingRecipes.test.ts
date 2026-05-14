@@ -152,11 +152,11 @@ describe('bindingRecipes', () => {
   });
 
   describe('getRecipeForVisual - map', () => {
-    it('binds geoDimension and defaults to US choropleth', () => {
+    it('binds geoDimension and defaults to Australia choropleth', () => {
       const recipe = getRecipeForVisual('map', 'Retail');
 
       expect(recipe.geoDimension).toBe('region');
-      expect(recipe.mapType).toBe('us');
+      expect(recipe.mapType).toBe('au');
       expect(recipe.displayMode).toBe('choropleth');
     });
   });
@@ -176,7 +176,7 @@ describe('bindingRecipes', () => {
 
       expect(recipe.geoDimension).toBe('region');
       expect(recipe.metric).toBe('revenue');
-      expect(recipe.mapType).toBe('us');
+      expect(recipe.mapType).toBe('au');
       expect(recipe.displayMode).toBe('bubble');
     });
   });

@@ -10,7 +10,7 @@ import type { AnyPhantomProps } from '../types/visual-props';
 import { isValidHexColor } from '../pbi-constraints/colors';
 import { isValidPBIFontSize, PBI_FONT_SIZES } from '../pbi-constraints/fonts';
 import { isValidDataVizColor, PBI_DATA_VIZ_COLORS_ARRAY } from '../tokens/pbi-css-tokens';
-import { ScenarioFields, ScenarioType } from '../store/semanticLayer';
+import { normalizeDimensionName, ScenarioFields, ScenarioType } from '../store/semanticLayer';
 
 /**
  * Get valid dimension fields for a scenario
@@ -112,7 +112,8 @@ function validateDimension(
   }
 
   const validDimensions = getValidDimensions(scenario);
-  if (!validDimensions.includes(value)) {
+  const normalizedValue = normalizeDimensionName(scenario as ScenarioType, value);
+  if (!normalizedValue || !validDimensions.includes(normalizedValue)) {
     // Check if it might be a metric instead
     const validMetrics = getValidMetrics(scenario);
     if (validMetrics.includes(value)) {

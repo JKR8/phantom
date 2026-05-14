@@ -179,7 +179,7 @@ export const ControversyBarChart: React.FC<ControversyBarChartProps> = ({ dimens
         ))}
       </div>
       <div className={styles.chartContainer}>
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
           <ReBarChart
             data={data}
             layout="vertical"

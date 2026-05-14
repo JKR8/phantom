@@ -8,7 +8,13 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      include: ['src/lib/stats-core/**/*.ts'],
+      include: [
+        'src/lib/stats-core/**/*.ts',
+        'src/export/**/*.ts',
+        'src/store/**/*.ts',
+        'src/utils/**/*.ts',
+        'src/engine/**/*.ts',
+      ],
       exclude: ['**/*.test.ts', '**/index.ts'],
     },
   },

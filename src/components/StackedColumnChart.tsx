@@ -6,13 +6,13 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
   Legend,
   ReferenceLine,
   LabelList
 } from 'recharts';
 import { useFilteredSales } from '../store/useStore';
 import { formatMetricValue, getMetricValue } from '../utils/chartUtils';
+import { StableResponsiveContainer } from './StableResponsiveContainer';
 
 interface StackedColumnChartProps {
   dimension: string;
@@ -78,7 +78,7 @@ export const StackedColumnChart: React.FC<StackedColumnChartProps> = ({ dimensio
   const formatValue = (value: number) => formatMetricValue(metric, value, true);
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <StableResponsiveContainer>
       <ReBarChart data={data} margin={{ top: 20, right: 20, left: 10, bottom: 5 }} barGap={0} barCategoryGap="20%">
         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F3F2F1" />
         <XAxis
@@ -122,6 +122,6 @@ export const StackedColumnChart: React.FC<StackedColumnChartProps> = ({ dimensio
           />
         </Bar>
       </ReBarChart>
-    </ResponsiveContainer>
+    </StableResponsiveContainer>
   );
 };

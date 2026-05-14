@@ -1,12 +1,12 @@
 import React, { useMemo } from 'react';
 import {
   Treemap as ReTreemap,
-  ResponsiveContainer,
   Tooltip
 } from 'recharts';
 import { useStore, useFilteredSales, useHighlight, useSetHighlight } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
 import { formatMetricValue, getDimensionValue, getMetricValue } from '../utils/chartUtils';
+import { StableResponsiveContainer } from './StableResponsiveContainer';
 
 interface TreemapProps {
   dimension: string;
@@ -105,7 +105,7 @@ export const Treemap: React.FC<TreemapProps> = ({ dimension, metric, manualData,
   const isHighlightActive = highlight && highlight.dimension === dimension;
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <StableResponsiveContainer>
       <ReTreemap
         data={data}
         dataKey="value"
@@ -120,6 +120,6 @@ export const Treemap: React.FC<TreemapProps> = ({ dimension, metric, manualData,
       >
         <Tooltip formatter={(value: any) => formatMetricValue(metric, Number(value))} />
       </ReTreemap>
-    </ResponsiveContainer>
+    </StableResponsiveContainer>
   );
 };

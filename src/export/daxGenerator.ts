@@ -57,37 +57,31 @@ export function extractMetricBindings(items: DashboardItem[], scenario: Scenario
     // Cast to Record<string, any> for dynamic property access
     const props = (item.props || {}) as Record<string, any>;
 
-    // Extract metric from various visual props
+    // Extract metrics from various visual props
+    // Different visual types use different prop names for metrics
     const metric = props.metric || props.value || null;
-    const metric2 = props.metric2 || null;
+    const metric2 = props.metric2 || props.comparisonMetric || null;
+    const xMetric = props.xMetric || null;  // scatter, dotStrip
+    const yMetric = props.yMetric || null;  // scatter
+    const barMetric = props.barMetric || null;  // combo
+    const lineMetric = props.lineMetric || null;  // combo
+    const sizeMetric = props.sizeMetric || null;  // scatter bubble size
     const operation = props.operation || 'sum';
 
-    if (metric) {
-      const key = `${metric}_${operation}`;
+    // Collect all metrics to process
+    const metricsToProcess = [metric, metric2, xMetric, yMetric, barMetric, lineMetric, sizeMetric].filter(Boolean);
+
+    // Process all metrics found in this visual
+    for (const m of metricsToProcess) {
+      const key = `${m}_${operation}`;
       if (!bindings.has(key)) {
-        const mapping = mapFieldToPBIColumn(scenario, metric);
+        const mapping = mapFieldToPBIColumn(scenario, m);
         if (hasColumn(mapping.table, mapping.column)) {
           bindings.set(key, {
-            metric,
+            metric: m,
             operation,
             table: mapping.table,
             column: mapping.column,
-          });
-        }
-      }
-    }
-
-    // Also extract metric2 for comparison charts (barbell, diverging)
-    if (metric2) {
-      const key2 = `${metric2}_${operation}`;
-      if (!bindings.has(key2)) {
-        const mapping2 = mapFieldToPBIColumn(scenario, metric2);
-        if (hasColumn(mapping2.table, mapping2.column)) {
-          bindings.set(key2, {
-            metric: metric2,
-            operation,
-            table: mapping2.table,
-            column: mapping2.column,
           });
         }
       }

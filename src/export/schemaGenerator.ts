@@ -598,55 +598,87 @@ export function getFactTableForScenario(scenario: Scenario): string {
 export function mapFieldToPBIColumn(scenario: Scenario, field: string): { table: string; column: string } {
   const factTable = getFactTableForScenario(scenario);
 
+  // Maps both PascalCase display names AND lowercase semantic-layer field names
+  // to their correct PBI table/column targets
   const scenarioMappings = ((): Record<string, { table: string; column: string }> => {
     switch (scenario) {
       case 'Retail':
         return {
           Region: { table: 'Store', column: 'Region' },
+          region: { table: 'Store', column: 'Region' },
           Store: { table: 'Store', column: 'StoreName' },
+          store_name: { table: 'Store', column: 'StoreName' },
           Category: { table: 'Product', column: 'Category' },
+          category: { table: 'Product', column: 'Category' },
           Product: { table: 'Product', column: 'ProductName' },
+          product_name: { table: 'Product', column: 'ProductName' },
+          Country: { table: 'Store', column: 'Country' },
+          country: { table: 'Store', column: 'Country' },
         };
       case 'SaaS':
         return {
           Region: { table: 'Customer', column: 'Region' },
+          region: { table: 'Customer', column: 'Region' },
           Tier: { table: 'Customer', column: 'Tier' },
+          tier: { table: 'Customer', column: 'Tier' },
           Customer: { table: 'Customer', column: 'CustomerName' },
+          name: { table: 'Customer', column: 'CustomerName' },
           Industry: { table: 'Customer', column: 'Industry' },
+          industry: { table: 'Customer', column: 'Industry' },
         };
       case 'HR':
         return {
           Department: { table: 'Employee', column: 'Department' },
+          department: { table: 'Employee', column: 'Department' },
           Role: { table: 'Employee', column: 'Role' },
+          role: { table: 'Employee', column: 'Role' },
           Office: { table: 'Employee', column: 'Office' },
+          office: { table: 'Employee', column: 'Office' },
+          name: { table: 'Employee', column: 'Name' },
         };
       case 'Logistics':
         return {
           Carrier: { table: 'Shipment', column: 'Carrier' },
+          carrier: { table: 'Shipment', column: 'Carrier' },
           Origin: { table: 'Shipment', column: 'Origin' },
+          origin: { table: 'Shipment', column: 'Origin' },
           Destination: { table: 'Shipment', column: 'Destination' },
+          destination: { table: 'Shipment', column: 'Destination' },
           Status: { table: 'Shipment', column: 'Status' },
+          status: { table: 'Shipment', column: 'Status' },
         };
       case 'Portfolio':
         return {
           Sector: { table: 'PortfolioEntity', column: 'Sector' },
+          sector: { table: 'PortfolioEntity', column: 'Sector' },
           Group: { table: 'ControversyScore', column: 'Group' },
           EntityName: { table: 'ControversyScore', column: 'EntityName' },
+          entityName: { table: 'ControversyScore', column: 'EntityName' },
           Region: { table: 'PortfolioEntity', column: 'Region' },
+          region: { table: 'PortfolioEntity', column: 'Region' },
+          source: { table: 'ControversyScore', column: 'Source' },
         };
       case 'Finance':
         return {
           Account: { table: 'FinanceRecord', column: 'Account' },
+          account: { table: 'FinanceRecord', column: 'Account' },
           BusinessUnit: { table: 'FinanceRecord', column: 'BusinessUnit' },
+          businessUnit: { table: 'FinanceRecord', column: 'BusinessUnit' },
           Scenario: { table: 'FinanceRecord', column: 'Scenario' },
+          scenario: { table: 'FinanceRecord', column: 'Scenario' },
           Region: { table: 'FinanceRecord', column: 'Region' },
+          region: { table: 'FinanceRecord', column: 'Region' },
         };
       case 'Social':
         return {
           Platform: { table: 'SocialPost', column: 'Platform' },
+          platform: { table: 'SocialPost', column: 'Platform' },
           Sentiment: { table: 'SocialPost', column: 'Sentiment' },
+          sentiment: { table: 'SocialPost', column: 'Sentiment' },
           Location: { table: 'SocialPost', column: 'Location' },
+          location: { table: 'SocialPost', column: 'Location' },
           User: { table: 'SocialPost', column: 'User' },
+          user: { table: 'SocialPost', column: 'User' },
         };
       default:
         return {};
@@ -657,10 +689,26 @@ export function mapFieldToPBIColumn(scenario: Scenario, field: string): { table:
     Month: { table: 'DateTable', column: 'Month' },
     Year: { table: 'DateTable', column: 'Year' },
     Quarter: { table: 'DateTable', column: 'Quarter' },
+    date: { table: 'DateTable', column: 'Date' },
+    hireDate: { table: 'DateTable', column: 'Date' },
+    validFrom: { table: 'DateTable', column: 'Date' },
   };
 
   if (scenarioMappings[field]) return scenarioMappings[field];
   if (dateMappings[field]) return dateMappings[field];
+
+  // Resolve against actual schema column names (case-insensitive) to handle
+  // abbreviations like mrr→MRR, ltv→LTV, arr→ARR, cac→CAC
+  const schema = getSchemaForScenario(scenario);
+  const factTableDef = schema.tables.find(t => t.name === factTable);
+  if (factTableDef) {
+    const matchingCol = factTableDef.columns.find(
+      c => c.name.toLowerCase() === field.toLowerCase()
+    );
+    if (matchingCol) {
+      return { table: factTable, column: matchingCol.name };
+    }
+  }
 
   const capitalizedField = field.charAt(0).toUpperCase() + field.slice(1);
   return { table: factTable, column: capitalizedField };

@@ -23,12 +23,19 @@ export interface BindingRecipe {
   comparison?: 'none' | 'pl' | 'py' | 'both';
   timeGrain?: 'month' | 'quarter' | 'year';
   title?: string;
+  text?: string;
+  subtitle?: string;
+  variant?: 'thinLine' | 'subtle' | 'gradient' | 'filled';
+  accentColor?: string;
+  titleFontSize?: number;
+  fontSize?: number;
+  bold?: boolean;
   // Combo chart specific
   barMetric?: string;
   lineMetric?: string;
   // Map chart specific
   geoDimension?: string;
-  mapType?: 'us' | 'world';
+  mapType?: 'au' | 'us' | 'world';
   displayMode?: 'choropleth' | 'bubble';
   // KPI visual specific
   goalText?: string;
@@ -76,7 +83,7 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
         metric: primaryMeasure,
         topN: 5,
         sort: 'desc',
-        showOther: true,
+        showOther: false,
       };
 
     case 'stackedBar':
@@ -87,7 +94,7 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
         series: secondaryCategory, // Required for stacked segments
         topN: 5,
         sort: 'desc',
-        showOther: true,
+        showOther: false,
       };
 
     case 'line':
@@ -116,6 +123,7 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
         lineMetric: availableMeasures[1] || secondaryMeasure,
         topN: 5,
         sort: 'desc',
+        showOther: false,
       };
 
     case 'map':
@@ -123,7 +131,7 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
       return {
         geoDimension: geoDimension || primaryCategory,
         metric: primaryMeasure,
-        mapType: 'us',
+        mapType: 'au',
         displayMode: 'choropleth',
       };
 
@@ -131,7 +139,7 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
       return {
         geoDimension: geoDimension || primaryCategory,
         metric: primaryMeasure,
-        mapType: 'us',
+        mapType: 'au',
         displayMode: 'bubble',
       };
 
@@ -159,6 +167,7 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
         dimension: primaryCategory,
         metric: primaryMeasure,
         topN: 5,
+        showOther: false,
       };
 
     case 'barbell':
@@ -167,6 +176,9 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
         dimension: primaryCategory,
         metric: primaryMeasure,
         metric2: secondaryMeasure,
+        topN: 5,
+        sort: 'desc',
+        showOther: false,
       };
 
     case 'slope':
@@ -182,6 +194,25 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
         sizeMetric: tertiaryMeasure,
         playAxis: timeDimension,
         dimension: primaryCategory
+      };
+
+    case 'histogram':
+      return {
+        metric: primaryMeasure,
+      };
+
+    case 'boxplot':
+    case 'violin':
+      return {
+        metric: primaryMeasure,
+        dimension: primaryCategory,
+      };
+
+    case 'regressionScatter':
+      return {
+        xMetric: primaryMeasure,
+        yMetric: secondaryMeasure,
+        dimension: primaryCategory,
       };
 
     case 'card':
@@ -236,9 +267,19 @@ export const getRecipeForVisual = (visualType: string, scenario: ScenarioType): 
 
     // Text/Layout visuals
     case 'textBox':
-      return { title: 'Text Box' };
+      return {
+        text: 'Write text here',
+        fontSize: 18,
+        bold: true,
+      };
     case 'banner':
-      return { title: 'Report Title' };
+      return {
+        title: 'Report Title',
+        subtitle: '',
+        variant: 'thinLine',
+        accentColor: '#0078D4',
+        titleFontSize: 24,
+      };
 
     default:
       return {};

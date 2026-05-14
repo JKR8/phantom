@@ -18,7 +18,7 @@ export const PHANTOM_ROW_HEIGHT = 20;
 
 // Power BI visual type identifiers (from reverse-engineering Power BI exports)
 // Note: 'cardVisual' is the new card visual (GA November 2025) with reference labels support
-export const PBI_VISUAL_TYPES: Record<VisualType, string> = {
+export const PBI_VISUAL_TYPES: Partial<Record<VisualType, string>> = {
   bar: 'clusteredBarChart',
   column: 'clusteredColumnChart',
   stackedBar: 'stackedBarChart',

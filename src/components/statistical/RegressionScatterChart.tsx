@@ -8,13 +8,13 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
   Cell,
   ReferenceLine,
 } from 'recharts';
 import { useStore, useFilteredSales, useHighlight, useSetHighlight } from '../../store/useStore';
 import { useThemeStore } from '../../store/useThemeStore';
 import { getDimensionValue, getMetricValue, formatMetricValue } from '../../utils/chartUtils';
+import { StableResponsiveContainer } from '../StableResponsiveContainer';
 import {
   computeRegression,
   RegressionType,
@@ -176,7 +176,7 @@ export const RegressionScatterChart: React.FC<RegressionScatterChartProps> = ({
   }
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <StableResponsiveContainer>
       <ComposedChart
         margin={{ top: 20, right: 30, bottom: 40, left: 60 }}
       >
@@ -342,6 +342,6 @@ export const RegressionScatterChart: React.FC<RegressionScatterChartProps> = ({
           </g>
         )}
       </ComposedChart>
-    </ResponsiveContainer>
+    </StableResponsiveContainer>
   );
 };

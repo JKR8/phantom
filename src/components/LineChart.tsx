@@ -263,7 +263,7 @@ export const LineChart: React.FC<LineChartProps> = ({
 
   // ========== DEFAULT / FORECAST / STEPPED VARIANT ==========
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
       <ComposedChart
         data={data}
         margin={{ top: 20, right: 20, left: 10, bottom: 5 }}

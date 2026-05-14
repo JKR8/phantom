@@ -7,6 +7,7 @@ import { MyDashboardsPage } from './pages/MyDashboardsPage';
 import { SharedDashboardPage } from './pages/SharedDashboardPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { PBIRendererTest } from './pages/PBIRendererTest';
+import { VisualLabPage } from './pages/VisualLabPage';
 
 function RootRedirect() {
   const { user, isLoading } = useAuth();
@@ -25,6 +26,7 @@ function App() {
       <Route path="/dashboards" element={<MyDashboardsPage />} />
       <Route path="/share/:shareId" element={<SharedDashboardPage />} />
       <Route path="/pbi-renderer-test" element={<PBIRendererTest />} />
+      <Route path="/visual-lab" element={<VisualLabPage />} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );

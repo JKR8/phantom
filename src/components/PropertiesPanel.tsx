@@ -15,7 +15,15 @@ import {
 } from '@fluentui/react-components';
 import { AddRegular, DeleteRegular, WarningRegular, ErrorCircleRegular } from '@fluentui/react-icons';
 import { useStore } from '../store/useStore';
-import { ScenarioFields, ScenarioType, RecommendedDimensions, RecommendedMeasures } from '../store/semanticLayer';
+import {
+  formatFieldLabel,
+  isKnownDimension,
+  normalizeDimensionName,
+  ScenarioFields,
+  ScenarioType,
+  RecommendedDimensions,
+  RecommendedMeasures,
+} from '../store/semanticLayer';
 import {
   ValidationDisplay,
   ValidationIndicator,
@@ -250,6 +258,13 @@ export const PropertiesPanel: React.FC = () => {
     [selectedItemId, updateItemNotes]
   );
 
+  const onTopNChange = useCallback(
+    (topN: string) => {
+      if (selectedItemId) updateItemProps(selectedItemId, { topN, showOther: false });
+    },
+    [selectedItemId, updateItemProps]
+  );
+
   if (!item) {
     return <div className={styles.noSelection}>Select a visual to edit</div>;
   }
@@ -299,6 +314,7 @@ export const PropertiesPanel: React.FC = () => {
   const showKpiGoalText = type === 'kpi';
   const showTarget = type === 'gauge';
   const showMaxRows = type === 'table';
+  const showTextBoxSettings = type === 'textBox';
   const showBannerSettings = type === 'banner';
   const showNudgeKpiSettings = type === 'nudgeKpi';
   const showManualData = ['bar', 'column', 'stackedBar', 'stackedColumn', 'line', 'area', 'pie', 'donut', 'treemap', 'funnel', 'waterfall'].includes(type);
@@ -332,14 +348,13 @@ export const PropertiesPanel: React.FC = () => {
 
   const resolveOptionValue = (options: string[], current: string | undefined) => {
     if (!current) return '';
-    const matched = options.find((opt) => opt.toLowerCase() === current.toLowerCase());
+    const normalizedCurrent = normalizeDimensionName(scenario, current) || current;
+    const matched = options.find((opt) => opt.toLowerCase() === normalizedCurrent.toLowerCase());
     return matched || current;
   };
 
   // Validation: check if current dimension/metric values exist in scenario
-  const isOrphanedDimension = props.dimension && !dimensionOptions.some(
-    (opt) => opt.toLowerCase() === props.dimension?.toLowerCase()
-  );
+  const isOrphanedDimension = props.dimension && !isKnownDimension(scenario, props.dimension);
   const isOrphanedMetric = props.metric && !metricOptions.some(
     (opt) => opt.toLowerCase() === props.metric?.toLowerCase()
   );
@@ -355,9 +370,7 @@ export const PropertiesPanel: React.FC = () => {
   const isOrphanedLineMetric = props.lineMetric && !metricOptions.some(
     (opt) => opt.toLowerCase() === props.lineMetric?.toLowerCase()
   );
-  const isOrphanedGeoDimension = props.geoDimension && !dimensionOptions.some(
-    (opt) => opt.toLowerCase() === props.geoDimension?.toLowerCase()
-  );
+  const isOrphanedGeoDimension = props.geoDimension && !isKnownDimension(scenario, props.geoDimension);
 
   return (
     <div className={styles.panel}>
@@ -475,7 +488,7 @@ export const PropertiesPanel: React.FC = () => {
               onChange={(_, d) => onPropChange('dimension', d.value)}
             >
               {dimensionOptions.map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
+                <option key={opt} value={opt}>{formatFieldLabel(opt)}</option>
               ))}
             </Select>
             {isOrphanedDimension && (
@@ -600,7 +613,7 @@ export const PropertiesPanel: React.FC = () => {
                 onChange={(_, d) => onPropChange('geoDimension', d.value)}
               >
                 {dimensionOptions.map((opt) => (
-                  <option key={opt} value={opt}>{opt}</option>
+                  <option key={opt} value={opt}>{formatFieldLabel(opt)}</option>
                 ))}
               </Select>
               {isOrphanedGeoDimension && (
@@ -614,9 +627,10 @@ export const PropertiesPanel: React.FC = () => {
               <Label className={styles.fieldLabel}>Map Type</Label>
               <Select
                 size="small"
-                value={props.mapType || 'us'}
+                value={props.mapType || 'au'}
                 onChange={(_, d) => onPropChange('mapType', d.value)}
               >
+                <option value="au">Australia States</option>
                 <option value="us">US States</option>
                 <option value="world">World Countries</option>
               </Select>
@@ -641,7 +655,7 @@ export const PropertiesPanel: React.FC = () => {
             <Select
               size="small"
               value={String(props.topN ?? 'All')}
-              onChange={(_, d) => onPropChange('topN', d.value)}
+              onChange={(_, d) => onTopNChange(d.value)}
             >
               <option value="2">2</option>
               <option value="3">3</option>
@@ -759,6 +773,66 @@ export const PropertiesPanel: React.FC = () => {
               onChange={(_, d) => onPropChange('maxRows', Number(d.value) || 100)}
             />
           </div>
+        )}
+
+        {/* Text Box Settings */}
+        {showTextBoxSettings && (
+          <>
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Text</Label>
+              <Textarea
+                size="small"
+                value={props.text || ''}
+                placeholder="Write text here"
+                onChange={(_, d) => onPropChange('text', d.value)}
+              />
+            </div>
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Font Size</Label>
+              <Input
+                size="small"
+                type="number"
+                value={String(props.fontSize || 18)}
+                onChange={(_, d) => onPropChange('fontSize', Number(d.value) || 18)}
+              />
+            </div>
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Alignment</Label>
+              <Select
+                size="small"
+                value={props.alignment || 'left'}
+                onChange={(_, d) => onPropChange('alignment', d.value)}
+              >
+                <option value="left">Left</option>
+                <option value="center">Center</option>
+                <option value="right">Right</option>
+              </Select>
+            </div>
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Text Color</Label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  type="color"
+                  value={props.fontColor || '#252423'}
+                  onChange={(e) => onPropChange('fontColor', e.target.value)}
+                  style={{ width: '32px', height: '24px', padding: '0', border: '1px solid #E1DFDD', borderRadius: '4px', cursor: 'pointer' }}
+                />
+                <Input
+                  size="small"
+                  value={props.fontColor || '#252423'}
+                  onChange={(_, d) => onPropChange('fontColor', d.value)}
+                  style={{ width: '80px' }}
+                />
+              </div>
+            </div>
+            <div className={styles.fieldRow}>
+              <Checkbox
+                checked={props.bold === true}
+                onChange={(_, d) => onPropChange('bold', !!d.checked)}
+                label="Bold"
+              />
+            </div>
+          </>
         )}
 
         {/* Banner Settings */}

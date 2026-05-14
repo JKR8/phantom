@@ -6,12 +6,12 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
   Cell
 } from 'recharts';
 import { useStore, useFilteredSales } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
 import { formatMetricValue, getDimensionValue, getMetricValue } from '../utils/chartUtils';
+import { StableResponsiveContainer } from './StableResponsiveContainer';
 
 interface StackedBarChartProps {
   dimension: string;
@@ -208,7 +208,7 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
             width: '100%',
             height: '100%',
             pointerEvents: 'none',
-          }}>
+          }} viewBox="0 0 100 100" preserveAspectRatio="none">
             {columnData.slice(0, -1).map((col, colIdx) => {
               const nextCol = columnData[colIdx + 1];
               const colWidth = 100 / columnData.length;
@@ -229,10 +229,10 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
                   <path
                     key={`ribbon-${colIdx}-${segIdx}`}
                     d={`
-                      M ${x1}% ${y1Start}%
-                      C ${x1 + colWidth * 0.4}% ${y1Start}%, ${x2 + colWidth * 0.6}% ${y2Start}%, ${x2 + colWidth}% ${y2Start}%
-                      L ${x2 + colWidth}% ${y2End}%
-                      C ${x2 + colWidth * 0.6}% ${y2End}%, ${x1 + colWidth * 0.4}% ${y1End}%, ${x1}% ${y1End}%
+                      M ${x1} ${y1Start}
+                      C ${x1 + colWidth * 0.4} ${y1Start}, ${x2 + colWidth * 0.6} ${y2Start}, ${x2 + colWidth} ${y2Start}
+                      L ${x2 + colWidth} ${y2End}
+                      C ${x2 + colWidth * 0.6} ${y2End}, ${x1 + colWidth * 0.4} ${y1End}, ${x1} ${y1End}
                       Z
                     `}
                     fill={getColor(seg.colorIdx)}
@@ -265,7 +265,7 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
 
   // ========== DEFAULT STACKED BAR VARIANT ==========
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <StableResponsiveContainer>
       <ReBarChart data={data} layout="vertical" margin={{ top: 5, right: 30, left: 40, bottom: 5 }} onClick={(e: any) => {
         if (e && e.activePayload) {
           handleClick(e.activePayload[0].payload);
@@ -294,6 +294,6 @@ export const StackedBarChart: React.FC<StackedBarChartProps> = ({
           ))}
         </Bar>
       </ReBarChart>
-    </ResponsiveContainer>
+    </StableResponsiveContainer>
   );
 };

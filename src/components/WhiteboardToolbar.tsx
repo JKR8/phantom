@@ -1,5 +1,5 @@
 import React from 'react';
-import { makeStyles, shorthands, Button, Tooltip, Text, Divider } from '@fluentui/react-components';
+import { makeStyles, shorthands, Button, Tooltip, Text } from '@fluentui/react-components';
 import {
   NoteAddRegular,
   DismissRegular,

@@ -7,13 +7,13 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
   Cell,
   ReferenceLine,
 } from 'recharts';
 import { useFilteredSales, useSetHighlight } from '../../store/useStore';
 import { useThemeStore } from '../../store/useThemeStore';
 import { getMetricValue } from '../../utils/chartUtils';
+import { StableResponsiveContainer } from '../StableResponsiveContainer';
 import {
   computeHistogramBins,
   computeKDE,
@@ -159,7 +159,7 @@ export const HistogramChart: React.FC<HistogramChartProps> = ({
   const yAxisLabel = yAxisType === 'count' ? 'Count' : yAxisType === 'frequency' ? 'Frequency' : 'Density';
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <StableResponsiveContainer>
       <ComposedChart
         data={chartData}
         margin={{ top: 20, right: 30, bottom: showRugPlot ? 50 : 40, left: 60 }}
@@ -274,6 +274,6 @@ export const HistogramChart: React.FC<HistogramChartProps> = ({
           </g>
         )}
       </ComposedChart>
-    </ResponsiveContainer>
+    </StableResponsiveContainer>
   );
 };

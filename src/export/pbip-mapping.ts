@@ -405,6 +405,7 @@ export function mapToPBIPQueryState(
     }
 
     case 'card':
+    case 'nudgeKpi':
     case 'gauge':
     case 'bullet': {
       const metric = resolveMeasure(props.metric, operation, measures, factTable);
@@ -750,7 +751,7 @@ function buildRetailVisualObjects(
   const objects: Record<string, unknown[]> = {};
 
   // cardVisual styling
-  if (pbiType === 'cardVisual' && item.type === 'card') {
+  if (pbiType === 'cardVisual' && (item.type === 'card' || item.type === 'nudgeKpi')) {
     objects.calloutArea = [{ properties: { size: makeLiteral('60D') } }];
 
     objects.calloutValue = [

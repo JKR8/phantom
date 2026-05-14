@@ -14,6 +14,67 @@ import { formatMetricValue, getDimensionValue, getMetricValue } from '../utils/c
 const US_GEO_URL = 'https://cdn.jsdelivr.net/npm/us-atlas@3/states-10m.json';
 const WORLD_GEO_URL = 'https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json';
 
+const AU_GEO_JSON = {
+  type: 'FeatureCollection',
+  features: [
+    {
+      type: 'Feature',
+      properties: { name: 'Western Australia', postal: 'WA' },
+      geometry: { type: 'Polygon', coordinates: [[[112, -14], [129, -14], [129, -35], [121, -35], [115, -34], [113, -26], [112, -14]]] },
+    },
+    {
+      type: 'Feature',
+      properties: { name: 'Northern Territory', postal: 'NT' },
+      geometry: { type: 'Polygon', coordinates: [[[129, -11], [138, -11], [138, -26], [129, -26], [129, -11]]] },
+    },
+    {
+      type: 'Feature',
+      properties: { name: 'South Australia', postal: 'SA' },
+      geometry: { type: 'Polygon', coordinates: [[[129, -26], [141, -26], [141, -38], [135, -38], [129, -35], [129, -26]]] },
+    },
+    {
+      type: 'Feature',
+      properties: { name: 'Queensland', postal: 'QLD' },
+      geometry: { type: 'Polygon', coordinates: [[[138, -10], [145, -10], [153, -25], [153, -29], [141, -29], [141, -26], [138, -26], [138, -10]]] },
+    },
+    {
+      type: 'Feature',
+      properties: { name: 'New South Wales', postal: 'NSW' },
+      geometry: { type: 'Polygon', coordinates: [[[141, -29], [153, -29], [153, -37], [141, -37], [141, -29]]] },
+    },
+    {
+      type: 'Feature',
+      properties: { name: 'Victoria', postal: 'VIC' },
+      geometry: { type: 'Polygon', coordinates: [[[141, -37], [150, -37], [150, -39.5], [144, -39], [141, -38], [141, -37]]] },
+    },
+    {
+      type: 'Feature',
+      properties: { name: 'Tasmania', postal: 'TAS' },
+      geometry: { type: 'Polygon', coordinates: [[[144, -40], [148.5, -40], [148.5, -44], [144, -44], [144, -40]]] },
+    },
+    {
+      type: 'Feature',
+      properties: { name: 'Australian Capital Territory', postal: 'ACT' },
+      geometry: { type: 'Polygon', coordinates: [[[148.8, -35.1], [149.4, -35.1], [149.4, -35.7], [148.8, -35.7], [148.8, -35.1]]] },
+    },
+  ],
+};
+
+const AU_STATE_ABBREV: Record<string, string> = {
+  'New South Wales': 'NSW',
+  'Victoria': 'VIC',
+  'Queensland': 'QLD',
+  'Western Australia': 'WA',
+  'South Australia': 'SA',
+  'Tasmania': 'TAS',
+  'Northern Territory': 'NT',
+  'Australian Capital Territory': 'ACT',
+};
+
+const AU_ABBREV_TO_STATE: Record<string, string> = Object.fromEntries(
+  Object.entries(AU_STATE_ABBREV).map(([k, v]) => [v, k])
+);
+
 // US State name to abbreviation mapping
 const US_STATE_ABBREV: Record<string, string> = {
   'Alabama': 'AL', 'Alaska': 'AK', 'Arizona': 'AZ', 'Arkansas': 'AR', 'California': 'CA',
@@ -54,6 +115,30 @@ const REGION_MAPPING: Record<string, string[]> = {
   'EMEA': ['United Kingdom', 'Germany', 'France', 'Italy', 'Spain', 'South Africa', 'United Arab Emirates', 'Saudi Arabia', 'Israel', 'Egypt']
 };
 
+const AU_REGION_MAPPING: Record<string, string[]> = {
+  'Australia': Object.keys(AU_STATE_ABBREV),
+  'AU': Object.keys(AU_STATE_ABBREV),
+  'ANZ': ['New South Wales', 'Victoria', 'Queensland', 'Western Australia', 'South Australia', 'Tasmania'],
+  'NSW': ['New South Wales'],
+  'VIC': ['Victoria'],
+  'QLD': ['Queensland'],
+  'WA': ['Western Australia'],
+  'SA': ['South Australia'],
+  'TAS': ['Tasmania'],
+  'NT': ['Northern Territory'],
+  'ACT': ['Australian Capital Territory'],
+  'East': ['New South Wales', 'Victoria', 'Queensland', 'Australian Capital Territory'],
+  'West': ['Western Australia'],
+  'North': ['Queensland', 'Northern Territory'],
+  'South': ['South Australia', 'Victoria', 'Tasmania'],
+  'Asia Pacific': ['New South Wales', 'Victoria', 'Queensland'],
+  'APAC': ['New South Wales', 'Victoria', 'Queensland', 'Western Australia'],
+  'North America': ['New South Wales', 'Australian Capital Territory'],
+  'Latin America': ['Western Australia', 'South Australia'],
+  'Europe': ['Victoria', 'Tasmania'],
+  'EMEA': ['Queensland', 'Western Australia'],
+};
+
 // US State centroids for bubble placement
 const US_STATE_CENTROIDS: Record<string, [number, number]> = {
   'Alabama': [-86.9023, 32.3182], 'Alaska': [-153.4937, 64.2008], 'Arizona': [-111.0937, 34.0489],
@@ -75,10 +160,21 @@ const US_STATE_CENTROIDS: Record<string, [number, number]> = {
   'Wisconsin': [-89.6385, 43.7844], 'Wyoming': [-107.2903, 43.0760], 'District of Columbia': [-77.0369, 38.9072]
 };
 
+const AU_STATE_CENTROIDS: Record<string, [number, number]> = {
+  'Western Australia': [121.6, -25.9],
+  'Northern Territory': [133.4, -19.5],
+  'South Australia': [135.6, -30.0],
+  'Queensland': [144.8, -22.5],
+  'New South Wales': [147.0, -32.8],
+  'Victoria': [144.5, -37.0],
+  'Tasmania': [146.7, -42.0],
+  'Australian Capital Territory': [149.1, -35.4],
+};
+
 interface MapChartProps {
   geoDimension: string;
   metric: string;
-  mapType?: 'us' | 'world';
+  mapType?: 'au' | 'us' | 'world';
   displayMode?: 'choropleth' | 'bubble';
   manualData?: Array<{ region: string; value: number }>;
 }
@@ -86,7 +182,7 @@ interface MapChartProps {
 export const MapChart: React.FC<MapChartProps> = ({
   geoDimension,
   metric,
-  mapType = 'us',
+  mapType = 'au',
   displayMode = 'choropleth',
   manualData
 }) => {
@@ -163,6 +259,19 @@ export const MapChart: React.FC<MapChartProps> = ({
       const fullName = ABBREV_TO_STATE[geoName];
       if (dataByRegion[fullName] !== undefined) return dataByRegion[fullName];
     }
+    if (AU_STATE_ABBREV[geoName]) {
+      const abbrev = AU_STATE_ABBREV[geoName];
+      if (dataByRegion[abbrev] !== undefined) return dataByRegion[abbrev];
+    }
+    if (AU_ABBREV_TO_STATE[geoName]) {
+      const fullName = AU_ABBREV_TO_STATE[geoName];
+      if (dataByRegion[fullName] !== undefined) return dataByRegion[fullName];
+    }
+    for (const [regionName, states] of Object.entries(AU_REGION_MAPPING)) {
+      if (dataByRegion[regionName] !== undefined && states.includes(geoName)) {
+        return dataByRegion[regionName] / states.length;
+      }
+    }
     // Region name expansion
     for (const [regionName, states] of Object.entries(REGION_MAPPING)) {
       if (dataByRegion[regionName] !== undefined && states.includes(geoName)) {
@@ -191,8 +300,14 @@ export const MapChart: React.FC<MapChartProps> = ({
     setTooltipContent(null);
   };
 
-  const geoUrl = mapType === 'us' ? US_GEO_URL : WORLD_GEO_URL;
+  const geoUrl = mapType === 'au' ? AU_GEO_JSON : mapType === 'us' ? US_GEO_URL : WORLD_GEO_URL;
   const projection = mapType === 'us' ? 'geoAlbersUsa' : 'geoMercator';
+  const projectionConfig =
+    mapType === 'au'
+      ? { scale: 640, center: [134, -28] as [number, number] }
+      : mapType === 'us'
+        ? { scale: 1000 }
+        : { scale: 140, center: [0, 40] as [number, number] };
 
   // Get bubble data for bubble mode
   const bubbleData = useMemo(() => {
@@ -205,7 +320,16 @@ export const MapChart: React.FC<MapChartProps> = ({
       let coords: [number, number] | null = null;
 
       // Check if it's a US state
-      if (US_STATE_CENTROIDS[region]) {
+      if (mapType === 'au' && AU_STATE_CENTROIDS[region]) {
+        coords = AU_STATE_CENTROIDS[region];
+      } else if (mapType === 'au' && AU_ABBREV_TO_STATE[region] && AU_STATE_CENTROIDS[AU_ABBREV_TO_STATE[region]]) {
+        coords = AU_STATE_CENTROIDS[AU_ABBREV_TO_STATE[region]];
+      } else if (mapType === 'au' && AU_REGION_MAPPING[region]) {
+        const firstState = AU_REGION_MAPPING[region][0];
+        if (AU_STATE_CENTROIDS[firstState]) {
+          coords = AU_STATE_CENTROIDS[firstState];
+        }
+      } else if (US_STATE_CENTROIDS[region]) {
         coords = US_STATE_CENTROIDS[region];
       } else if (ABBREV_TO_STATE[region] && US_STATE_CENTROIDS[ABBREV_TO_STATE[region]]) {
         coords = US_STATE_CENTROIDS[ABBREV_TO_STATE[region]];
@@ -229,7 +353,7 @@ export const MapChart: React.FC<MapChartProps> = ({
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <ComposableMap
         projection={projection}
-        projectionConfig={mapType === 'us' ? { scale: 1000 } : { scale: 140, center: [0, 40] }}
+        projectionConfig={projectionConfig}
         style={{ width: '100%', height: '100%' }}
       >
         <ZoomableGroup>

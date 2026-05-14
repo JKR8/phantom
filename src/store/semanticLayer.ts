@@ -16,99 +16,229 @@ export type ScenarioType = 'Retail' | 'SaaS' | 'HR' | 'Logistics' | 'Finance' | 
 
 export const ScenarioFields: Record<ScenarioType, SemanticField[]> = {
   Retail: [
-    { name: 'Date', role: 'Time', type: 'date' },
-    { name: 'Store', role: 'Entity', type: 'string' },
-    { name: 'Region', role: 'Geography', type: 'string' },
-    { name: 'Category', role: 'Category', type: 'string' },
-    { name: 'Product', role: 'Category', type: 'string' },
-    { name: 'Revenue', role: 'Measure', type: 'number' },
-    { name: 'Profit', role: 'Measure', type: 'number' },
-    { name: 'Quantity', role: 'Measure', type: 'number' },
-    { name: 'Discount', role: 'Measure', type: 'number' },
+    { name: 'date', role: 'Time', type: 'date' },
+    { name: 'store_name', role: 'Entity', type: 'string' },
+    { name: 'region', role: 'Geography', type: 'string' },
+    { name: 'country', role: 'Geography', type: 'string' },
+    { name: 'category', role: 'Category', type: 'string' },
+    { name: 'product_name', role: 'Entity', type: 'string' },
+    { name: 'price', role: 'Measure', type: 'number' },
+    { name: 'revenue', role: 'Measure', type: 'number' },
+    { name: 'revenuePL', role: 'Measure', type: 'number' },
+    { name: 'revenuePY', role: 'Measure', type: 'number' },
+    { name: 'profit', role: 'Measure', type: 'number' },
+    { name: 'profitPL', role: 'Measure', type: 'number' },
+    { name: 'profitPY', role: 'Measure', type: 'number' },
+    { name: 'quantity', role: 'Measure', type: 'number' },
+    { name: 'quantityPL', role: 'Measure', type: 'number' },
+    { name: 'quantityPY', role: 'Measure', type: 'number' },
+    { name: 'discount', role: 'Measure', type: 'number' },
+    { name: 'discountPL', role: 'Measure', type: 'number' },
+    { name: 'discountPY', role: 'Measure', type: 'number' },
   ],
   SaaS: [
-    { name: 'Date', role: 'Time', type: 'date' },
-    { name: 'Customer', role: 'Entity', type: 'string' },
-    { name: 'Region', role: 'Geography', type: 'string' },
-    { name: 'Tier', role: 'Category', type: 'string' },
-    { name: 'Industry', role: 'Category', type: 'string' },
-    { name: 'MRR', role: 'Measure', type: 'number' },
-    { name: 'ARR', role: 'Measure', type: 'number' },
-    { name: 'Churn', role: 'Measure', type: 'number' },
-    { name: 'LTV', role: 'Measure', type: 'number' },
-    { name: 'CAC', role: 'Measure', type: 'number' },
+    { name: 'date', role: 'Time', type: 'date' },
+    { name: 'name', role: 'Entity', type: 'string' },
+    { name: 'region', role: 'Geography', type: 'string' },
+    { name: 'tier', role: 'Category', type: 'string' },
+    { name: 'industry', role: 'Category', type: 'string' },
+    { name: 'mrr', role: 'Measure', type: 'number' },
+    { name: 'mrrPL', role: 'Measure', type: 'number' },
+    { name: 'mrrPY', role: 'Measure', type: 'number' },
+    { name: 'arr', role: 'Measure', type: 'number' },
+    { name: 'churn', role: 'Measure', type: 'number' },
+    { name: 'ltv', role: 'Measure', type: 'number' },
+    { name: 'cac', role: 'Measure', type: 'number' },
   ],
   HR: [
-    { name: 'Date', role: 'Time', type: 'date' },
-    { name: 'Employee', role: 'Entity', type: 'string' },
-    { name: 'Office', role: 'Geography', type: 'string' },
-    { name: 'Department', role: 'Category', type: 'string' },
-    { name: 'Role', role: 'Category', type: 'string' },
-    { name: 'Salary', role: 'Measure', type: 'number' },
-    { name: 'Rating', role: 'Measure', type: 'number' },
-    { name: 'Tenure', role: 'Measure', type: 'number' },
-    { name: 'Attrition', role: 'Measure', type: 'number' }, // 1 or 0
+    { name: 'hireDate', role: 'Time', type: 'date' },
+    { name: 'name', role: 'Entity', type: 'string' },
+    { name: 'office', role: 'Geography', type: 'string' },
+    { name: 'department', role: 'Category', type: 'string' },
+    { name: 'role', role: 'Category', type: 'string' },
+    { name: 'salary', role: 'Measure', type: 'number' },
+    { name: 'salaryPL', role: 'Measure', type: 'number' },
+    { name: 'salaryPY', role: 'Measure', type: 'number' },
+    { name: 'rating', role: 'Measure', type: 'number' },
+    { name: 'ratingPL', role: 'Measure', type: 'number' },
+    { name: 'ratingPY', role: 'Measure', type: 'number' },
+    { name: 'tenure', role: 'Measure', type: 'number' },
+    { name: 'attrition', role: 'Measure', type: 'number' },
   ],
   Logistics: [
-    { name: 'Date', role: 'Time', type: 'date' },
-    { name: 'Carrier', role: 'Entity', type: 'string' },
-    { name: 'Origin', role: 'Geography', type: 'string' },
-    { name: 'Destination', role: 'Geography', type: 'string' },
-    { name: 'Status', role: 'Category', type: 'string' },
-    { name: 'Cost', role: 'Measure', type: 'number' },
-    { name: 'Weight', role: 'Measure', type: 'number' },
-    { name: 'OnTime', role: 'Measure', type: 'number' }, // 1 or 0
+    { name: 'date', role: 'Time', type: 'date' },
+    { name: 'carrier', role: 'Entity', type: 'string' },
+    { name: 'origin', role: 'Geography', type: 'string' },
+    { name: 'destination', role: 'Geography', type: 'string' },
+    { name: 'status', role: 'Category', type: 'string' },
+    { name: 'cost', role: 'Measure', type: 'number' },
+    { name: 'costPL', role: 'Measure', type: 'number' },
+    { name: 'costPY', role: 'Measure', type: 'number' },
+    { name: 'weight', role: 'Measure', type: 'number' },
+    { name: 'weightPL', role: 'Measure', type: 'number' },
+    { name: 'weightPY', role: 'Measure', type: 'number' },
+    { name: 'onTime', role: 'Measure', type: 'number' },
   ],
   Finance: [
-    { name: 'Date', role: 'Time', type: 'date' },
-    { name: 'Account', role: 'Entity', type: 'string' },
-    { name: 'Region', role: 'Geography', type: 'string' },
-    { name: 'BusinessUnit', role: 'Category', type: 'string' },
-    { name: 'Scenario', role: 'Category', type: 'string' }, // Actual, Budget, Forecast
-    { name: 'Amount', role: 'Measure', type: 'number' },
-    { name: 'Variance', role: 'Measure', type: 'number' },
+    { name: 'date', role: 'Time', type: 'date' },
+    { name: 'account', role: 'Entity', type: 'string' },
+    { name: 'region', role: 'Geography', type: 'string' },
+    { name: 'businessUnit', role: 'Category', type: 'string' },
+    { name: 'scenario', role: 'Category', type: 'string' },
+    { name: 'amount', role: 'Measure', type: 'number' },
+    { name: 'variance', role: 'Measure', type: 'number' },
   ],
   Portfolio: [
-    { name: 'Date', role: 'Time', type: 'date' },
-    { name: 'Entity', role: 'Entity', type: 'string' },
-    { name: 'Region', role: 'Geography', type: 'string' },
-    { name: 'Sector', role: 'Category', type: 'string' },
-    { name: 'MarketValue', role: 'Measure', type: 'number' },
-    { name: 'ControversyScore', role: 'Measure', type: 'number' },
-    { name: 'Score', role: 'Measure', type: 'number' },
+    { name: 'validFrom', role: 'Time', type: 'date' },
+    { name: 'entityName', role: 'Entity', type: 'string' },
+    { name: 'region', role: 'Geography', type: 'string' },
+    { name: 'sector', role: 'Category', type: 'string' },
+    { name: 'category', role: 'Category', type: 'string' },
+    { name: 'group', role: 'Category', type: 'string' },
+    { name: 'marketValue', role: 'Measure', type: 'number' },
+    { name: 'score', role: 'Measure', type: 'number' },
+    { name: 'previousScore', role: 'Measure', type: 'number' },
+    { name: 'scoreChange', role: 'Measure', type: 'number' },
+    { name: 'source', role: 'Entity', type: 'string' },
   ],
   Social: [
-    { name: 'Date', role: 'Time', type: 'date' },
-    { name: 'User', role: 'Entity', type: 'string' },
-    { name: 'Location', role: 'Geography', type: 'string' },
-    { name: 'Platform', role: 'Category', type: 'string' },
-    { name: 'Sentiment', role: 'Category', type: 'string' },
-    { name: 'Engagements', role: 'Measure', type: 'number' },
-    { name: 'Mentions', role: 'Measure', type: 'number' },
-    { name: 'SentimentScore', role: 'Measure', type: 'number' },
+    { name: 'date', role: 'Time', type: 'date' },
+    { name: 'user', role: 'Entity', type: 'string' },
+    { name: 'location', role: 'Geography', type: 'string' },
+    { name: 'platform', role: 'Category', type: 'string' },
+    { name: 'sentiment', role: 'Category', type: 'string' },
+    { name: 'engagements', role: 'Measure', type: 'number' },
+    { name: 'engagementsPL', role: 'Measure', type: 'number' },
+    { name: 'engagementsPY', role: 'Measure', type: 'number' },
+    { name: 'mentions', role: 'Measure', type: 'number' },
+    { name: 'mentionsPL', role: 'Measure', type: 'number' },
+    { name: 'mentionsPY', role: 'Measure', type: 'number' },
+    { name: 'sentimentScore', role: 'Measure', type: 'number' },
   ]
 };
 
 /** Ordered dimension lists per scenario (best first) — powers sorted dropdowns */
 export const RecommendedDimensions: Record<ScenarioType, string[]> = {
-  Retail: ['Category', 'Product', 'Store', 'Region', 'Date'],
-  SaaS: ['Tier', 'Industry', 'Customer', 'Region', 'Date'],
-  HR: ['Department', 'Role', 'Employee', 'Office', 'Date'],
-  Logistics: ['Status', 'Carrier', 'Origin', 'Destination', 'Date'],
-  Finance: ['BusinessUnit', 'Scenario', 'Account', 'Region', 'Date'],
-  Portfolio: ['Sector', 'Entity', 'Region', 'Date'],
-  Social: ['Platform', 'Sentiment', 'User', 'Location', 'Date'],
+  Retail: ['category', 'product_name', 'store_name', 'region', 'country', 'date'],
+  SaaS: ['tier', 'industry', 'name', 'region', 'date'],
+  HR: ['department', 'role', 'name', 'office', 'hireDate'],
+  Logistics: ['status', 'carrier', 'origin', 'destination', 'date'],
+  Finance: ['businessUnit', 'scenario', 'account', 'region', 'date'],
+  Portfolio: ['sector', 'entityName', 'region', 'source', 'validFrom'],
+  Social: ['platform', 'sentiment', 'user', 'location', 'date'],
 };
 
 /** Ordered measure lists per scenario (primary first) — powers sorted dropdowns */
 export const RecommendedMeasures: Record<ScenarioType, string[]> = {
-  Retail: ['Revenue', 'RevenuePL', 'RevenuePY', 'Profit', 'ProfitPL', 'ProfitPY', 'Quantity', 'Discount'],
-  SaaS: ['MRR', 'MRRPL', 'MRRPY', 'ARR', 'Churn', 'LTV', 'CAC'],
-  HR: ['Salary', 'SalaryPL', 'SalaryPY', 'Rating', 'RatingPL', 'RatingPY', 'Tenure', 'Attrition'],
-  Logistics: ['Cost', 'CostPL', 'CostPY', 'Weight', 'WeightPL', 'WeightPY', 'OnTime'],
-  Finance: ['Amount', 'Variance'],
-  Portfolio: ['MarketValue', 'ControversyScore', 'Score'],
-  Social: ['Engagements', 'EngagementsPL', 'EngagementsPY', 'Mentions', 'MentionsPL', 'MentionsPY', 'SentimentScore'],
+  Retail: ['revenue', 'revenuePL', 'revenuePY', 'profit', 'profitPL', 'profitPY', 'quantity', 'quantityPL', 'quantityPY', 'discount', 'price'],
+  SaaS: ['mrr', 'mrrPL', 'mrrPY', 'arr', 'churn', 'ltv', 'cac'],
+  HR: ['salary', 'salaryPL', 'salaryPY', 'rating', 'ratingPL', 'ratingPY', 'tenure', 'attrition'],
+  Logistics: ['cost', 'costPL', 'costPY', 'weight', 'weightPL', 'weightPY', 'onTime'],
+  Finance: ['amount', 'variance'],
+  Portfolio: ['marketValue', 'score', 'previousScore', 'scoreChange'],
+  Social: ['engagements', 'engagementsPL', 'engagementsPY', 'mentions', 'mentionsPL', 'mentionsPY', 'sentimentScore'],
+};
+
+const DimensionAliases: Record<ScenarioType, Record<string, string>> = {
+  Retail: {
+    store: 'store_name',
+    store_name: 'store_name',
+    region: 'region',
+    country: 'country',
+    category: 'category',
+    product: 'product_name',
+    product_name: 'product_name',
+    date: 'date',
+    month: 'date',
+  },
+  SaaS: {
+    customer: 'name',
+    name: 'name',
+    region: 'region',
+    tier: 'tier',
+    industry: 'industry',
+    date: 'date',
+  },
+  HR: {
+    employee: 'name',
+    name: 'name',
+    office: 'office',
+    department: 'department',
+    role: 'role',
+    hiredate: 'hireDate',
+  },
+  Logistics: {
+    carrier: 'carrier',
+    origin: 'origin',
+    destination: 'destination',
+    status: 'status',
+    date: 'date',
+  },
+  Finance: {
+    account: 'account',
+    region: 'region',
+    businessunit: 'businessUnit',
+    scenario: 'scenario',
+    date: 'date',
+  },
+  Portfolio: {
+    entity: 'entityName',
+    entityname: 'entityName',
+    region: 'region',
+    sector: 'sector',
+    source: 'source',
+    validfrom: 'validFrom',
+    category: 'category',
+    group: 'group',
+  },
+  Social: {
+    user: 'user',
+    location: 'location',
+    platform: 'platform',
+    sentiment: 'sentiment',
+    date: 'date',
+  },
+};
+
+export const normalizeDimensionName = (
+  scenario: ScenarioType,
+  dimension: string | undefined
+): string | undefined => {
+  if (!dimension) return dimension;
+
+  const fields = ScenarioFields[scenario] || [];
+  const exactField = fields.find((field) => field.name.toLowerCase() === dimension.toLowerCase());
+  if (exactField) return exactField.name;
+
+  return DimensionAliases[scenario]?.[dimension.toLowerCase()] || dimension;
+};
+
+export const isKnownDimension = (
+  scenario: ScenarioType,
+  dimension: string | undefined
+): boolean => {
+  const normalized = normalizeDimensionName(scenario, dimension);
+  if (!normalized) return false;
+  return (ScenarioFields[scenario] || []).some(
+    (field) =>
+      field.role !== 'Measure' &&
+      field.role !== 'Identifier' &&
+      field.name.toLowerCase() === normalized.toLowerCase()
+  );
+};
+
+export const formatFieldLabel = (fieldName: string): string => {
+  const labels: Record<string, string> = {
+    store_name: 'Store',
+    product_name: 'Product',
+    businessUnit: 'Business Unit',
+    entityName: 'Entity',
+    validFrom: 'Valid From',
+    hireDate: 'Hire Date',
+    sentimentScore: 'Sentiment Score',
+  };
+
+  return labels[fieldName] || fieldName.replace(/_/g, ' ');
 };
 
 /** Data model types available for selection (limited to 3 core scenarios) */

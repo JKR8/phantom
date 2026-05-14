@@ -3,12 +3,12 @@ import {
   FunnelChart as ReFunnelChart,
   Funnel,
   Tooltip,
-  ResponsiveContainer,
   Cell
 } from 'recharts';
 import { useStore, useFilteredSales, useHighlight, useSetHighlight } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
 import { formatMetricValue, getDimensionValue, getMetricValue } from '../utils/chartUtils';
+import { StableResponsiveContainer } from './StableResponsiveContainer';
 
 interface FunnelChartProps {
   dimension: string;
@@ -76,7 +76,7 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({ dimension, metric, man
   return (
     <div style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}>
       <div style={{ flex: 1, minHeight: 0 }}>
-        <ResponsiveContainer width="100%" height="100%">
+        <StableResponsiveContainer>
           <ReFunnelChart>
             <Tooltip formatter={(value: any) => formatMetricValue(metric, Number(value))} />
             <Funnel
@@ -102,7 +102,7 @@ export const FunnelChart: React.FC<FunnelChartProps> = ({ dimension, metric, man
               })}
             </Funnel>
           </ReFunnelChart>
-        </ResponsiveContainer>
+        </StableResponsiveContainer>
       </div>
       <div style={{
         display: 'flex',

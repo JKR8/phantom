@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { makeStyles, shorthands, Text } from '@fluentui/react-components';
+import { makeStyles, mergeClasses, shorthands, Text } from '@fluentui/react-components';
 import { useFilteredSales } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
 
@@ -10,6 +10,8 @@ const useStyles = makeStyles({
     flexDirection: 'row',
     backgroundColor: 'white',
     fontFamily: '"Segoe UI", "Segoe UI Web (West European)", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
+    minHeight: 0,
+    ...shorthands.overflow('hidden'),
   },
   accentBar: {
     width: '4px',
@@ -21,48 +23,66 @@ const useStyles = makeStyles({
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
-    ...shorthands.padding('8px', '12px'),
+    gap: '5px',
+    ...shorthands.padding('6px', '10px', '7px'),
     minWidth: 0,
+    minHeight: 0,
+    ...shorthands.overflow('hidden'),
   },
   header: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'flex-start',
-    marginBottom: '2px',
+    minWidth: 0,
   },
   label: {
-    fontSize: '11px',
+    display: 'none',
+    fontSize: '10px',
     color: '#605E5C',
     fontWeight: '400',
     textTransform: 'uppercase',
     letterSpacing: '0.5px',
-    marginBottom: '2px',
+    lineHeight: '12px',
+    maxWidth: '100%',
+    ...shorthands.overflow('hidden'),
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
   value: {
-    fontSize: '32px',
+    fontSize: '28px',
     fontWeight: '600',
     color: '#252423',
-    lineHeight: '1.1',
-    letterSpacing: '-0.5px',
+    lineHeight: '30px',
+    letterSpacing: 0,
+    maxWidth: '100%',
+    ...shorthands.overflow('hidden'),
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
   footer: {
     display: 'flex',
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: '8px',
-    marginTop: '6px',
-    paddingTop: '6px',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'nowrap',
+    gap: '6px',
+    paddingTop: '5px',
     borderTop: '1px solid #EDEBE9',
+    minWidth: 0,
+    ...shorthands.overflow('hidden'),
   },
   varianceRow: {
     display: 'flex',
     alignItems: 'center',
-    gap: '4px',
-    fontSize: '11px',
+    gap: '3px',
+    fontSize: '10px',
+    lineHeight: '12px',
+    minWidth: 0,
+    whiteSpace: 'nowrap',
   },
   dot: {
-    width: '6px',
-    height: '6px',
+    width: '5px',
+    height: '5px',
     ...shorthands.borderRadius('50%'),
     flexShrink: 0,
   },
@@ -74,11 +94,14 @@ const useStyles = makeStyles({
   },
   variancePercent: {
     fontWeight: '600',
-    fontSize: '11px',
+    fontSize: '10px',
   },
   varianceAbsolute: {
+    display: 'none',
     color: '#605E5C',
     fontSize: '10px',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   },
   positive: {
     color: '#107C10',
@@ -170,8 +193,8 @@ export const KPICard: React.FC<KPICardProps> = ({ value: explicitValue, label, m
         {stats && showVariance && (
           <div className={styles.footer}>
             <div className={styles.varianceRow}>
-              <div className={`${styles.dot} ${stats.varPY >= 0 ? styles.dotPositive : styles.dotNegative}`} />
-              <span className={`${styles.variancePercent} ${stats.varPY >= 0 ? styles.positive : styles.negative}`}>
+              <div className={mergeClasses(styles.dot, stats.varPY >= 0 ? styles.dotPositive : styles.dotNegative)} />
+              <span className={mergeClasses(styles.variancePercent, stats.varPY >= 0 ? styles.positive : styles.negative)}>
                 {stats.varPY >= 0 ? '+' : ''}{stats.varPYPct.toFixed(1)}%
               </span>
               <span className={styles.varianceAbsolute}>
@@ -179,8 +202,8 @@ export const KPICard: React.FC<KPICardProps> = ({ value: explicitValue, label, m
               </span>
             </div>
             <div className={styles.varianceRow}>
-              <div className={`${styles.dot} ${stats.varPL >= 0 ? styles.dotPositive : styles.dotNegative}`} />
-              <span className={`${styles.variancePercent} ${stats.varPL >= 0 ? styles.positive : styles.negative}`}>
+              <div className={mergeClasses(styles.dot, stats.varPL >= 0 ? styles.dotPositive : styles.dotNegative)} />
+              <span className={mergeClasses(styles.variancePercent, stats.varPL >= 0 ? styles.positive : styles.negative)}>
                 {stats.varPL >= 0 ? '+' : ''}{stats.varPLPct.toFixed(1)}%
               </span>
               <span className={styles.varianceAbsolute}>

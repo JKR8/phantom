@@ -3,6 +3,7 @@ import { DashboardState, Scenario, DashboardItem, LayoutMode, Archetype, DbDashb
 import { generateRetailData, generateSaaSData, generateHRData, generateLogisticsData, generatePortfolioData, generateSocialData, generateFinanceData } from '../engine/dataGenerator';
 import { useThemeStore, PALETTES, DEFAULT_PALETTE } from './useThemeStore';
 import { validateVisualProps } from '../validation/visual-props-validator';
+import { normalizeDimensionName, ScenarioType } from './semanticLayer';
 
 // Initial items match RetailDashboardTemplate (48-column grid)
 // Uses unique prefixed IDs to prevent React key conflicts when switching templates
@@ -330,38 +331,40 @@ const getTimeBucket = (date: Date, grain: 'month' | 'quarter' | 'year'): string 
 
 // Helper to get dimension value for cross-filtering
 const getDimValue = (item: any, dimension: string, state: any): string => {
+  const normalizedDimension = normalizeDimensionName(state.scenario as ScenarioType, dimension) || dimension;
+
   // Handle time dimensions (_time_month, _time_quarter, _time_year)
-  if (dimension.startsWith('_time_')) {
-    const grain = dimension.replace('_time_', '') as 'month' | 'quarter' | 'year';
+  if (normalizedDimension.startsWith('_time_')) {
+    const grain = normalizedDimension.replace('_time_', '') as 'month' | 'quarter' | 'year';
     const date = new Date(item.date);
     return getTimeBucket(date, grain);
   }
 
   if (state.scenario === 'Retail') {
-    if (dimension === 'Region') {
+    if (normalizedDimension === 'region') {
       const store = state.stores.find((s: any) => s.id === item.storeId);
       return store?.region || '';
     }
-    if (dimension === 'Category') {
+    if (normalizedDimension === 'category') {
       const product = state.products.find((p: any) => p.id === item.productId);
       return product?.category || '';
     }
-    if (dimension === 'Store') {
+    if (normalizedDimension === 'store_name') {
       const store = state.stores.find((s: any) => s.id === item.storeId);
       return store?.name || '';
     }
-    if (dimension === 'Product') {
+    if (normalizedDimension === 'product_name') {
       const product = state.products.find((p: any) => p.id === item.productId);
       return product?.name || '';
     }
   } else if (state.scenario === 'SaaS') {
-    if (dimension === 'Tier' || dimension === 'Industry' || dimension === 'Region') {
+    if (normalizedDimension === 'tier' || normalizedDimension === 'industry' || normalizedDimension === 'region') {
       const customer = state.customers.find((c: any) => c.id === item.customerId);
-      return (customer as any)?.[dimension.toLowerCase()] || '';
+      return (customer as any)?.[normalizedDimension] || '';
     }
   }
   // Generic fallback
-  return item?.[dimension] ?? item?.[dimension.toLowerCase()] ?? '';
+  return item?.[normalizedDimension] ?? item?.[dimension] ?? item?.[dimension.toLowerCase()] ?? '';
 };
 
 // Generic Selector for filtered data (applies both filters AND highlight for cross-filtering)
@@ -392,7 +395,9 @@ export const useFilteredSales = (excludeHighlightDimension?: string) => {
     // Apply highlight cross-filter (skip if this chart's dimension matches the highlight or if cross-filtering is disabled)
     if (crossFilterEnabled && highlight && highlight.dimension && highlight.values.size > 0) {
       // Don't filter if this chart is showing the same dimension as the highlight
-      if (excludeHighlightDimension !== highlight.dimension) {
+      const normalizedExclude = normalizeDimensionName(scenario as ScenarioType, excludeHighlightDimension) || excludeHighlightDimension;
+      const normalizedHighlight = normalizeDimensionName(scenario as ScenarioType, highlight.dimension) || highlight.dimension;
+      if (normalizedExclude !== normalizedHighlight) {
         const itemValue = getDimValue(item, highlight.dimension, state);
         if (!highlight.values.has(itemValue)) {
           return false;
@@ -404,50 +409,53 @@ export const useFilteredSales = (excludeHighlightDimension?: string) => {
     // For Retail: Join Store/Product
     // For others: Direct property match
 
-    for (const [column, value] of Object.entries(filters)) {
+    for (const [rawColumn, value] of Object.entries(filters)) {
       if (!value) continue;
+      const column = normalizeDimensionName(scenario as ScenarioType, rawColumn) || rawColumn;
 
       if (scenario === 'Retail') {
         const store = state.stores.find((s) => s.id === item.storeId);
         const product = state.products.find((p) => p.id === item.productId);
-        if (column === 'Region' && store?.region !== value) return false;
-        if (column === 'Category' && product?.category !== value) return false;
-        if (column === 'Store' && store?.name !== value) return false;
-        if (column === 'Product' && product?.name !== value) return false;
+        if (column === 'region' && store?.region !== value) return false;
+        if (column === 'category' && product?.category !== value) return false;
+        if (column === 'store_name' && store?.name !== value) return false;
+        if (column === 'product_name' && product?.name !== value) return false;
       } else if (scenario === 'SaaS') {
         const customer = state.customers.find(c => c.id === item.customerId);
-        if (column === 'Region' && customer?.region !== value) return false;
-        if (column === 'Tier' && customer?.tier !== value) return false;
+        if (column === 'region' && customer?.region !== value) return false;
+        if (column === 'tier' && customer?.tier !== value) return false;
+        if (column === 'industry' && customer?.industry !== value) return false;
+        if (column === 'name' && customer?.name !== value) return false;
       } else if (scenario === 'Portfolio') {
         // Portfolio filtering
-        if (column === 'Region' && item.region !== value) return false;
-        if (column === 'Sector') {
+        if (column === 'region' && item.region !== value) return false;
+        if (column === 'sector') {
           const entity = state.portfolioEntities.find(e => e.id === item.entityId);
           if (entity?.sector !== value) return false;
         }
-        if (column === 'Category' && item.category !== value) return false;
-        if (column === 'Score' && item.score !== parseInt(value)) return false;
-        if (column === 'ChangeDirection') {
+        if (column === 'category' && item.category !== value) return false;
+        if (rawColumn === 'Score' && item.score !== parseInt(value)) return false;
+        if (rawColumn === 'ChangeDirection') {
           if (value === 'Increase' && item.scoreChange <= 0) return false;
           if (value === 'Decrease' && item.scoreChange >= 0) return false;
           if (value === 'No Change' && item.scoreChange !== 0) return false;
         }
-        if (column === 'Group' && item.group !== value) return false;
+        if (column === 'group' && item.group !== value) return false;
       } else if (scenario === 'Social') {
-        if (column === 'Platform' && item.platform !== value) return false;
-        if (column === 'Sentiment' && item.sentiment !== value) return false;
-        if (column === 'Location' && item.location !== value) return false;
-        if (column === 'User' && item.user !== value) return false;
+        if (column === 'platform' && item.platform !== value) return false;
+        if (column === 'sentiment' && item.sentiment !== value) return false;
+        if (column === 'location' && item.location !== value) return false;
+        if (column === 'user' && item.user !== value) return false;
       } else if (scenario === 'Finance') {
-        if (column === 'Account' && item.account !== value) return false;
-        if (column === 'Region' && item.region !== value) return false;
-        if (column === 'BusinessUnit' && item.businessUnit !== value) return false;
-        if (column === 'Scenario' && item.scenario !== value) return false;
+        if (column === 'account' && item.account !== value) return false;
+        if (column === 'region' && item.region !== value) return false;
+        if (column === 'businessUnit' && item.businessUnit !== value) return false;
+        if (column === 'scenario' && item.scenario !== value) return false;
       } else {
         // HR and Logistics are flat for now
-        const key = column.toLowerCase();
-        if (item[key] !== undefined && item[key] !== value) return false;
-        if (item[column.toLowerCase()] !== value && item[column] !== value) return false;
+        const lowerKey = column.toLowerCase();
+        if (item[column] !== undefined && item[column] !== value) return false;
+        if (item[lowerKey] !== undefined && item[lowerKey] !== value) return false;
       }
     }
     return true;
@@ -460,10 +468,11 @@ export const useFilteredPortfolioEntities = () => {
   const { filters, portfolioEntities } = state;
 
   return portfolioEntities.filter((entity) => {
-    for (const [column, value] of Object.entries(filters)) {
+    for (const [rawColumn, value] of Object.entries(filters)) {
       if (!value) continue;
-      if (column === 'Region' && entity.region !== value) return false;
-      if (column === 'Sector' && entity.sector !== value) return false;
+      const column = normalizeDimensionName('Portfolio', rawColumn) || rawColumn;
+      if (column === 'region' && entity.region !== value) return false;
+      if (column === 'sector' && entity.sector !== value) return false;
     }
     return true;
   });
@@ -475,21 +484,22 @@ export const useFilteredControversyScores = () => {
   const { filters, controversyScores, portfolioEntities } = state;
 
   return controversyScores.filter((score) => {
-    for (const [column, value] of Object.entries(filters)) {
+    for (const [rawColumn, value] of Object.entries(filters)) {
       if (!value) continue;
-      if (column === 'Region' && score.region !== value) return false;
-      if (column === 'Sector') {
+      const column = normalizeDimensionName('Portfolio', rawColumn) || rawColumn;
+      if (column === 'region' && score.region !== value) return false;
+      if (column === 'sector') {
         const entity = portfolioEntities.find(e => e.id === score.entityId);
         if (entity?.sector !== value) return false;
       }
-      if (column === 'Category' && score.category !== value) return false;
-      if (column === 'Score' && score.score !== parseInt(value)) return false;
-      if (column === 'ChangeDirection') {
+      if (column === 'category' && score.category !== value) return false;
+      if (rawColumn === 'Score' && score.score !== parseInt(value)) return false;
+      if (rawColumn === 'ChangeDirection') {
         if (value === 'Increase' && score.scoreChange <= 0) return false;
         if (value === 'Decrease' && score.scoreChange >= 0) return false;
         if (value === 'No Change' && score.scoreChange !== 0) return false;
       }
-      if (column === 'Group' && score.group !== value) return false;
+      if (column === 'group' && score.group !== value) return false;
     }
     return true;
   });

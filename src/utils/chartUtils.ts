@@ -37,50 +37,50 @@ export const getMetricValue = (item: any, metric?: string) => {
 };
 
 interface DimensionContext {
-  stores?: Store[];
-  products?: Product[];
-  customers?: Customer[];
+  stores?: Array<Pick<Store, 'id' | 'name' | 'region'>>;
+  products?: Array<Pick<Product, 'id' | 'name' | 'category'>>;
+  customers?: Array<Pick<Customer, 'id' | 'name' | 'industry'> & { tier?: string; region?: string }>;
 }
 
 export const getDimensionValue = (item: any, dimension: string, context: DimensionContext = {}) => {
   const { stores = [], products = [], customers = [] } = context;
 
   if (!dimension) return 'Unknown';
+  const dimKey = dimension.toLowerCase();
 
-  if (dimension === 'Region' && item?.storeId) {
+  if (dimKey === 'region' && item?.storeId) {
     return stores.find((s) => s.id === item.storeId)?.region || 'Unknown';
   }
 
-  if (dimension === 'Store' && item?.storeId) {
+  if ((dimKey === 'store' || dimKey === 'store_name') && item?.storeId) {
     return stores.find((s) => s.id === item.storeId)?.name || 'Unknown';
   }
 
-  if (dimension === 'Category' && item?.productId) {
+  if (dimKey === 'category' && item?.productId) {
     return products.find((p) => p.id === item.productId)?.category || 'Unknown';
   }
 
-  if (dimension === 'Product' && item?.productId) {
+  if ((dimKey === 'product' || dimKey === 'product_name') && item?.productId) {
     return products.find((p) => p.id === item.productId)?.name || 'Unknown';
   }
 
-  if (dimension === 'Customer' && item?.customerId) {
+  if ((dimKey === 'customer' || dimKey === 'name') && item?.customerId) {
     return customers.find((c) => c.id === item.customerId)?.name || 'Unknown';
   }
 
-  if (dimension === 'Industry' && item?.customerId) {
+  if (dimKey === 'industry' && item?.customerId) {
     return customers.find((c) => c.id === item.customerId)?.industry || 'Unknown';
   }
 
-  if (dimension === 'Tier' && item?.customerId) {
+  if (dimKey === 'tier' && item?.customerId) {
     return (customers.find((c) => c.id === item.customerId) as any)?.tier || 'Unknown';
   }
 
-  if (dimension === 'Office' && item?.office) {
+  if (dimKey === 'office' && item?.office) {
     return item.office;
   }
 
   // Try direct property, then camelCase, then lowercase
-  const dimKey = dimension.toLowerCase();
   const camelKey = dimension[0].toLowerCase() + dimension.slice(1);
   return item?.[dimension] ?? item?.[camelKey] ?? item?.[dimKey] ?? 'Unknown';
 };

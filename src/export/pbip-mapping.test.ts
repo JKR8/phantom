@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { DashboardItem, VisualType } from '../types';
 import type { DAXMeasure } from './daxGenerator';
-import { getSchemaForScenario } from './schemaGenerator';
+import { getSchemaForScenario, mapFieldToPBIColumn } from './schemaGenerator';
 import { PBI_VISUAL_TYPES } from './layoutConverter';
 import {
   getMeasureName,
@@ -256,6 +256,19 @@ describe('pbip-mapping', () => {
       expect(result.Values.projections[0].field.Measure.Property).toBe('Total MRR');
     });
 
+    it('maps nudgeKpi same as card with Values projections', () => {
+      const result = mapToPBIPQueryState(
+        makeItem('nudgeKpi', { metric: 'MRR' }),
+        'SaaS',
+        SAAS_MEASURES,
+        SAAS_SCHEMA
+      ) as Record<string, any>;
+
+      expect(result.Values).toBeDefined();
+      expect(result.Values.projections).toHaveLength(1);
+      expect(result.Values.projections[0].field.Measure.Property).toBe('Total MRR');
+    });
+
     it('maps table using explicit columns array', () => {
       const result = mapToPBIPQueryState(
         makeItem('table', { columns: ['Category', 'Region'] }),
@@ -479,6 +492,31 @@ describe('pbip-mapping', () => {
       expect(paragraphs[0].horizontalTextAlignment).toBe('center');
       expect(objects.background[0].properties.show.expr.Literal.Value).toBe('true');
       expect(objects.background[0].properties.color.solid.color.expr.Literal.Value).toBe("'#EFEFEF'");
+    });
+  });
+
+  describe('mapFieldToPBIColumn case resolution', () => {
+    it('resolves lowercase abbreviations to correct schema casing (MRR, LTV, ARR, CAC)', () => {
+      expect(mapFieldToPBIColumn('SaaS', 'mrr')).toEqual({ table: 'Subscription', column: 'MRR' });
+      expect(mapFieldToPBIColumn('SaaS', 'ltv')).toEqual({ table: 'Subscription', column: 'LTV' });
+      expect(mapFieldToPBIColumn('SaaS', 'arr')).toEqual({ table: 'Subscription', column: 'ARR' });
+      expect(mapFieldToPBIColumn('SaaS', 'cac')).toEqual({ table: 'Subscription', column: 'CAC' });
+    });
+
+    it('resolves lowercase metrics to PascalCase schema columns', () => {
+      expect(mapFieldToPBIColumn('Retail', 'revenue')).toEqual({ table: 'Sales', column: 'Revenue' });
+      expect(mapFieldToPBIColumn('HR', 'salary')).toEqual({ table: 'Employee', column: 'Salary' });
+      expect(mapFieldToPBIColumn('Logistics', 'cost')).toEqual({ table: 'Shipment', column: 'Cost' });
+      expect(mapFieldToPBIColumn('Finance', 'amount')).toEqual({ table: 'FinanceRecord', column: 'Amount' });
+      expect(mapFieldToPBIColumn('Social', 'engagements')).toEqual({ table: 'SocialPost', column: 'Engagements' });
+    });
+
+    it('preserves explicit dimension mappings for lowercase fields', () => {
+      expect(mapFieldToPBIColumn('SaaS', 'tier')).toEqual({ table: 'Customer', column: 'Tier' });
+      expect(mapFieldToPBIColumn('HR', 'department')).toEqual({ table: 'Employee', column: 'Department' });
+      expect(mapFieldToPBIColumn('Logistics', 'carrier')).toEqual({ table: 'Shipment', column: 'Carrier' });
+      expect(mapFieldToPBIColumn('Finance', 'account')).toEqual({ table: 'FinanceRecord', column: 'Account' });
+      expect(mapFieldToPBIColumn('Social', 'platform')).toEqual({ table: 'SocialPost', column: 'Platform' });
     });
   });
 });

@@ -41,6 +41,9 @@ interface QuickShapeStripProps {
     rowHeight: number;
     cols: number;
     margin: [number, number];
+    zoom?: number;
+    panX?: number;
+    panY?: number;
 }
 
 // Visual types that show the strip
@@ -69,13 +72,14 @@ function sortByRecommended(items: string[], recommended: string[]): string[] {
   });
 }
 
-export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth, rowHeight, cols, margin }) => {
+export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth, rowHeight, cols, margin, zoom = 1, panX = 0, panY = 0 }) => {
   const styles = useStyles();
   const selectedItemId = useStore((state) => state.selectedItemId);
   const items = useStore((state) => state.items);
   const scenario = useStore((state) => state.scenario) as ScenarioType;
   const updateItemProps = useStore((state) => state.updateItemProps);
   const updateItemTitle = useStore((state) => state.updateItemTitle);
+  const canvasMode = useStore((state) => state.canvasMode);
 
   const selectedItem = items.find((i) => i.id === selectedItemId);
 
@@ -113,12 +117,24 @@ export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth
     }
   };
 
+  const handleTopNUpdate = (value: string) => {
+    const updatedProps = { ...selectedItem.props, topN: value, showOther: false };
+    updateItemProps(selectedItem.id, { topN: value, showOther: false });
+    updateItemTitle(selectedItem.id, generateSmartTitle(selectedItem.type, updatedProps as any, scenario));
+  };
+
   // Calculate position
   const colWidth = (containerWidth - (margin[0] * (cols + 1))) / cols;
-  const left = Math.round((selectedItem.layout.x * (colWidth + margin[0])) + margin[0]);
+  let left = Math.round((selectedItem.layout.x * (colWidth + margin[0])) + margin[0]);
   // Position 40px above the element, but ensure minimum of 8px from canvas top
-  const rawTop = (selectedItem.layout.y * (rowHeight + margin[1])) - 40;
-  const top = Math.max(8, Math.round(rawTop));
+  let rawTop = (selectedItem.layout.y * (rowHeight + margin[1])) - 40;
+  let top = Math.max(8, Math.round(rawTop));
+
+  // In whiteboard mode, apply zoom and pan transforms
+  if (canvasMode === 'whiteboard') {
+    left = Math.round(left * zoom + panX);
+    top = Math.max(8, Math.round(rawTop * zoom + panY));
+  }
 
   const renderBarControls = () => (
     <>
@@ -127,7 +143,7 @@ export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth
         <RadioGroup
             layout="horizontal"
             value={String(props.topN ?? 'All')}
-            onChange={(_, data) => handleTitleUpdate('topN', data.value)}
+            onChange={(_, data) => handleTopNUpdate(data.value)}
         >
           <Radio value="2" label="2" data-testid="quick-shape-bars-2" />
           <Radio value="5" label="5" data-testid="quick-shape-bars-5" />
@@ -260,7 +276,7 @@ export const QuickShapeStrip: React.FC<QuickShapeStripProps> = ({ containerWidth
         <RadioGroup
             layout="horizontal"
             value={String(props.topN ?? 'All')}
-            onChange={(_, data) => handleTitleUpdate('topN', data.value)}
+            onChange={(_, data) => handleTopNUpdate(data.value)}
         >
           <Radio value="3" label="3" />
           <Radio value="5" label="5" />

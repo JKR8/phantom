@@ -434,7 +434,8 @@ export interface MapPhantomProps {
   /** Color measure (for choropleth) */
   colorMetric?: string;
   /** Map type */
-  mapType?: 'bubble' | 'choropleth';
+  mapType?: 'au' | 'us' | 'world';
+  displayMode?: 'bubble' | 'choropleth';
 }
 
 /**

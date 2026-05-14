@@ -14,6 +14,7 @@ import {
   MenuPopover,
   Switch,
   Tooltip,
+  mergeClasses,
 } from '@fluentui/react-components';
 import {
   HomeRegular,
@@ -25,9 +26,11 @@ import {
   DesignIdeasRegular,
   ClipboardTextEditRegular,
   WhiteboardRegular,
+  PanelRightContractRegular,
+  PanelRightExpandRegular,
+  ChartMultipleRegular,
 } from '@fluentui/react-icons';
 import { FieldsPane } from './FieldsPane';
-import { VisualizationsPane } from './VisualizationsPane';
 import { PropertiesPanel } from './PropertiesPanel';
 import { SpecificationPanel } from './SpecificationPanel';
 import { DataModelPanel } from './DataModelPanel';
@@ -140,12 +143,6 @@ const useStyles = makeStyles({
     position: 'relative',
     ...shorthands.padding('20px'),
   },
-  bottomPane: {
-    height: '110px',
-    borderTop: `1px solid ${tokens.colorNeutralStroke2}`,
-    flexShrink: 0,
-    backgroundColor: '#F3F2F1',
-  },
   rightPane: {
     width: '240px',
     borderLeft: `1px solid ${tokens.colorNeutralStroke2}`,
@@ -154,9 +151,50 @@ const useStyles = makeStyles({
     height: '100%',
     boxSizing: 'border-box' as const,
     backgroundColor: '#FAFAF9',
+    display: 'flex',
+    flexDirection: 'column',
+    transitionProperty: 'width',
+    transitionDuration: '0.16s',
+    transitionTimingFunction: 'ease',
+  },
+  rightPaneCollapsed: {
+    width: '40px',
+  },
+  rightPaneHeader: {
+    minHeight: '36px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    ...shorthands.padding('4px'),
+    borderBottom: `1px solid ${tokens.colorNeutralStroke2}`,
+    flexShrink: 0,
+  },
+  rightPaneHeaderCollapsed: {
+    justifyContent: 'center',
+  },
+  rightPaneToggle: {
+    width: '28px',
+    height: '28px',
+    minWidth: '28px',
+  },
+  rightPaneContent: {
+    flex: 1,
+    minHeight: 0,
+    overflow: 'hidden',
+  },
+  rightPaneRailLabel: {
+    writingMode: 'vertical-rl' as const,
+    transform: 'rotate(180deg)',
+    color: '#605E5C',
+    fontSize: '10px',
+    fontWeight: 600,
+    textTransform: 'uppercase',
+    letterSpacing: '0.8px',
+    alignSelf: 'center',
+    marginTop: '12px',
   },
   ffmaPane: {
-    width: '180px',
+    width: '240px',
     borderRight: `1px solid ${tokens.colorNeutralStroke2}`,
     flexShrink: 0,
     overflowY: 'auto',
@@ -233,6 +271,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
   const [showDataModelFull, setShowDataModelFull] = React.useState(false);
   const [showPBIUiKit, setShowPBIUiKit] = React.useState(false);
   const [showSpec, setShowSpec] = React.useState(false);
+  const [isRightPaneCollapsed, setIsRightPaneCollapsed] = React.useState(false);
   const [editingTitle, setEditingTitle] = React.useState(false);
   const [titleDraft, setTitleDraft] = React.useState(dashboardName);
 
@@ -331,13 +370,24 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
                   </MenuList>
                 </MenuPopover>
               </Menu>
-              <Tooltip content="Use Vega-Lite rendering for Power BI parity" relationship="description">
+              <Tooltip content="Toggle legacy Recharts/Vega fallback rendering" relationship="description">
                 <Switch
                   checked={useVegaRendering}
                   onChange={(_, data) => setUseVegaRendering(data.checked)}
-                  label={useVegaRendering ? "Vega" : "Recharts"}
+                  label={useVegaRendering ? "Legacy" : "Plot"}
                   style={{ color: 'white', marginRight: '8px' }}
                 />
+              </Tooltip>
+              <Tooltip content="Open the upgraded visual gallery" relationship="description">
+                <Button
+                  appearance="subtle"
+                  className={styles.topButton}
+                  size="small"
+                  icon={<ChartMultipleRegular />}
+                  onClick={() => navigate('/visual-lab')}
+                >
+                  Visual Lab
+                </Button>
               </Tooltip>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '8px', paddingLeft: '8px', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>
                 <Tooltip content="Toggle between PBI mode (fixed canvas) and Whiteboard mode (zoom, pan, annotations)" relationship="description">
@@ -407,7 +457,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
               appearance="subtle"
               style={showPBIUiKit ? navBtnActiveStyle : navBtnStyle}
               onClick={() => { setShowPBIUiKit(!showPBIUiKit); setShowDataModelPane(false); setShowSpec(false); }}
-              title="PBI UI Kit 2.0"
+              title="Visuals"
             />
             <Button
               icon={<ClipboardTextEditRegular />}
@@ -455,17 +505,29 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
                   {children}
                 </CanvasViewport>
               </main>
-              {!readOnly && (
-                <div className={styles.bottomPane}>
-                  <VisualizationsPane />
-                </div>
-              )}
             </div>
             {!readOnly && (
-              <div className={styles.rightPane}>
-                <div key={selectedItemId || 'fields'} className="panel-transition">
-                  {selectedItemId ? <PropertiesPanel /> : <FieldsPane />}
+              <div className={mergeClasses(styles.rightPane, isRightPaneCollapsed ? styles.rightPaneCollapsed : undefined)}>
+                <div className={mergeClasses(styles.rightPaneHeader, isRightPaneCollapsed ? styles.rightPaneHeaderCollapsed : undefined)}>
+                  <Tooltip content={isRightPaneCollapsed ? 'Show theme and fields pane' : 'Hide theme and fields pane'} relationship="label">
+                    <Button
+                      appearance="subtle"
+                      size="small"
+                      className={styles.rightPaneToggle}
+                      icon={isRightPaneCollapsed ? <PanelRightExpandRegular /> : <PanelRightContractRegular />}
+                      aria-label={isRightPaneCollapsed ? 'Show right pane' : 'Hide right pane'}
+                      data-testid="right-pane-toggle"
+                      onClick={() => setIsRightPaneCollapsed((value) => !value)}
+                    />
+                  </Tooltip>
                 </div>
+                {isRightPaneCollapsed ? (
+                  <div className={styles.rightPaneRailLabel}>Theme</div>
+                ) : (
+                  <div className={styles.rightPaneContent} key={selectedItemId || 'fields'}>
+                    {selectedItemId ? <PropertiesPanel /> : <FieldsPane />}
+                  </div>
+                )}
               </div>
             )}
             {/* Whiteboard mode controls */}

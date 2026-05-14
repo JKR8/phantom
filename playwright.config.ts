@@ -1,5 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const host = process.env.PLAYWRIGHT_HOST || '127.0.0.1';
+const port = process.env.PLAYWRIGHT_PORT || process.env.PORT || '5174';
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || `http://${host}:${port}`;
+
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
@@ -8,7 +12,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'html',
   use: {
-    baseURL: 'http://127.0.0.1:5173',
+    baseURL,
     trace: 'on-first-retry',
     screenshot: 'on',
   },
@@ -19,8 +23,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev -- --host 127.0.0.1 --port 5173',
-    url: 'http://127.0.0.1:5173',
+    command: `npm run dev -- --host ${host} --port ${port} --strictPort`,
+    url: baseURL,
     reuseExistingServer: !process.env.CI,
   },
 });

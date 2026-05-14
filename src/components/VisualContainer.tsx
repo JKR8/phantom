@@ -8,7 +8,8 @@ import {
   MenuList,
   MenuItem,
   MenuPopover,
-  Button
+  Button,
+  mergeClasses
 } from '@fluentui/react-components';
 import { MoreHorizontalRegular, DeleteRegular, EditRegular } from '@fluentui/react-icons';
 
@@ -87,7 +88,7 @@ export const VisualContainer: React.FC<VisualContainerProps> = ({ title, childre
       onClick={handleClick}
       data-testid={`visual-container-${itemId}`}
     >
-      <div className={`${styles.header} visual-header`}>
+      <div className={mergeClasses(styles.header, 'visual-header')}>
         <Text className={styles.title}>{title}</Text>
         {!hideMenu && (
           <div

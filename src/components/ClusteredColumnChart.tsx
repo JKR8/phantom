@@ -80,7 +80,7 @@ export const ClusteredColumnChart: React.FC<ClusteredColumnChartProps> = ({ dime
   };
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
       <ReBarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }} onClick={(e: any, event?: any) => {
         if (e && e.activePayload) {
           handleClick(e.activePayload[0].payload, event);

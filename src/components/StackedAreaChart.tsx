@@ -6,12 +6,12 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
   Legend
 } from 'recharts';
 import { useStore, useFilteredSales, useHighlight, useSetHighlight } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
 import { formatMetricValue, getDimensionValue, getMetricValue } from '../utils/chartUtils';
+import { StableResponsiveContainer } from './StableResponsiveContainer';
 
 interface StackedAreaChartProps {
   dimension: string;
@@ -100,7 +100,7 @@ export const StackedAreaChart: React.FC<StackedAreaChartProps> = ({
   };
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <StableResponsiveContainer>
       <ReAreaChart
         data={data}
         margin={{ top: 10, right: 30, left: 10, bottom: 5 }}
@@ -144,6 +144,6 @@ export const StackedAreaChart: React.FC<StackedAreaChartProps> = ({
           />
         ))}
       </ReAreaChart>
-    </ResponsiveContainer>
+    </StableResponsiveContainer>
   );
 };

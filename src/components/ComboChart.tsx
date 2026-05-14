@@ -7,13 +7,13 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
   Legend,
   Cell
 } from 'recharts';
 import { useStore, useFilteredSales } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
 import { formatMetricValue, getDimensionValue, getMetricValue } from '../utils/chartUtils';
+import { StableResponsiveContainer } from './StableResponsiveContainer';
 
 interface ComboChartProps {
   dimension: string;
@@ -110,7 +110,7 @@ export const ComboChart: React.FC<ComboChartProps> = ({
   const maxLineValue = Math.max(...data.map((d) => d.lineValue), 0);
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <StableResponsiveContainer>
       <ComposedChart
         data={data}
         margin={{ top: 20, right: 60, left: 10, bottom: 5 }}
@@ -181,6 +181,6 @@ export const ComboChart: React.FC<ComboChartProps> = ({
           dot={{ r: 4, fill: getColor(1), stroke: getColor(1) }}
         />
       </ComposedChart>
-    </ResponsiveContainer>
+    </StableResponsiveContainer>
   );
 };

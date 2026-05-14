@@ -155,7 +155,7 @@ export const ScatterChart: React.FC<ScatterChartProps> = ({
 
   // ========== DEFAULT SCATTER VARIANT ==========
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
       <ReScatterChart
         margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
       >

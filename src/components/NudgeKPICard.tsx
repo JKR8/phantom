@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { makeStyles, shorthands } from '@fluentui/react-components';
 import { ArrowUpRegular, ArrowDownRegular } from '@fluentui/react-icons';
-import { useFilteredSales, useStore } from '../store/useStore';
+import { useFilteredSales } from '../store/useStore';
 
 const useStyles = makeStyles({
   card: {
@@ -183,7 +183,6 @@ export const NudgeKPICard: React.FC<NudgeKPICardProps> = ({
 }) => {
   const styles = useStyles();
   const filteredData = useFilteredSales();
-  const scenario = useStore((state) => state.scenario);
 
   // Calculate the main value based on metric and operation
   const { mainValue, previousValue, targetVal, yoyChange } = useMemo(() => {

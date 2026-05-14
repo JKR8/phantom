@@ -1,12 +1,11 @@
 /**
- * PBI UI Kit 2.0 Pane
+ * Visuals Pane
  *
- * Shows chart types from the Power BI UI Kit 2.0 CSS spec.
- * These charts use PBI-constrained styling for 100% export fidelity.
+ * Shows universal report objects and analytical chart types in one main pane.
  */
 import React from 'react';
 import { makeStyles, shorthands, Text, Tooltip } from '@fluentui/react-components';
-import { pbiUiKitVisuals, dragState } from './VisualizationsPane';
+import { pbiUiKitVisuals, dragState, universalVisuals } from './VisualizationsPane';
 
 const useStyles = makeStyles({
   container: {
@@ -69,12 +68,14 @@ const useStyles = makeStyles({
     textAlign: 'center',
   },
   sectionHeader: {
-    ...shorthands.padding('4px', '12px'),
+    ...shorthands.padding('10px', '12px', '4px'),
     fontSize: '10px',
     fontWeight: '600',
     color: '#605E5C',
     textTransform: 'uppercase' as const,
     letterSpacing: '0.8px',
+  },
+  sectionHeaderWithRule: {
     borderTop: '1px solid #E1DFDD',
     marginTop: '4px',
   },
@@ -102,34 +103,40 @@ const scheduleClearDragState = () => {
 
 export const PBIUiKitPane: React.FC = () => {
   const styles = useStyles();
+  const renderVisualButton = (visual: { id: string; icon: any; label: string; tooltip: string }) => (
+    <Tooltip key={visual.id} content={visual.tooltip} relationship="label">
+      <div
+        className={styles.visualButton}
+        data-testid={`visual-source-${visual.id}`}
+        draggable
+        onDragStart={(e) => {
+          clearDragState();
+          dragState.visualType = visual.id;
+          e.dataTransfer.setData('visualType', visual.id);
+          e.dataTransfer.setData('text/plain', visual.id);
+          e.dataTransfer.effectAllowed = 'copy';
+        }}
+        onDragEnd={() => {
+          scheduleClearDragState();
+        }}
+        unselectable="on"
+      >
+        <visual.icon className={styles.visualIcon} fontSize={24} style={{ pointerEvents: 'none' }} />
+        <Text className={styles.visualLabel} style={{ pointerEvents: 'none' }}>{visual.label}</Text>
+      </div>
+    </Tooltip>
+  );
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>PBI UI Kit 2.0</div>
+      <div className={styles.header}>Visuals</div>
+      <div className={styles.sectionHeader}>Build</div>
       <div className={styles.content}>
-        {pbiUiKitVisuals.map((visual) => (
-          <Tooltip key={visual.id} content={visual.tooltip} relationship="label">
-            <div
-              className={styles.visualButton}
-              data-testid={`visual-source-${visual.id}`}
-              draggable
-              onDragStart={(e) => {
-                clearDragState();
-                dragState.visualType = visual.id;
-                e.dataTransfer.setData('visualType', visual.id);
-                e.dataTransfer.setData('text/plain', visual.id);
-                e.dataTransfer.effectAllowed = 'copy';
-              }}
-              onDragEnd={() => {
-                scheduleClearDragState();
-              }}
-              unselectable="on"
-            >
-              <visual.icon className={styles.visualIcon} fontSize={24} style={{ pointerEvents: 'none' }} />
-              <Text className={styles.visualLabel} style={{ pointerEvents: 'none' }}>{visual.label}</Text>
-            </div>
-          </Tooltip>
-        ))}
+        {universalVisuals.map(renderVisualButton)}
+      </div>
+      <div className={`${styles.sectionHeader} ${styles.sectionHeaderWithRule}`}>Charts</div>
+      <div className={styles.content}>
+        {pbiUiKitVisuals.map(renderVisualButton)}
       </div>
     </div>
   );

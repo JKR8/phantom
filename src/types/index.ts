@@ -204,6 +204,10 @@ export type VisualType =
   | 'matrix'
   | 'waterfall'
   | 'slicer'
+  | 'boxplot'
+  | 'histogram'
+  | 'violin'
+  | 'regressionScatter'
   // Bar chart variants
   | 'groupedBar'
   | 'lollipop'

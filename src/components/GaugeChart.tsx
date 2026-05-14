@@ -3,11 +3,11 @@ import {
   PieChart,
   Pie,
   Cell,
-  ResponsiveContainer,
 } from 'recharts';
 import { useFilteredSales } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
 import { formatMetricValue, getMetricValue } from '../utils/chartUtils';
+import { StableResponsiveContainer } from './StableResponsiveContainer';
 
 interface GaugeChartProps {
   metric: string;
@@ -144,7 +144,7 @@ const GaugeArc: React.FC<{
   ];
 
   return (
-    <ResponsiveContainer width="100%" height="100%">
+    <StableResponsiveContainer>
       <PieChart>
         <Pie
           data={data}
@@ -169,7 +169,7 @@ const GaugeArc: React.FC<{
           Target: {formatMetricValue(metric, target, true)}
         </text>
       </PieChart>
-    </ResponsiveContainer>
+    </StableResponsiveContainer>
   );
 };
 
