@@ -28,6 +28,9 @@ test.describe('Routing & Guest Mode', () => {
     await expect(page.getByText('Power BI readiness')).toBeVisible();
     await expect(page.getByRole('region', { name: 'Spec canvas' })).toBeVisible();
     await expect(page.getByText('Confirm pbi fallback behavior for elicitation_panel.')).toBeVisible();
+    await page.getByRole('button', { name: 'Resolve prompt' }).click();
+    await expect(page.getByText('All prompts resolved')).toBeVisible();
+    await expect(page.getByText('100%')).toBeVisible();
 
     await page.getByRole('button', { name: 'data', exact: true }).click();
     await expect(page.getByText('Power BI fallback behavior', { exact: true })).toBeVisible();

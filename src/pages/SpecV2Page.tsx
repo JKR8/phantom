@@ -11,6 +11,7 @@ import { ArrowLeftRegular } from '@fluentui/react-icons';
 import { useNavigate } from 'react-router-dom';
 import v2SpecMarkdown from '../../phantom_product_spec_v0.2.md?raw';
 import {
+  applyPhantomSpecV2PromptResolution,
   createPhantomSpecV2AcceptedGaps,
   createPhantomSpecV2ApprovalStatus,
   createPhantomSpecV2DataContractExport,
@@ -214,8 +215,9 @@ export const SpecV2Page: React.FC = () => {
   const styles = useStyles();
   const navigate = useNavigate();
   const [rightPanel, setRightPanel] = useState<RightPanel>('elicitation');
+  const [specMarkdown, setSpecMarkdown] = useState(v2SpecMarkdown);
   const model = useMemo(() => {
-    const document = parsePhantomSpecV2Markdown(v2SpecMarkdown);
+    const document = parsePhantomSpecV2Markdown(specMarkdown);
     return {
       document,
       validation: validatePhantomSpecV2Document(document),
@@ -229,10 +231,24 @@ export const SpecV2Page: React.FC = () => {
       reactExport: createPhantomSpecV2ReactProductExport(document),
       powerBiExport: createPhantomSpecV2PowerBiExport(document),
     };
-  }, []);
+  }, [specMarkdown]);
   const pages = model.document.blocks.find((block) => block.header.id === 'pages')?.body.pages;
   const pageList = Array.isArray(pages) ? pages : [];
   const components = model.reactExport.components;
+  const resolveFirstPrompt = () => {
+    const prompt = model.prompts.find((item) => item.objectType === 'component');
+    if (!prompt) return;
+    const result = applyPhantomSpecV2PromptResolution(specMarkdown, {
+      objectType: 'component',
+      objectId: prompt.objectId,
+      fieldPath: prompt.fieldPath,
+      value: 'Document Power BI as an implementation note and use React for exact workshop behavior.',
+      ownerRole: prompt.ownerRole || 'dashboard_builder',
+      date: '2026-05-15',
+      notes: 'Resolved in the v0.2 workshop surface.',
+    });
+    setSpecMarkdown(result.markdown);
+  };
 
   return (
     <main className={styles.page}>
@@ -271,7 +287,9 @@ export const SpecV2Page: React.FC = () => {
           <div className={styles.metric}>
             <Text className={styles.metricLabel}>Unresolved prompts</Text>
             <Text className={styles.metricValue}>{model.prompts.length}</Text>
-            <Badge color={model.prompts.length === 0 ? 'success' : 'important'}>Needs answer</Badge>
+            <Badge color={model.prompts.length === 0 ? 'success' : 'important'}>
+              {model.prompts.length === 0 ? 'Resolved' : 'Needs answer'}
+            </Badge>
           </div>
         </div>
       </section>
@@ -344,7 +362,7 @@ export const SpecV2Page: React.FC = () => {
                 </div>
               ))}
             </div>
-            <pre className={styles.source}>{v2SpecMarkdown.slice(0, 1800)}...</pre>
+            <pre className={styles.source}>{specMarkdown.slice(0, 1800)}...</pre>
           </div>
         </section>
 
@@ -369,11 +387,24 @@ export const SpecV2Page: React.FC = () => {
 
             {rightPanel === 'elicitation' && (
               <div className={styles.list}>
+                {model.prompts.length === 0 && (
+                  <div className={styles.listItem}>
+                    <Text weight="semibold">All prompts resolved</Text>
+                    <Text size={200}>
+                      The spec has no unresolved elicitation prompts in the current workshop state.
+                    </Text>
+                  </div>
+                )}
                 {model.prompts.map((prompt) => (
                   <div key={prompt.id} className={styles.prompt}>
                     <Text weight="semibold">{prompt.prompt}</Text>
                     <Text size={200}>{prompt.reason}</Text>
                     <Text size={200}>Owner: {prompt.ownerRole || 'unassigned'}</Text>
+                    {prompt.objectType === 'component' && (
+                      <Button size="small" appearance="primary" onClick={resolveFirstPrompt}>
+                        Resolve prompt
+                      </Button>
+                    )}
                   </div>
                 ))}
               </div>
