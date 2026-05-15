@@ -224,6 +224,9 @@ export const SpecificationPanel: React.FC = () => {
   );
   const visibleIssues = [...powerBiReadiness.errors, ...powerBiReadiness.warnings].slice(0, 3);
   const visibleGateNextSteps = implementationGate.requiredNextSteps.slice(0, 3);
+  const visibleDrillActions = drillActions.slice(0, 3);
+  const getComponentTitle = (componentId: string) =>
+    items.find((item) => item.id === componentId)?.title || componentId;
 
   const handleChange = (field: keyof DashboardSpecification, value: string) => {
     updateSpecification({ [field]: value });
@@ -494,6 +497,50 @@ export const SpecificationPanel: React.FC = () => {
         </div>
         <Text className={styles.hint}>
           The exported handoff pack includes this same gate as implementation-gate.json for agents and engineers.
+        </Text>
+      </div>
+
+      {/* Analytical Journeys */}
+      <div className={styles.section}>
+        <Text className={styles.sectionHeader}>Analytical Journeys</Text>
+        <div className={styles.metricGrid}>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Drill Actions</Text>
+            <Text className={styles.metricValue}>{drillActions.length}</Text>
+          </div>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Context Mappings</Text>
+            <Text className={styles.metricValue}>
+              {drillActions.reduce((count, action) => count + action.context.length, 0)}
+            </Text>
+          </div>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Preserve Filters</Text>
+            <Text className={styles.metricValue}>
+              {drillActions.filter((action) => action.preserveFilters).length}
+            </Text>
+          </div>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>View Targets</Text>
+            <Text className={styles.metricValue}>
+              {drillActions.filter((action) => action.targetType === 'view').length}
+            </Text>
+          </div>
+        </div>
+        <div className={styles.issueList}>
+          {visibleDrillActions.length === 0 ? (
+            <Text className={styles.issueText}>
+              No drill actions defined yet. Select a visual and use its properties panel to add one.
+            </Text>
+          ) : visibleDrillActions.map((action) => (
+            <Text key={action.id} className={styles.issueText}>
+              {action.label}: {getComponentTitle(action.sourceComponentId)} to {action.targetType}:{action.targetId}
+              {action.context.length ? ` (${action.context.map((context) => `${context.source} to ${context.target}`).join(', ')})` : ''}
+            </Text>
+          ))}
+        </div>
+        <Text className={styles.hint}>
+          Drill actions export into React routes/interactions and Power BI implementation notes.
         </Text>
       </div>
 
