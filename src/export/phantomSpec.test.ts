@@ -779,6 +779,7 @@ describe('phantomSpec', () => {
     expect(guide.summary.readyVisuals).toBe(1);
     expect(guide.summary.approximateVisuals).toBe(1);
     expect(guide.summary.unsupportedVisuals).toBe(1);
+    expect(guide.project.signOffStatus).toBe('draft');
     expect(guide.designWorkflow).toMatchObject({
       entryPoint: 'figma-led',
       designPlane: 'figma',
@@ -795,6 +796,7 @@ describe('phantomSpec', () => {
     expect(guide.components[1].designSources).toEqual(['figma-1']);
     expect(markdown).toContain('| visual-2 | Ranked variance | lollipop | approximate | figma-1 | Region, profit |');
     expect(markdown).toContain('ERROR POWER_BI_UNSUPPORTED_VISUAL');
+    expect(markdown).toContain('- Sign-off: draft');
     expect(markdown).toContain('| drill-1 | Open region detail | visual-1 | view:region-detail | Region->region | Yes |');
     expect(markdown).toContain('- Power BI concept (type: figmaFrame; url: https://www.figma.com/design/power-bi; frame: 3:4; components: visual-2)');
     expect(markdown).toContain('## Design Workflow');

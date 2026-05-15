@@ -1290,6 +1290,7 @@ const createPowerBiGuide = (spec) => {
     project: {
       scenario: spec.project?.scenario,
       sourceMode: spec.mode,
+      signOffStatus: spec.project?.specification?.signOffStatus || 'draft',
       designEntryPoint: spec.project?.designEntryPoint,
       designSources: spec.project?.designSources || [],
     },
@@ -1349,6 +1350,7 @@ Generated from Phantom Spec ${guide.sourceSpecVersion}.
 
 - Ready for Power BI handoff: ${guide.readiness.ready ? 'Yes' : 'No'}
 - Source mode: ${guide.project.sourceMode}
+- Sign-off: ${guide.project.signOffStatus || 'draft'}
 - Entry point: ${guide.project.designEntryPoint}
 - Design sources: ${guide.project.designSources.length}
 - Components: ${guide.summary.components}
