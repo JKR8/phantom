@@ -1208,6 +1208,7 @@ const writeHandoffPack = async (spec, outDir) => {
     },
     readiness,
     handoffRecommendation,
+    workshopIntent: handoffSummary.workshopIntent,
     nextActions,
     artifacts: {
       spec: 'phantom-spec.json',
