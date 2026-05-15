@@ -70,6 +70,8 @@ npm run phantom:spec -- inspect path/to/spec.json powerbi-build-matrix
 npm run phantom:spec -- inspect path/to/spec.json handoff-summary
 npm run phantom:spec -- import-design-source path/to/spec.json figmaFrame "Client concept" https://www.figma.com/design/... "1:2" "Workshop-approved direction" path/to/spec.with-design.json
 node tools/phantom-spec-cli.mjs import-design-source path/to/spec.json --type figmaFrame --name "Client concept" --url https://www.figma.com/design/... --frame-id "1:2" --views main --components kpi-1,chart-1 --out path/to/spec.with-design.json
+npm run phantom:spec -- import-data-source path/to/spec.json dbt "Orders mart" mart_orders Region,revenue visual-1 path/to/spec.with-data.json
+node tools/phantom-spec-cli.mjs import-data-source path/to/spec.json --type dbt --name "Orders mart" --model mart_orders --fields Region,revenue --components visual-1 --out path/to/spec.with-data.json
 ```
 
 `validate` returns:
@@ -108,6 +110,8 @@ node tools/phantom-spec-cli.mjs import-design-source path/to/spec.json --type fi
 `inspect handoff-summary` returns project metadata including sign-off status, implementation gate, data path, design workflow, design mapping coverage, workshop intent, workshop completeness, React and Power BI readiness, a recommended handoff target, field/component/task counts, Power BI visual support counts, and next actions in one JSON payload. Use it as the first agent check after a workshop.
 
 `import-design-source` adds or updates a Figma frame, Figma component, screenshot, Phantom default, or external reference in a Phantom Spec. Use the npm-friendly positional form `type name url frame-id notes out-spec`; direct `node tools/phantom-spec-cli.mjs ...` usage can also pass named flags such as `--type`, `--name`, `--url`, `--views`, `--components`, and `--out`. It writes a new spec to the positional output path or `--out`, marks non-Phantom sources as `figma-led`, and mirrors the source into `project.specification` so browser exports, CLI exports, readiness checks, and agents see the same design context.
+
+`import-data-source` adds or updates an API, GraphQL endpoint, warehouse table, dbt model, semantic API, file, manual source, or unknown source in a Phantom Spec. Use it to repair `inspect data-path` blockers by linking source IDs to component IDs and required fields before exporting handoff packs.
 
 `readiness` returns a machine-readable report with `ready`, `errors`, and `warnings`. It exits non-zero when blockers exist, which lets agents and CI stop before generating misleading implementation output. It also warns when the spec is not approved, Figma/design-source mappings are unmapped, or mappings reference missing Phantom view IDs or component IDs, so agents can repair handoff links before implementation work starts.
 
@@ -148,6 +152,7 @@ Future commands should include:
 - `phantom inspect powerbi-build-matrix <file>` implemented as `npm run phantom:spec -- inspect <file> powerbi-build-matrix`
 - `phantom inspect handoff-summary <file>` implemented as `npm run phantom:spec -- inspect <file> handoff-summary`
 - `phantom import design-source <file> --type figmaFrame --name <name> --url <url> --out <file>` implemented as `npm run phantom:spec -- import-design-source <file> ...`
+- `phantom import data-source <file> --type dbt --name <name> --model <model> --fields <fields> --components <ids> --out <file>` implemented as `npm run phantom:spec -- import-data-source <file> ...`
 
 ## Intended API Roadmap
 

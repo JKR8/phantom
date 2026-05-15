@@ -111,6 +111,12 @@ For Figma-led work:
 npm run phantom:spec -- import-design-source path/to/spec.json figmaFrame "Client concept" https://www.figma.com/design/... "1:2" "Workshop-approved direction" path/to/spec.with-design.json
 ```
 
+For data-path work:
+
+```bash
+npm run phantom:spec -- import-data-source path/to/spec.json dbt "Orders mart" mart_orders Region,revenue visual-1 path/to/spec.with-data.json
+```
+
 For full implementation handoff:
 
 ```bash

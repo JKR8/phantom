@@ -18,7 +18,9 @@ Usage:
   npm run phantom:spec -- export-handoff-pack <spec.json> <dir>
   npm run phantom:spec -- inspect <spec.json> components|drill-actions|data-requirements|data-path|design-sources|design-mapping|design-workflow|approval|implementation-gate|workshop-intent|react-backlog|powerbi-build-matrix|handoff-summary
   npm run phantom:spec -- import-design-source <spec.json> figmaFrame "Client frame" <url> <frame-id> "notes" <out-spec.json>
+  npm run phantom:spec -- import-data-source <spec.json> dbt "Orders mart" mart_orders Region,revenue visual-1 <out-spec.json>
   node tools/phantom-spec-cli.mjs import-design-source <spec.json> --type figmaFrame --name "Client frame" --url <url> --frame-id <frame-id> --views main --components kpi-1,chart-1 --out <out-spec.json>
+  node tools/phantom-spec-cli.mjs import-data-source <spec.json> --type dbt --name "Orders mart" --model mart_orders --fields Region,revenue --components visual-1 --out <out-spec.json>
 
 Commands:
   validate             Validate a Phantom Spec JSON file for agent/build handoff.
@@ -31,6 +33,7 @@ Commands:
   export-handoff-pack  Generate a bundled React and Power BI handoff pack.
   inspect              Print a focused machine-readable view of a spec section.
   import-design-source Add or update a Figma/screenshot/reference design source in a spec.
+  import-data-source   Add or update an API/warehouse/dbt/semantic/file data source in a spec.
 `);
 };
 
@@ -480,6 +483,70 @@ const mergeDesignSource = (spec) => {
     },
     outPath: resolve(outPath),
     designSource,
+  };
+};
+
+const mergeDataSource = (spec) => {
+  const positional = positionalOptions();
+  const type = optionValue('--type') || positional[0] || 'dbt';
+  const allowedTypes = new Set(['api', 'graphql', 'warehouse', 'dbt', 'semantic', 'file', 'manual', 'unknown']);
+  if (!allowedTypes.has(type)) {
+    throw new Error('Data source type must be api, graphql, warehouse, dbt, semantic, file, manual, or unknown.');
+  }
+
+  const name = optionValue('--name') || positional[1];
+  const model = optionValue('--model') || positional[2];
+  const url = optionValue('--url');
+  const query = optionValue('--query');
+  const description = optionValue('--description') || optionValue('--notes');
+  const positionalFields = positional[3] ? positional[3].split(',').map((item) => item.trim()).filter(Boolean) : [];
+  const positionalComponents = positional[4] && positional.length >= 6
+    ? positional[4].split(',').map((item) => item.trim()).filter(Boolean)
+    : [];
+  const linkedFieldsOption = csvOption('--fields', '--field-ids', '--linked-fields');
+  const linkedComponentsOption = csvOption('--components', '--component-ids', '--linked-component-ids');
+  const linkedFields = linkedFieldsOption.length ? linkedFieldsOption : positionalFields;
+  const linkedComponentIds = linkedComponentsOption.length ? linkedComponentsOption : positionalComponents;
+  const id = optionValue('--id') || `${type}-${slug(model || name || url || query)}`;
+  const outPath = optionValue('--out') || (positional.length >= 4 ? positional[positional.length - 1] : undefined);
+  if (!outPath) {
+    throw new Error('Missing --out path for import-data-source.');
+  }
+  if (!name && !model && !url && !query) {
+    throw new Error('Provide at least one of --name, --model, --url, or --query.');
+  }
+
+  const dataSource = {
+    id,
+    type,
+    name: name || model || url || query || 'Data source',
+    ...(description ? { description } : {}),
+    ...(url ? { url } : {}),
+    ...(model ? { model } : {}),
+    ...(query ? { query } : {}),
+    ...(linkedComponentIds.length ? { linkedComponentIds } : {}),
+    ...(linkedFields.length ? { linkedFields } : {}),
+  };
+  const existingSources = spec.project?.specification?.dataSources || [];
+  const nextSources = [
+    ...existingSources.filter((source) => source.id !== id),
+    dataSource,
+  ];
+  const specification = {
+    ...(spec.project?.specification || {}),
+    dataSources: nextSources,
+  };
+
+  return {
+    nextSpec: {
+      ...spec,
+      project: {
+        ...spec.project,
+        specification,
+      },
+    },
+    outPath: resolve(outPath),
+    dataSource,
   };
 };
 
@@ -1885,7 +1952,7 @@ try {
     process.exit(0);
   }
 
-  if (!['validate', 'summary', 'diff', 'readiness', 'export-react', 'export-data-contract', 'export-powerbi-guide', 'export-handoff-pack', 'inspect', 'import-design-source'].includes(command)) {
+  if (!['validate', 'summary', 'diff', 'readiness', 'export-react', 'export-data-contract', 'export-powerbi-guide', 'export-handoff-pack', 'inspect', 'import-design-source', 'import-data-source'].includes(command)) {
     throw new Error(`Unknown command: ${command}`);
   }
 
@@ -1941,6 +2008,21 @@ try {
       designEntryPoint: nextSpec.project.designEntryPoint,
       designSources: nextSpec.project.designSources.length,
       imported: designSource,
+    }, null, 2));
+  }
+
+  if (command === 'import-data-source') {
+    if (errors.length > 0) {
+      console.error(JSON.stringify({ valid: false, errors }, null, 2));
+      process.exit(1);
+    }
+    const { nextSpec, outPath, dataSource } = mergeDataSource(spec);
+    await writeFile(outPath, `${JSON.stringify(nextSpec, null, 2)}\n`);
+    console.log(JSON.stringify({
+      outPath,
+      dataSources: nextSpec.project.specification.dataSources.length,
+      imported: dataSource,
+      dataPath: createDataPath(nextSpec),
     }, null, 2));
   }
 

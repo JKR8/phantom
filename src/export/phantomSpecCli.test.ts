@@ -241,4 +241,52 @@ describe('phantom spec CLI', () => {
       await rm(tempDir, { recursive: true, force: true });
     }
   }, 30000);
+
+  it('imports structured data sources through the CLI', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'phantom-import-data-source-'));
+    const specPath = join(tempDir, 'spec.json');
+    const outPath = join(tempDir, 'spec.with-data.json');
+    const spec = JSON.parse(JSON.stringify(createReadySpec()));
+    spec.project.specification.dataSources = [];
+
+    try {
+      await writeFile(specPath, `${JSON.stringify(spec, null, 2)}\n`);
+      const { stdout } = await execFileAsync(
+        process.execPath,
+        [
+          'tools/phantom-spec-cli.mjs',
+          'import-data-source',
+          specPath,
+          '--type',
+          'dbt',
+          '--name',
+          'Orders mart',
+          '--model',
+          'mart_orders',
+          '--fields',
+          'Region,Account,revenue',
+          '--components',
+          'visual-1,visual-2',
+          '--out',
+          outPath,
+        ],
+        { cwd: process.cwd() },
+      );
+      const result = JSON.parse(stdout);
+      const nextSpec = JSON.parse(await readFile(outPath, 'utf8'));
+
+      expect(result.imported).toMatchObject({
+        id: 'dbt-mart-orders',
+        type: 'dbt',
+        name: 'Orders mart',
+        model: 'mart_orders',
+        linkedComponentIds: ['visual-1', 'visual-2'],
+        linkedFields: ['Region', 'Account', 'revenue'],
+      });
+      expect(result.dataPath.requiredNextSteps).toEqual([]);
+      expect(nextSpec.project.specification.dataSources).toHaveLength(1);
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  }, 30000);
 });
