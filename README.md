@@ -1,5 +1,23 @@
 # Phantom
 
+## Current Direction
+
+Phantom is an analytics-native design toolkit for consultants, report builders, and product teams.
+
+It turns client reporting workshops into build-ready analytical specs. Teams can start in Figma for visual design, import or link that design into Phantom, then use Phantom for the analytics workflow: metrics, dimensions, filters, drill-throughs, data contracts, readiness checks, and React or Power BI handoff.
+
+Phantom also works without Figma. Use its sensible analytical defaults, templates, visual kit, and mock data to move quickly from workshop to implementation spec.
+
+Current product direction:
+
+- **React Product Mode** for polished custom analytical React apps.
+- **Power BI Mode** for constrained Power BI-safe mockups and implementation guidance.
+- **Figma-led workflow** when design starts in Figma and Phantom adds analytical behavior and handoff.
+- **Phantom-led workflow** when speed and sensible analytical defaults matter more than bespoke visual design.
+- **Agent-ready exports** through Phantom Spec JSON, readiness reports, data contracts, handoff summaries, and CLI commands.
+
+## Legacy Snapshot
+
 **Micro-BI prototyping tool — "Looks like Power BI, works like magic."**
 
 Phantom generates interactive Power BI-style dashboards with realistic fake data, cross-highlighting, and one-click export to real PBIP projects. Pick one of 7 industry scenarios, drag 20+ visual types onto a 24-column grid, shape with 12 color palettes and 9 templates, then export a working Power BI project with star schema, DAX measures, and positioned visuals — all from the browser.
@@ -142,6 +160,11 @@ src/
 ```
 
 ## Documentation
+
+- [VISION.md](VISION.md) - Product goal and positioning
+- [docs/PRODUCT_ROADMAP.md](docs/PRODUCT_ROADMAP.md) - Roadmap for React Product Mode, Power BI Mode, Figma-led workflow, and exports
+- [docs/CONSULTANT_WORKFLOW.md](docs/CONSULTANT_WORKFLOW.md) - Consultant workflow from Figma or Phantom defaults to engineering handoff
+- [docs/AI_CONTROL_SURFACE.md](docs/AI_CONTROL_SURFACE.md) - CLI/API/agent control surface
 
 - [PRD.md](PRD.md) — Product requirements & architecture
 - [TODO.md](TODO.md) — Roadmap & task tracking
