@@ -325,6 +325,31 @@ describe('phantomSpec', () => {
     expect(report.warnings.map((issue) => issue.code)).toContain('DRILL_ACTION_WITHOUT_CONTEXT');
   });
 
+  it('warns when workshop intent is too thin for implementation handoff', () => {
+    const spec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [item({})],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      specification: {
+        signOffStatus: 'draft',
+        businessQuestions: 'Which regions need intervention?',
+      },
+    });
+
+    const report = checkPhantomReadiness(spec, 'react');
+
+    expect(report.ready).toBe(true);
+    expect(report.warnings.map((issue) => issue.code)).toEqual(expect.arrayContaining([
+      'MISSING_AUDIENCE',
+      'MISSING_ACCEPTANCE_CRITERIA',
+    ]));
+    expect(report.warnings.map((issue) => issue.code)).not.toContain('MISSING_BUSINESS_QUESTIONS');
+  });
+
   it('creates a data contract from a Phantom spec', () => {
     const spec = createPhantomSpec({
       scenario: 'Retail',

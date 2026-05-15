@@ -487,6 +487,8 @@ const createWorkshopIntent = (specification: DashboardSpecification): PhantomDat
   buildNotes: specification.buildNotes,
 });
 
+const hasText = (value: unknown) => typeof value === 'string' && value.trim().length > 0;
+
 export const createDesignSourcesMarkdown = (designSources: DesignSource[]) => {
   if (!designSources.length) return '- None specified';
 
@@ -928,6 +930,30 @@ export const checkPhantomReadiness = (spec: PhantomSpec, target: ExportMode = sp
       severity: 'warning',
       code: 'FIGMA_LED_WITHOUT_SOURCE',
       message: 'Project is marked Figma-led but has no linked design sources.',
+    });
+  }
+
+  if (!hasText(spec.project.specification.businessQuestions)) {
+    warnings.push({
+      severity: 'warning',
+      code: 'MISSING_BUSINESS_QUESTIONS',
+      message: 'Workshop intent has no business questions; implementation teams may not know what decisions the experience must support.',
+    });
+  }
+
+  if (!hasText(spec.project.specification.audience)) {
+    warnings.push({
+      severity: 'warning',
+      code: 'MISSING_AUDIENCE',
+      message: 'Workshop intent has no audience; UX, density, and distribution decisions are underspecified.',
+    });
+  }
+
+  if (!hasText(spec.project.specification.acceptanceCriteria)) {
+    warnings.push({
+      severity: 'warning',
+      code: 'MISSING_ACCEPTANCE_CRITERIA',
+      message: 'Workshop intent has no acceptance criteria for client sign-off or implementation QA.',
     });
   }
 
