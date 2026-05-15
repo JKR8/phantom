@@ -50,6 +50,7 @@ npm run phantom:spec -- validate path/to/spec.json
 npm run phantom:spec -- summary path/to/spec.json
 npm run phantom:spec -- readiness path/to/spec.json react
 npm run phantom:spec -- readiness path/to/spec.json powerBi
+npm run phantom:spec -- export-react path/to/spec.json ./generated-app
 ```
 
 `validate` returns:
@@ -65,6 +66,8 @@ npm run phantom:spec -- readiness path/to/spec.json powerBi
 
 `readiness` returns a machine-readable report with `ready`, `errors`, and `warnings`. It exits non-zero when blockers exist, which lets agents and CI stop before generating misleading implementation output.
 
+`export-react` creates a deterministic Vite/React starter with the Phantom Spec embedded, placeholder component cards, and a README that tells engineers what to wire next.
+
 ## Intended CLI Roadmap
 
 Future commands should include:
@@ -73,7 +76,6 @@ Future commands should include:
 - `phantom spec summary <file>`
 - `phantom spec diff <before> <after>`
 - `phantom spec readiness <file> react|powerBi`
-- `phantom export react <file> --out <dir>`
 - `phantom export pbi-report <file> --out <dir>`
 - `phantom export data-contract <file> --out <dir>`
 - `phantom inspect components <file>`
