@@ -152,7 +152,7 @@ node tools/phantom-spec-cli.mjs import-data-source path/to/spec.json --type dbt 
 
 The browser export menu also provides workshop-friendly implementation exports:
 
-- `Handoff Pack (.zip)` bundles the canonical spec, handoff summary, implementation gate, design handoff, data contract, Power BI guide, React implementation notes, and a machine-readable manifest.
+- `Handoff Pack (.zip)` bundles the canonical spec, handoff summary, implementation gate, design handoff, data contract, Power BI guide, React Product Build Pack artifacts, and a machine-readable manifest.
 - `React Product Build Pack` creates a React-focused zip with `phantom-spec.json`, `phantom-data-contract.json`, `design-handoff.json`, `implementation-gate.json`, `react-implementation-backlog.json`, `REACT_IMPLEMENTATION_BACKLOG.md`, `REACT_IMPLEMENTATION_NOTES.md`, and `REACT_BUILD_MANIFEST.json`. The CLI equivalent is `export-react-build-pack`.
 - `Data Contract` creates a zip with `data-contract.json` and `DATA_CONTRACT.md` for API, warehouse/dbt, semantic endpoint, or agent mapping.
 - `Power BI Build Guide` creates a zip with `power-bi-implementation-guide.json` and `POWER_BI_IMPLEMENTATION_GUIDE.md` for constrained Power BI Mode delivery.

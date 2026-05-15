@@ -43,7 +43,6 @@ import {
   createPowerBiImplementationGuide,
   createPowerBiImplementationGuideMarkdown,
   createReactImplementationBacklog,
-  createReactImplementationBacklogMarkdown,
   createReactProductBuildPack,
   downloadPBIPPackage,
   generateAllMeasures,
@@ -276,6 +275,7 @@ export const ExportButton: React.FC = () => {
       const reactBacklog = createReactImplementationBacklog(spec);
       const handoffSummary = createPhantomHandoffSummary(spec);
       const designHandoff = createPhantomDesignHandoff(spec);
+      const reactBuildPack = createReactProductBuildPack(spec);
       const date = new Date().toISOString().split('T')[0];
       const zip = new JSZip();
       const manifest = {
@@ -307,7 +307,16 @@ export const ExportButton: React.FC = () => {
           designHandoff: 'design-handoff.json',
           dataContract: ['data-contract/data-contract.json', 'data-contract/DATA_CONTRACT.md'],
           powerBi: ['power-bi/power-bi-implementation-guide.json', 'power-bi/POWER_BI_IMPLEMENTATION_GUIDE.md'],
-          react: ['react-product/REACT_IMPLEMENTATION_NOTES.md', 'react-product/react-implementation-backlog.json', 'react-product/REACT_IMPLEMENTATION_BACKLOG.md', 'react-product/phantom-spec.json', 'react-product/phantom-data-contract.json', 'react-product/implementation-gate.json', 'react-product/design-handoff.json'],
+          react: [
+            'react-product/REACT_IMPLEMENTATION_NOTES.md',
+            'react-product/react-implementation-backlog.json',
+            'react-product/REACT_IMPLEMENTATION_BACKLOG.md',
+            'react-product/phantom-spec.json',
+            'react-product/phantom-data-contract.json',
+            'react-product/implementation-gate.json',
+            'react-product/design-handoff.json',
+            'react-product/REACT_BUILD_MANIFEST.json',
+          ],
         },
         summary: {
           components: powerBiGuide.summary.components,
@@ -410,69 +419,6 @@ ${handoffSummary.designWorkflow.requiredNextSteps.map((step) => `- ${step}`).joi
 - \`design-handoff.json\`: component-level Figma/default provenance and missing design mappings for agents and engineers.
 - \`HANDOFF_MANIFEST.json\`: machine-readable index for agents and engineering automation.
 `;
-      const reactNotes = `# React Product Implementation Notes
-
-Use \`phantom-spec.json\` and \`phantom-data-contract.json\` as the implementation contract.
-
-## Project Status
-
-- Sign-off: ${contract.project.signOffStatus || 'draft'}
-- Recommended handoff: ${handoffSummary.handoffRecommendation.target}
-- Guidance: ${handoffSummary.handoffRecommendation.guidance}
-- Ready for implementation: ${handoffSummary.implementationGate.readyForImplementation ? 'Yes' : 'No'}
-
-## Expected Work
-
-- Clear any implementation gate blockers before treating this as a final build contract.
-- Replace Phantom placeholder visuals with production React components.
-- Wire data requirements to client-owned APIs, warehouse/dbt models, or optional semantic endpoints.
-- Implement drill actions from \`phantom-spec.json > interactions.drillActions\`.
-- Confirm sign-off status is approved before treating this as a final implementation contract.
-- Apply Figma/design-source references from \`phantom-spec.json > project.designSources\` when present.
-
-## Workshop Intent
-
-- Business questions: ${contract.workshopIntent.businessQuestions || 'Not specified'}
-- Audience: ${contract.workshopIntent.audience || 'Not specified'}
-- Decisions/actions: ${contract.workshopIntent.decisions || 'Not specified'}
-- Acceptance criteria: ${contract.workshopIntent.acceptanceCriteria || 'Not specified'}
-- Build notes: ${contract.workshopIntent.buildNotes || 'Not specified'}
-
-## Design Sources
-
-${createDesignSourcesMarkdown(spec.project.designSources)}
-
-## Design Workflow
-
-- Design plane: ${handoffSummary.designWorkflow.designPlane}
-- Status: ${handoffSummary.designWorkflow.status}
-- Next steps: ${handoffSummary.designWorkflow.requiredNextSteps.join(' ')}
-
-## Design Mapping
-
-- Sources: ${handoffSummary.designMapping.totalSources}
-- Mapped sources: ${handoffSummary.designMapping.mappedSources}
-- Unmapped sources: ${handoffSummary.designMapping.unmappedSources}
-- Linked views: ${handoffSummary.designMapping.linkedViewIds.join(', ') || 'None'}
-- Linked components: ${handoffSummary.designMapping.linkedComponentIds.join(', ') || 'None'}
-
-## Design Handoff
-
-- Source mode: ${designHandoff.sourceMode}
-- Can skip Figma: ${designHandoff.canSkipFigma ? 'Yes' : 'No'}
-- Missing component mappings: ${designHandoff.missingMappings.join(', ') || 'None'}
-
-## Component Backlog
-
-${createReactImplementationBacklogMarkdown(reactBacklog)}
-
-For a runnable starter app, use:
-
-\`\`\`bash
-npm run phantom:spec -- export-react phantom-spec.json ./generated-app
-\`\`\`
-`;
-
       zip.file('phantom-spec.json', JSON.stringify(spec, null, 2));
       zip.file('handoff-summary.json', JSON.stringify(handoffSummary, null, 2));
       zip.file('implementation-gate.json', JSON.stringify(handoffSummary.implementationGate, null, 2));
@@ -483,13 +429,9 @@ npm run phantom:spec -- export-react phantom-spec.json ./generated-app
       zip.file('data-contract/DATA_CONTRACT.md', createPhantomDataContractMarkdown(contract));
       zip.file('power-bi/power-bi-implementation-guide.json', JSON.stringify(powerBiGuide, null, 2));
       zip.file('power-bi/POWER_BI_IMPLEMENTATION_GUIDE.md', createPowerBiImplementationGuideMarkdown(powerBiGuide));
-      zip.file('react-product/REACT_IMPLEMENTATION_NOTES.md', reactNotes);
-      zip.file('react-product/react-implementation-backlog.json', JSON.stringify(reactBacklog, null, 2));
-      zip.file('react-product/REACT_IMPLEMENTATION_BACKLOG.md', createReactImplementationBacklogMarkdown(reactBacklog));
-      zip.file('react-product/phantom-spec.json', JSON.stringify(spec, null, 2));
-      zip.file('react-product/phantom-data-contract.json', JSON.stringify(contract, null, 2));
-      zip.file('react-product/implementation-gate.json', JSON.stringify(handoffSummary.implementationGate, null, 2));
-      zip.file('react-product/design-handoff.json', JSON.stringify(designHandoff, null, 2));
+      Object.entries(reactBuildPack.files).forEach(([filename, contents]) => {
+        zip.file(`react-product/${filename}`, typeof contents === 'string' ? contents : JSON.stringify(contents, null, 2));
+      });
 
       const blob = await zip.generateAsync({ type: 'blob' });
       downloadBlob(blob, `${scenario}_Phantom_Handoff_Pack_${date}.zip`);
