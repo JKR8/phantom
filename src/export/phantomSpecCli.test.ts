@@ -1,0 +1,144 @@
+import { execFile } from 'node:child_process';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { promisify } from 'node:util';
+import { describe, expect, it } from 'vitest';
+
+const execFileAsync = promisify(execFile);
+
+describe('phantom spec CLI', () => {
+  it('exports React starters with route and component contracts', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'phantom-react-export-'));
+    const specPath = join(tempDir, 'spec.json');
+    const outDir = join(tempDir, 'react-starter');
+    const spec = {
+      specVersion: '0.1.0',
+      mode: 'react',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      project: {
+        scenario: 'Retail',
+        layoutMode: 'Free',
+        themePalette: 'Default',
+        specification: {
+          signOffStatus: 'approved',
+          businessQuestions: 'Which regions are growing?',
+          audience: 'Executives',
+          decisions: 'Prioritise regions.',
+          acceptanceCriteria: 'Revenue by region is clear and drillable.',
+        },
+        designEntryPoint: 'figma-led',
+        designSources: [
+          {
+            id: 'figma-1',
+            type: 'figmaFrame',
+            name: 'Client frame',
+            linkedViewIds: ['main', 'detail'],
+            linkedComponentIds: ['visual-1'],
+          },
+        ],
+      },
+      views: [
+        {
+          id: 'main',
+          name: 'Executive Overview',
+          layoutMode: 'Free',
+          components: [
+            {
+              id: 'visual-1',
+              type: 'bar',
+              title: 'Revenue by Region',
+              layout: { x: 0, y: 0, w: 12, h: 8 },
+              props: { dimension: 'Region', metric: 'revenue' },
+              dataRequirements: {
+                metrics: ['revenue'],
+                dimensions: ['Region'],
+                fields: ['Region', 'revenue'],
+              },
+              exportTargets: {
+                react: { status: 'ready' },
+                powerBi: { status: 'ready' },
+              },
+            },
+          ],
+        },
+        {
+          id: 'detail',
+          name: 'Region Detail',
+          layoutMode: 'Free',
+          components: [
+            {
+              id: 'visual-2',
+              type: 'table',
+              title: 'Regional Accounts',
+              layout: { x: 0, y: 8, w: 12, h: 8 },
+              props: { dimensions: ['Region', 'Account'], metrics: ['revenue'] },
+              dataRequirements: {
+                metrics: ['revenue'],
+                dimensions: ['Region', 'Account'],
+                fields: ['Region', 'Account', 'revenue'],
+              },
+              exportTargets: {
+                react: { status: 'ready' },
+                powerBi: { status: 'ready' },
+              },
+            },
+          ],
+        },
+      ],
+      filters: {},
+      dataContract: {
+        metrics: ['revenue'],
+        dimensions: ['Region', 'Account'],
+        fields: ['Region', 'Account', 'revenue'],
+      },
+      interactions: {
+        drillActions: [
+          {
+            id: 'drill-1',
+            sourceComponentId: 'visual-1',
+            trigger: 'click',
+            targetType: 'view',
+            targetId: 'detail',
+            label: 'Open region detail',
+            context: [{ source: 'Region', target: 'Region' }],
+            preserveFilters: true,
+          },
+        ],
+      },
+    };
+
+    try {
+      await writeFile(specPath, `${JSON.stringify(spec, null, 2)}\n`);
+      const { stdout } = await execFileAsync(
+        process.execPath,
+        ['tools/phantom-spec-cli.mjs', 'export-react', specPath, outDir],
+        { cwd: process.cwd() },
+      );
+      const result = JSON.parse(stdout);
+
+      expect(result.files).toContain('src/routes.ts');
+      expect(result.files).toContain('src/component-contracts.ts');
+      expect(result.components).toBe(2);
+      expect(result.drillActions).toBe(1);
+
+      const routes = await readFile(join(outDir, 'src/routes.ts'), 'utf8');
+      expect(routes).toContain('export type PhantomRouteDefinition');
+      expect(routes).toContain('"path": "/"');
+      expect(routes).toContain('"path": "/region-detail"');
+      expect(routes).toContain('"drill-1"');
+
+      const componentContracts = await readFile(join(outDir, 'src/component-contracts.ts'), 'utf8');
+      expect(componentContracts).toContain('export type ComponentContract');
+      expect(componentContracts).toContain('"id": "visual-1"');
+      expect(componentContracts).toContain('"designSources": [');
+      expect(componentContracts).toContain('"figma-1"');
+
+      const app = await readFile(join(outDir, 'src/App.tsx'), 'utf8');
+      expect(app).toContain("from './component-contracts'");
+      expect(app).toContain("from './routes'");
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  }, 30000);
+});
