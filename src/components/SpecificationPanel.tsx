@@ -8,6 +8,7 @@ import {
   Label,
   Badge,
   Input,
+  Button,
 } from '@fluentui/react-components';
 import { useStore } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
@@ -141,6 +142,31 @@ const useStyles = makeStyles({
     color: '#252423',
     fontWeight: 600,
   },
+  sourceCard: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+    ...shorthands.padding('10px'),
+    ...shorthands.border('1px', 'solid', '#E1DFDD'),
+    ...shorthands.borderRadius('6px'),
+    backgroundColor: '#FAFAF9',
+  },
+  sourceHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '8px',
+  },
+  sourceTitle: {
+    fontSize: '12px',
+    fontWeight: 600,
+    color: '#252423',
+  },
+  actionRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '8px',
+  },
 });
 
 export const SpecificationPanel: React.FC = () => {
@@ -197,38 +223,71 @@ export const SpecificationPanel: React.FC = () => {
     updateSpecification({ [field]: value });
   };
 
-  const primaryDesignSource = specification.designSources?.[0];
   const primaryDataSource = specification.dataSources?.[0];
   const designEntryPoint = specification.designEntryPoint || 'phantom-led';
+  const designSources = specification.designSources || [];
+  const displayedDesignSources = designSources.length
+    ? designSources
+    : [{ id: 'design-source-draft', type: 'figmaFrame' as DesignSourceType, name: '' }];
 
-  const handleDesignSourceChange = (field: keyof DesignSource, value: string) => {
-    const currentSource: DesignSource = primaryDesignSource || {
-      id: 'design-source-primary',
-      type: 'figmaFrame',
-      name: '',
-    };
-    const nextSource = {
+  const createBlankDesignSource = (type: DesignSourceType = 'figmaFrame'): DesignSource => ({
+    id: `design-source-${Date.now()}`,
+    type,
+    name: '',
+  });
+
+  const updateDesignSourceAt = (index: number, updates: Partial<DesignSource>) => {
+    const nextSources = designSources.length ? [...designSources] : [createBlankDesignSource()];
+    const currentSource = nextSources[index] || createBlankDesignSource();
+    nextSources[index] = {
       ...currentSource,
-      [field]: value,
+      id: currentSource.id || `design-source-${Date.now()}`,
+      name: currentSource.name || '',
+      ...updates,
     };
-    updateSpecification({ designSources: [nextSource] });
+    updateSpecification({ designSources: nextSources });
+  };
+
+  const handleDesignSourceChange = (index: number, field: keyof DesignSource, value: string) => {
+    updateDesignSourceAt(index, {
+      [field]: value,
+    });
   };
 
   const handleDesignSourceListChange = (
+    index: number,
     field: 'linkedViewIds' | 'linkedComponentIds',
     value: string,
   ) => {
-    const currentSource: DesignSource = primaryDesignSource || {
-      id: 'design-source-primary',
-      type: 'figmaFrame',
-      name: '',
-    };
     const nextValues = parseIdList(value);
-    const nextSource = {
-      ...currentSource,
-      ...(nextValues.length ? { [field]: nextValues } : { [field]: undefined }),
-    };
-    updateSpecification({ designSources: [nextSource] });
+    updateDesignSourceAt(index, nextValues.length ? { [field]: nextValues } : { [field]: undefined });
+  };
+
+  const addDesignSource = (type: DesignSourceType = 'figmaFrame') => {
+    updateSpecification({
+      designEntryPoint: type === 'phantomDefault' ? 'phantom-led' : 'figma-led',
+      designSources: [...designSources, createBlankDesignSource(type)],
+    });
+  };
+
+  const removeDesignSource = (index: number) => {
+    updateSpecification({
+      designSources: designSources.filter((_, sourceIndex) => sourceIndex !== index),
+    });
+  };
+
+  const usePhantomDefaults = () => {
+    updateSpecification({
+      designEntryPoint: 'phantom-led',
+      designSources: [{
+        id: 'phantom-defaults',
+        type: 'phantomDefault',
+        name: 'Phantom analytical defaults',
+        linkedViewIds: ['main'],
+        linkedComponentIds: items.map((item) => item.id),
+        notes: 'No external Figma source required. Use Phantom layout, component, analytics, and handoff defaults as the design baseline.',
+      }],
+    });
   };
 
   const handleDataSourceChange = (field: keyof DataSourceReference, value: string) => {
@@ -495,97 +554,127 @@ export const SpecificationPanel: React.FC = () => {
           Component design handoff: {designHandoff.canSkipFigma ? 'Figma optional' : 'Figma/design source required'}; missing maps: {designHandoff.missingMappings.join(', ') || 'none'}
         </Text>
 
-        <div className={styles.selectRow}>
-          <div className={`${styles.fieldRow} ${styles.selectField}`}>
-            <Label className={styles.fieldLabel}>Source Type</Label>
-            <Select
-              size="small"
-              value={primaryDesignSource?.type || 'figmaFrame'}
-              onChange={(_, d) => handleDesignSourceChange('type', d.value as DesignSourceType)}
-            >
-              <option value="figmaFrame">Figma Frame</option>
-              <option value="figmaComponent">Figma Component</option>
-              <option value="screenshot">Screenshot</option>
-              <option value="externalReference">External Reference</option>
-              <option value="phantomDefault">Phantom Default</option>
-            </Select>
-          </div>
-
-          <div className={`${styles.fieldRow} ${styles.selectField}`}>
-            <Label className={styles.fieldLabel}>Name</Label>
-            <Input
-              size="small"
-              placeholder="Exec dashboard frame"
-              value={primaryDesignSource?.name || ''}
-              onChange={(_, d) => handleDesignSourceChange('name', d.value)}
-            />
-          </div>
+        <div className={styles.actionRow}>
+          <Button size="small" appearance="secondary" onClick={() => addDesignSource('figmaFrame')}>
+            Add Figma Source
+          </Button>
+          <Button size="small" appearance="secondary" onClick={() => addDesignSource('screenshot')}>
+            Add Screenshot
+          </Button>
+          <Button size="small" appearance="primary" onClick={usePhantomDefaults}>
+            Use Phantom Defaults
+          </Button>
         </div>
 
-        <div className={styles.fieldRow}>
-          <Label className={styles.fieldLabel}>Design Link</Label>
-          <Input
-            size="small"
-            placeholder="https://www.figma.com/file/..."
-            value={primaryDesignSource?.url || ''}
-            onChange={(_, d) => handleDesignSourceChange('url', d.value)}
-          />
-        </div>
+        {displayedDesignSources.map((source, index) => (
+          <div className={styles.sourceCard} key={source.id || `design-source-${index}`}>
+            <div className={styles.sourceHeader}>
+              <Text className={styles.sourceTitle}>
+                {source.name || `Design Source ${index + 1}`}
+              </Text>
+              <Button
+                size="small"
+                appearance="subtle"
+                disabled={designSources.length === 0}
+                onClick={() => removeDesignSource(index)}
+              >
+                Remove
+              </Button>
+            </div>
 
-        <div className={styles.selectRow}>
-          <div className={`${styles.fieldRow} ${styles.selectField}`}>
-            <Label className={styles.fieldLabel}>Frame ID</Label>
-            <Input
-              size="small"
-              placeholder="Optional"
-              value={primaryDesignSource?.frameId || ''}
-              onChange={(_, d) => handleDesignSourceChange('frameId', d.value)}
-            />
+            <div className={styles.selectRow}>
+              <div className={`${styles.fieldRow} ${styles.selectField}`}>
+                <Label className={styles.fieldLabel}>Source Type</Label>
+                <Select
+                  size="small"
+                  value={source.type || 'figmaFrame'}
+                  onChange={(_, d) => handleDesignSourceChange(index, 'type', d.value as DesignSourceType)}
+                >
+                  <option value="figmaFrame">Figma Frame</option>
+                  <option value="figmaComponent">Figma Component</option>
+                  <option value="screenshot">Screenshot</option>
+                  <option value="externalReference">External Reference</option>
+                  <option value="phantomDefault">Phantom Default</option>
+                </Select>
+              </div>
+
+              <div className={`${styles.fieldRow} ${styles.selectField}`}>
+                <Label className={styles.fieldLabel}>Name</Label>
+                <Input
+                  size="small"
+                  placeholder="Exec dashboard frame"
+                  value={source.name || ''}
+                  onChange={(_, d) => handleDesignSourceChange(index, 'name', d.value)}
+                />
+              </div>
+            </div>
+
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Design Link</Label>
+              <Input
+                size="small"
+                placeholder="https://www.figma.com/file/..."
+                value={source.url || ''}
+                onChange={(_, d) => handleDesignSourceChange(index, 'url', d.value)}
+              />
+            </div>
+
+            <div className={styles.selectRow}>
+              <div className={`${styles.fieldRow} ${styles.selectField}`}>
+                <Label className={styles.fieldLabel}>Frame ID</Label>
+                <Input
+                  size="small"
+                  placeholder="Optional"
+                  value={source.frameId || ''}
+                  onChange={(_, d) => handleDesignSourceChange(index, 'frameId', d.value)}
+                />
+              </div>
+
+              <div className={`${styles.fieldRow} ${styles.selectField}`}>
+                <Label className={styles.fieldLabel}>Component ID</Label>
+                <Input
+                  size="small"
+                  placeholder="Optional"
+                  value={source.componentId || ''}
+                  onChange={(_, d) => handleDesignSourceChange(index, 'componentId', d.value)}
+                />
+              </div>
+            </div>
+
+            <div className={styles.selectRow}>
+              <div className={`${styles.fieldRow} ${styles.selectField}`}>
+                <Label className={styles.fieldLabel}>Linked Views</Label>
+                <Input
+                  size="small"
+                  placeholder="main"
+                  value={formatIdList(source.linkedViewIds)}
+                  onChange={(_, d) => handleDesignSourceListChange(index, 'linkedViewIds', d.value)}
+                />
+              </div>
+
+              <div className={`${styles.fieldRow} ${styles.selectField}`}>
+                <Label className={styles.fieldLabel}>Linked Components</Label>
+                <Input
+                  size="small"
+                  placeholder={items.slice(0, 2).map((item) => item.id).join(', ') || 'visual-1'}
+                  value={formatIdList(source.linkedComponentIds)}
+                  onChange={(_, d) => handleDesignSourceListChange(index, 'linkedComponentIds', d.value)}
+                />
+              </div>
+            </div>
+
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Design Notes</Label>
+              <Textarea
+                className={styles.textarea}
+                placeholder="Brand, component, token, or handoff notes..."
+                value={source.notes || ''}
+                onChange={(_, d) => handleDesignSourceChange(index, 'notes', d.value)}
+                resize="vertical"
+              />
+            </div>
           </div>
-
-          <div className={`${styles.fieldRow} ${styles.selectField}`}>
-            <Label className={styles.fieldLabel}>Component ID</Label>
-            <Input
-              size="small"
-              placeholder="Optional"
-              value={primaryDesignSource?.componentId || ''}
-              onChange={(_, d) => handleDesignSourceChange('componentId', d.value)}
-            />
-          </div>
-        </div>
-
-        <div className={styles.selectRow}>
-          <div className={`${styles.fieldRow} ${styles.selectField}`}>
-            <Label className={styles.fieldLabel}>Linked Views</Label>
-            <Input
-              size="small"
-              placeholder="main"
-              value={formatIdList(primaryDesignSource?.linkedViewIds)}
-              onChange={(_, d) => handleDesignSourceListChange('linkedViewIds', d.value)}
-            />
-          </div>
-
-          <div className={`${styles.fieldRow} ${styles.selectField}`}>
-            <Label className={styles.fieldLabel}>Linked Components</Label>
-            <Input
-              size="small"
-              placeholder={items.slice(0, 2).map((item) => item.id).join(', ') || 'visual-1'}
-              value={formatIdList(primaryDesignSource?.linkedComponentIds)}
-              onChange={(_, d) => handleDesignSourceListChange('linkedComponentIds', d.value)}
-            />
-          </div>
-        </div>
-
-        <div className={styles.fieldRow}>
-          <Label className={styles.fieldLabel}>Design Notes</Label>
-          <Textarea
-            className={styles.textarea}
-            placeholder="Brand, component, token, or handoff notes..."
-            value={primaryDesignSource?.notes || ''}
-            onChange={(_, d) => handleDesignSourceChange('notes', d.value)}
-            resize="vertical"
-          />
-        </div>
+        ))}
       </div>
 
       {/* Data Requirements */}
