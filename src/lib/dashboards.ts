@@ -10,6 +10,24 @@ function nanoid(len = 12): string {
   return id;
 }
 
+export const createDashboardPersistenceRow = (
+  name: string,
+  snapshot: DashboardSnapshot,
+) => ({
+  name,
+  scenario: snapshot.scenario,
+  items: snapshot.items as any,
+  filters: snapshot.filters as any,
+  layout_mode: snapshot.layoutMode,
+  theme_palette: snapshot.themePalette,
+  specification: {
+    ...(snapshot.specification || {}),
+    exportMode: snapshot.exportMode,
+    drillActions: snapshot.drillActions || [],
+    annotations: snapshot.annotations || [],
+  } as any,
+});
+
 export async function saveDashboard(
   id: string | null,
   name: string,
@@ -20,20 +38,7 @@ export async function saveDashboard(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Not authenticated');
 
-  const row = {
-    name,
-    scenario: snapshot.scenario,
-    items: snapshot.items as any,
-    filters: snapshot.filters as any,
-    layout_mode: snapshot.layoutMode,
-    theme_palette: snapshot.themePalette,
-    specification: {
-      ...(snapshot.specification || {}),
-      exportMode: snapshot.exportMode,
-      drillActions: snapshot.drillActions || [],
-      annotations: snapshot.annotations || [],
-    } as any,
-  };
+  const row = createDashboardPersistenceRow(name, snapshot);
 
   if (id) {
     // Update existing
