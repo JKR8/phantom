@@ -99,6 +99,15 @@ const getHandoffRecommendation = (reactReady: boolean, powerBiReady: boolean) =>
   };
 };
 
+const getHandoffNextActions = (
+  reactReadiness: ReturnType<typeof checkPhantomReadiness>,
+  powerBiReadiness: ReturnType<typeof checkPhantomReadiness>,
+) => [
+  ...reactReadiness.errors.map((issue) => `React blocker: ${issue.message}`),
+  ...powerBiReadiness.errors.map((issue) => `Power BI blocker: ${issue.message}`),
+  ...powerBiReadiness.warnings.map((issue) => `Power BI warning: ${issue.message}`),
+];
+
 export const ExportButton: React.FC = () => {
   const styles = useStyles();
   const [isExporting, setIsExporting] = useState(false);
@@ -261,6 +270,7 @@ export const ExportButton: React.FC = () => {
       const reactBacklog = createReactImplementationBacklog(spec);
       const reactReadiness = checkPhantomReadiness(spec, 'react');
       const handoffRecommendation = getHandoffRecommendation(reactReadiness.ready, powerBiGuide.readiness.ready);
+      const nextActions = getHandoffNextActions(reactReadiness, powerBiGuide.readiness);
       const date = new Date().toISOString().split('T')[0];
       const zip = new JSZip();
       const manifest = {
@@ -278,6 +288,7 @@ export const ExportButton: React.FC = () => {
           powerBi: powerBiGuide.readiness,
         },
         handoffRecommendation,
+        nextActions,
         artifacts: {
           spec: 'phantom-spec.json',
           dataContract: ['data-contract/data-contract.json', 'data-contract/DATA_CONTRACT.md'],

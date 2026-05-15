@@ -251,6 +251,7 @@ const inspectSpec = (spec, subject) => {
     const powerBiGuide = createPowerBiGuide(spec);
     const reactReadiness = checkReadiness(spec, 'react');
     const handoffRecommendation = getHandoffRecommendation(reactReadiness.ready, powerBiGuide.readiness.ready);
+    const nextActions = getHandoffNextActions(reactReadiness, powerBiGuide.readiness);
     return {
       subject,
       project: {
@@ -276,11 +277,7 @@ const inspectSpec = (spec, subject) => {
         powerBiApproximateVisuals: powerBiGuide.summary.approximateVisuals,
         powerBiUnsupportedVisuals: powerBiGuide.summary.unsupportedVisuals,
       },
-      nextActions: [
-        ...reactReadiness.errors.map((issue) => `React blocker: ${issue.message}`),
-        ...powerBiGuide.readiness.errors.map((issue) => `Power BI blocker: ${issue.message}`),
-        ...powerBiGuide.readiness.warnings.map((issue) => `Power BI warning: ${issue.message}`),
-      ],
+      nextActions,
     };
   }
 
@@ -396,6 +393,12 @@ const getHandoffRecommendation = (reactReady, powerBiReady) => {
     guidance: 'Resolve readiness blockers before using this spec for implementation handoff.',
   };
 };
+
+const getHandoffNextActions = (reactReadiness, powerBiReadiness) => [
+  ...reactReadiness.errors.map((issue) => `React blocker: ${issue.message}`),
+  ...powerBiReadiness.errors.map((issue) => `Power BI blocker: ${issue.message}`),
+  ...powerBiReadiness.warnings.map((issue) => `Power BI warning: ${issue.message}`),
+];
 
 const checkReadiness = (spec, target = spec.mode) => {
   const errors = [];
@@ -1123,6 +1126,7 @@ const writeHandoffPack = async (spec, outDir) => {
     powerBi: checkReadiness(spec, 'powerBi'),
   };
   const handoffRecommendation = getHandoffRecommendation(readiness.react.ready, readiness.powerBi.ready);
+  const nextActions = getHandoffNextActions(readiness.react, readiness.powerBi);
   const manifest = {
     manifestVersion: '0.1.0',
     sourceSpecVersion: spec.specVersion,
@@ -1135,6 +1139,7 @@ const writeHandoffPack = async (spec, outDir) => {
     },
     readiness,
     handoffRecommendation,
+    nextActions,
     artifacts: {
       spec: 'phantom-spec.json',
       dataContract: dataContract.files.map((file) => `data-contract/${file}`),
@@ -1180,6 +1185,10 @@ ${designSourcesMarkdown(spec.project?.designSources || [])}
 - Power BI errors: ${readiness.powerBi.errors.length}
 - Recommended handoff: ${handoffRecommendation.target}
 - Guidance: ${handoffRecommendation.guidance}
+
+## Next Actions
+
+${markdownList(nextActions)}
 
 ## Suggested Flow
 
