@@ -62,6 +62,7 @@ node tools/phantom-spec-cli.mjs set-workshop-intent path/to/spec.json --business
 node tools/phantom-spec-cli.mjs add-view path/to/spec.json --id detail --name "Account Detail" --out path/to/spec.with-view.json
 node tools/phantom-spec-cli.mjs add-component path/to/spec.with-view.json --view detail --type table --title "Account Detail" --dimensions Region,Account --metrics revenue --out path/to/spec.with-detail-table.json
 node tools/phantom-spec-cli.mjs add-drill-action path/to/spec.json --source visual-1 --target-type view --target detail --label "Open detail" --context Region:Region --out path/to/spec.with-drill.json
+npm run phantom:spec -- inspect path/to/spec.json views
 npm run phantom:spec -- inspect path/to/spec.json components
 npm run phantom:spec -- inspect path/to/spec.json drill-actions
 npm run phantom:spec -- inspect path/to/spec.json data-requirements
@@ -106,7 +107,9 @@ node tools/phantom-spec-cli.mjs import-data-source path/to/spec.json --type dbt 
 
 `add-drill-action` adds or updates an analytical journey action with a source component, trigger, target type, target id, context mapping, and preserve-filters flag. Use it to turn a workshop statement like "click this KPI/bar/row to open that detail view" into a spec-level interaction that React exports and Power BI build guides can carry forward.
 
-`inspect` returns focused JSON for `components`, `drill-actions`, `data-requirements`, `data-path`, `design-sources`, `design-mapping`, `design-workflow`, `design-handoff`, `approval`, `implementation-gate`, `workshop-intent`, `react-backlog`, `powerbi-build-matrix`, or `handoff-summary`, so agents can query the spec before deciding what to generate or validate.
+`inspect` returns focused JSON for `views`, `components`, `drill-actions`, `data-requirements`, `data-path`, `design-sources`, `design-mapping`, `design-workflow`, `design-handoff`, `approval`, `implementation-gate`, `workshop-intent`, `react-backlog`, `powerbi-build-matrix`, or `handoff-summary`, so agents can query the spec before deciding what to generate or validate.
+
+`inspect views` returns each view/page with route path, component IDs, component count, and inbound drill action IDs. Use it after `add-view`, `add-component`, or `add-drill-action` to verify the analytical journey shape before exporting a React starter or Power BI guide.
 
 `inspect design-sources` returns the current design entry point and linked design sources, including any mapped Phantom view IDs or component IDs. Use it to decide whether the project is Figma-led or Phantom-led before generating implementation tasks.
 
@@ -165,6 +168,7 @@ Future commands should include:
 - `phantom export handoff-pack <file> --out <dir>`
 - `phantom export data-contract <file> --out <dir>`
 - `phantom export react <file> --out <dir>`
+- `phantom inspect views <file>` implemented as `npm run phantom:spec -- inspect <file> views`
 - `phantom inspect components <file>` implemented as `npm run phantom:spec -- inspect <file> components`
 - `phantom inspect drill-actions <file>` implemented as `npm run phantom:spec -- inspect <file> drill-actions`
 - `phantom inspect data-requirements <file>` implemented as `npm run phantom:spec -- inspect <file> data-requirements`

@@ -648,6 +648,51 @@ describe('phantom spec CLI', () => {
     }
   }, 30000);
 
+  it('inspects views with route and inbound drill metadata', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'phantom-inspect-views-'));
+    const specPath = join(tempDir, 'spec.json');
+    const spec = createReadySpec();
+
+    try {
+      await writeFile(specPath, `${JSON.stringify(spec, null, 2)}\n`);
+      const { stdout } = await execFileAsync(
+        process.execPath,
+        ['tools/phantom-spec-cli.mjs', 'inspect', specPath, 'views'],
+        { cwd: process.cwd() },
+      );
+      const result = JSON.parse(stdout);
+
+      expect(result).toEqual({
+        subject: 'views',
+        count: 2,
+        views: [
+          {
+            id: 'main',
+            name: 'Executive Overview',
+            type: 'dashboard',
+            layoutMode: 'Free',
+            routePath: '/',
+            componentIds: ['visual-1'],
+            componentCount: 1,
+            inboundDrillActions: [],
+          },
+          {
+            id: 'detail',
+            name: 'Region Detail',
+            type: 'dashboard',
+            layoutMode: 'Free',
+            routePath: '/region-detail',
+            componentIds: ['visual-2'],
+            componentCount: 1,
+            inboundDrillActions: ['drill-1'],
+          },
+        ],
+      });
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  }, 30000);
+
   it('adds drill actions through the CLI for analytical journeys', async () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'phantom-add-drill-action-'));
     const specPath = join(tempDir, 'spec.json');

@@ -16,7 +16,7 @@ Usage:
   npm run phantom:spec -- export-data-contract <spec.json> <dir>
   npm run phantom:spec -- export-powerbi-guide <spec.json> <dir>
   npm run phantom:spec -- export-handoff-pack <spec.json> <dir>
-  npm run phantom:spec -- inspect <spec.json> components|drill-actions|data-requirements|data-path|design-sources|design-mapping|design-workflow|design-handoff|approval|implementation-gate|workshop-intent|react-backlog|powerbi-build-matrix|handoff-summary
+  npm run phantom:spec -- inspect <spec.json> views|components|drill-actions|data-requirements|data-path|design-sources|design-mapping|design-workflow|design-handoff|approval|implementation-gate|workshop-intent|react-backlog|powerbi-build-matrix|handoff-summary
   npm run phantom:spec -- set-mode <spec.json> react|powerBi <out-spec.json>
   npm run phantom:spec -- set-approval <spec.json> approved <out-spec.json>
   npm run phantom:spec -- set-workshop-intent <spec.json> --business-questions "..." --audience "..." --decisions "..." --acceptance-criteria "..." --out <out-spec.json>
@@ -212,6 +212,26 @@ const inspectSpec = (spec, subject) => {
     };
   }
 
+  if (subject === 'views') {
+    const drillActions = spec.interactions?.drillActions || [];
+    return {
+      subject,
+      count: spec.views?.length || 0,
+      views: (spec.views || []).map((view, index) => ({
+        id: view.id,
+        name: view.name,
+        type: view.type || 'dashboard',
+        layoutMode: view.layoutMode,
+        routePath: index === 0 ? '/' : `/${slug(view.name || view.id)}`,
+        componentIds: (view.components || []).map((component) => component.id),
+        componentCount: (view.components || []).length,
+        inboundDrillActions: drillActions
+          .filter((action) => action.targetType === 'view' && action.targetId === view.id)
+          .map((action) => action.id),
+      })),
+    };
+  }
+
   if (subject === 'drill-actions') {
     return {
       subject,
@@ -350,7 +370,7 @@ const inspectSpec = (spec, subject) => {
     };
   }
 
-  throw new Error('Inspect subject must be components, drill-actions, data-requirements, data-path, design-sources, design-mapping, design-workflow, design-handoff, approval, implementation-gate, workshop-intent, react-backlog, powerbi-build-matrix, or handoff-summary.');
+  throw new Error('Inspect subject must be views, components, drill-actions, data-requirements, data-path, design-sources, design-mapping, design-workflow, design-handoff, approval, implementation-gate, workshop-intent, react-backlog, powerbi-build-matrix, or handoff-summary.');
 };
 
 const optionValue = (name) => {
