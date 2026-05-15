@@ -81,11 +81,13 @@ node tools/phantom-spec-cli.mjs import-design-source path/to/spec.json --type fi
 
 `diff` returns project, mode, component, drill action, and data requirement changes between two Phantom specs. Use it after workshops or AI edits before regenerating implementation artifacts.
 
-`inspect` returns focused JSON for `components`, `drill-actions`, `data-requirements`, `design-sources`, `design-mapping`, `workshop-intent`, `react-backlog`, `powerbi-build-matrix`, or `handoff-summary`, so agents can query the spec before deciding what to generate or validate.
+`inspect` returns focused JSON for `components`, `drill-actions`, `data-requirements`, `design-sources`, `design-mapping`, `design-workflow`, `workshop-intent`, `react-backlog`, `powerbi-build-matrix`, or `handoff-summary`, so agents can query the spec before deciding what to generate or validate.
 
 `inspect design-sources` returns the current design entry point and linked design sources, including any mapped Phantom view IDs or component IDs. Use it to decide whether the project is Figma-led or Phantom-led before generating implementation tasks.
 
 `inspect design-mapping` returns design-source mapping coverage: total sources, mapped/unmapped counts, linked view IDs, linked component IDs, and source IDs without mappings. Use it as a lightweight gate before implementation work when the project is Figma-led.
+
+`inspect design-workflow` returns the current design plane (`figma` or `phantom`), Phantom's role in that workflow, mapping status, required next steps, supported handoff modes, and suggested agent commands. Use it first when deciding whether to pull in Figma references or proceed with Phantom defaults.
 
 `inspect workshop-intent` returns the business questions, audience, decisions/actions, acceptance criteria, build notes, and a completeness object with present/missing workshop fields. Use it before generating React or Power BI implementation work so agents preserve the client workshop intent and can pause when the brief is too thin.
 
@@ -93,7 +95,7 @@ node tools/phantom-spec-cli.mjs import-design-source path/to/spec.json --type fi
 
 `inspect powerbi-build-matrix` returns the same readiness summary, visual support statuses, field requirements, drill-through rows, and build checklist used by the Power BI implementation guide. Use it when an agent needs to assess Power BI Mode fit without generating guide files.
 
-`inspect handoff-summary` returns project metadata, design mapping coverage, workshop intent, workshop completeness, React and Power BI readiness, a recommended handoff target, field/component/task counts, Power BI visual support counts, and next actions in one JSON payload. Use it as the first agent check after a workshop.
+`inspect handoff-summary` returns project metadata, design workflow, design mapping coverage, workshop intent, workshop completeness, React and Power BI readiness, a recommended handoff target, field/component/task counts, Power BI visual support counts, and next actions in one JSON payload. Use it as the first agent check after a workshop.
 
 `import-design-source` adds or updates a Figma frame, Figma component, screenshot, Phantom default, or external reference in a Phantom Spec. Use the npm-friendly positional form `type name url frame-id notes out-spec`; direct `node tools/phantom-spec-cli.mjs ...` usage can also pass named flags such as `--type`, `--name`, `--url`, `--views`, `--components`, and `--out`. It writes a new spec to the positional output path or `--out`, marks non-Phantom sources as `figma-led`, and mirrors the source into `project.specification` so browser exports, CLI exports, readiness checks, and agents see the same design context.
 
@@ -105,7 +107,7 @@ node tools/phantom-spec-cli.mjs import-design-source path/to/spec.json --type fi
 
 `export-powerbi-guide` creates `power-bi-implementation-guide.json` and `POWER_BI_IMPLEMENTATION_GUIDE.md` with Power BI readiness, visual support statuses, field requirements, drill-through notes, blockers, and a build checklist.
 
-`export-handoff-pack` creates a bundled folder with `phantom-spec.json`, `handoff-summary.json`, `HANDOFF_MANIFEST.json`, `README.md`, `data-contract/`, `power-bi/`, and `react-starter/`. `handoff-summary.json` and `HANDOFF_MANIFEST.json` both include `designMapping`, `workshopIntent`, and `workshopCompleteness`, so agents can gate on unmapped design sources or missing business questions, audience, decisions/actions, or acceptance criteria before generating implementation work. This is the preferred consultant-to-engineering handoff when both React Product Mode and Power BI Mode artifacts should travel together.
+`export-handoff-pack` creates a bundled folder with `phantom-spec.json`, `handoff-summary.json`, `HANDOFF_MANIFEST.json`, `README.md`, `data-contract/`, `power-bi/`, and `react-starter/`. `handoff-summary.json` and `HANDOFF_MANIFEST.json` both include `designWorkflow`, `designMapping`, `workshopIntent`, and `workshopCompleteness`, so agents can gate on the Figma-led/Phantom-led workflow, unmapped design sources, or missing business questions, audience, decisions/actions, or acceptance criteria before generating implementation work. This is the preferred consultant-to-engineering handoff when both React Product Mode and Power BI Mode artifacts should travel together.
 
 The browser export menu also provides `Handoff Pack (.zip)`, a workshop-friendly bundle with the canonical spec, handoff summary, data contract, Power BI guide, React implementation notes, and a machine-readable manifest. Use the CLI `export-handoff-pack` when a runnable React starter folder is required.
 
@@ -127,6 +129,7 @@ Future commands should include:
 - `phantom inspect data-requirements <file>` implemented as `npm run phantom:spec -- inspect <file> data-requirements`
 - `phantom inspect design-sources <file>` implemented as `npm run phantom:spec -- inspect <file> design-sources`
 - `phantom inspect design-mapping <file>` implemented as `npm run phantom:spec -- inspect <file> design-mapping`
+- `phantom inspect design-workflow <file>` implemented as `npm run phantom:spec -- inspect <file> design-workflow`
 - `phantom inspect workshop-intent <file>` implemented as `npm run phantom:spec -- inspect <file> workshop-intent`
 - `phantom inspect react-backlog <file>` implemented as `npm run phantom:spec -- inspect <file> react-backlog`
 - `phantom inspect powerbi-build-matrix <file>` implemented as `npm run phantom:spec -- inspect <file> powerbi-build-matrix`
@@ -142,6 +145,7 @@ The public TypeScript API should expose:
 - `summarizePhantomSpec`
 - `checkPhantomReadiness`
 - `mergeDesignSourceIntoSpec`
+- `createPhantomDesignWorkflow`
 - `createPhantomDesignMappingSummary`
 - `createPhantomWorkshopIntent`
 - `createPhantomWorkshopIntentCompleteness`
@@ -159,7 +163,7 @@ A strong agent workflow should look like:
 
 1. Export or receive a Phantom Spec JSON.
 2. Run CLI validation.
-3. Inspect design mapping and workshop intent completeness.
+3. Inspect design workflow, design mapping, and workshop intent completeness.
 4. Inspect missing data requirements and unsupported visuals.
 5. Generate an implementation plan.
 6. Generate React starter components or Power BI implementation notes.

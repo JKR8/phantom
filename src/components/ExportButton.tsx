@@ -249,6 +249,7 @@ export const ExportButton: React.FC = () => {
         },
         readiness: handoffSummary.readiness,
         handoffRecommendation: handoffSummary.handoffRecommendation,
+        designWorkflow: handoffSummary.designWorkflow,
         designMapping: handoffSummary.designMapping,
         workshopIntent: handoffSummary.workshopIntent,
         workshopCompleteness: handoffSummary.workshopCompleteness,
@@ -283,6 +284,17 @@ Generated from Phantom Spec ${spec.specVersion}.
 
 ${createDesignSourcesMarkdown(spec.project.designSources)}
 
+## Design Workflow
+
+- Design plane: ${handoffSummary.designWorkflow.designPlane}
+- Phantom role: ${handoffSummary.designWorkflow.phantomRole}
+- Status: ${handoffSummary.designWorkflow.status}
+- Handoff modes: ${handoffSummary.designWorkflow.handoffModes.join(', ')}
+
+### Design Workflow Next Steps
+
+${handoffSummary.designWorkflow.requiredNextSteps.map((step) => `- ${step}`).join('\n')}
+
 ## Design Mapping
 
 - Sources: ${handoffSummary.designMapping.totalSources}
@@ -311,7 +323,7 @@ ${createDesignSourcesMarkdown(spec.project.designSources)}
 - \`data-contract/\`: data requirements for API, warehouse/dbt, or semantic endpoint mapping.
 - \`power-bi/\`: Power BI build guide with readiness, visual support status, fields, and drill-through notes.
 - \`react-product/\`: React implementation starting notes plus the same spec and data contract.
-- \`handoff-summary.json\`: first-pass design mapping, readiness, recommendation, counts, and next actions for agents.
+- \`handoff-summary.json\`: first-pass design workflow, design mapping, readiness, recommendation, counts, and next actions for agents.
 - \`HANDOFF_MANIFEST.json\`: machine-readable index for agents and engineering automation.
 `;
       const reactNotes = `# React Product Implementation Notes
@@ -336,6 +348,12 @@ Use \`phantom-spec.json\` and \`phantom-data-contract.json\` as the implementati
 ## Design Sources
 
 ${createDesignSourcesMarkdown(spec.project.designSources)}
+
+## Design Workflow
+
+- Design plane: ${handoffSummary.designWorkflow.designPlane}
+- Status: ${handoffSummary.designWorkflow.status}
+- Next steps: ${handoffSummary.designWorkflow.requiredNextSteps.join(' ')}
 
 ## Design Mapping
 

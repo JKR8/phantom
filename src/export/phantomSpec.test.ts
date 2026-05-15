@@ -7,6 +7,7 @@ import {
   createHandoffNextActions,
   createHandoffRecommendation,
   createPhantomDesignMappingSummary,
+  createPhantomDesignWorkflow,
   createPhantomHandoffSummary,
   createPhantomSpec,
   createPhantomWorkshopIntent,
@@ -262,6 +263,11 @@ describe('phantomSpec', () => {
     expect(createHandoffRecommendation(true, true).target).toBe('dual-track');
     expect(createHandoffRecommendation(true, false).target).toBe('react-product');
     expect(summary.handoffRecommendation.target).toBe('react-product');
+    expect(summary.designWorkflow.status).toBe('needs-mapping');
+    expect(summary.designWorkflow.designPlane).toBe('figma');
+    expect(summary.designWorkflow.requiredNextSteps).toContain(
+      'Map every design source to at least one Phantom view or component before engineering handoff.',
+    );
     expect(summary.readiness.react.ready).toBe(true);
     expect(summary.readiness.powerBi.ready).toBe(false);
     expect(summary.workshopIntent.businessQuestions).toBe('Which regions need intervention?');
@@ -361,6 +367,83 @@ describe('phantomSpec', () => {
       linkedComponentIds: ['visual-1', 'visual-2'],
       sourceIdsWithoutMappings: ['reference-1'],
     });
+  });
+
+  it('creates a design workflow contract for Figma-led and Phantom-led handoff', () => {
+    const figmaLedSpec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [item({})],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      specification: {
+        signOffStatus: 'draft',
+        designEntryPoint: 'figma-led',
+        designSources: [{
+          id: 'figma-1',
+          type: 'figmaFrame',
+          name: 'Client concept',
+          linkedComponentIds: ['visual-1'],
+        }],
+      },
+    });
+    const phantomLedSpec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [item({})],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+    });
+
+    expect(createPhantomDesignWorkflow(figmaLedSpec)).toMatchObject({
+      subject: 'design-workflow',
+      entryPoint: 'figma-led',
+      designPlane: 'figma',
+      status: 'ready',
+      mapping: {
+        totalSources: 1,
+        mappedSources: 1,
+        unmappedSources: 0,
+        linkedComponentIds: ['visual-1'],
+      },
+      handoffModes: ['react-product', 'power-bi'],
+    });
+    expect(createPhantomDesignWorkflow(figmaLedSpec).agentCommands).toContain(
+      'npm run phantom:spec -- import-design-source <spec.json> --type figmaFrame --name "<name>" --url <figma-url> --views main --components <ids> --out <out-spec.json>',
+    );
+    expect(createPhantomDesignWorkflow(phantomLedSpec)).toMatchObject({
+      entryPoint: 'phantom-led',
+      designPlane: 'phantom',
+      status: 'ready',
+    });
+  });
+
+  it('marks Figma-led design workflow as needing a design source before handoff', () => {
+    const spec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [item({})],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      specification: {
+        signOffStatus: 'draft',
+        designEntryPoint: 'figma-led',
+        designSources: [],
+      },
+    });
+
+    const workflow = createPhantomDesignWorkflow(spec);
+
+    expect(workflow.status).toBe('needs-design-source');
+    expect(workflow.requiredNextSteps).toContain(
+      'Import or link at least one Figma frame, Figma component, screenshot, or external design reference.',
+    );
   });
 
   it('replaces design sources by id instead of duplicating them', () => {

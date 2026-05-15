@@ -16,7 +16,7 @@ Usage:
   npm run phantom:spec -- export-data-contract <spec.json> <dir>
   npm run phantom:spec -- export-powerbi-guide <spec.json> <dir>
   npm run phantom:spec -- export-handoff-pack <spec.json> <dir>
-  npm run phantom:spec -- inspect <spec.json> components|drill-actions|data-requirements|design-sources|design-mapping|workshop-intent|react-backlog|powerbi-build-matrix|handoff-summary
+  npm run phantom:spec -- inspect <spec.json> components|drill-actions|data-requirements|design-sources|design-mapping|design-workflow|workshop-intent|react-backlog|powerbi-build-matrix|handoff-summary
   npm run phantom:spec -- import-design-source <spec.json> figmaFrame "Client frame" <url> <frame-id> "notes" <out-spec.json>
   node tools/phantom-spec-cli.mjs import-design-source <spec.json> --type figmaFrame --name "Client frame" --url <url> --frame-id <frame-id> --views main --components kpi-1,chart-1 --out <out-spec.json>
 
@@ -233,6 +233,10 @@ const inspectSpec = (spec, subject) => {
     };
   }
 
+  if (subject === 'design-workflow') {
+    return createDesignWorkflow(spec);
+  }
+
   if (subject === 'workshop-intent') {
     const workshopIntent = createWorkshopIntent(spec.project?.specification);
     return {
@@ -279,6 +283,7 @@ const inspectSpec = (spec, subject) => {
         designEntryPoint: spec.project?.designEntryPoint || 'phantom-led',
         designSources: spec.project?.designSources || [],
       },
+      designWorkflow: createDesignWorkflow(spec),
       designMapping: createDesignMappingSummary(spec.project?.designSources || []),
       workshopIntent,
       workshopCompleteness: createWorkshopIntentCompleteness(workshopIntent),
@@ -303,7 +308,7 @@ const inspectSpec = (spec, subject) => {
     };
   }
 
-  throw new Error('Inspect subject must be components, drill-actions, data-requirements, design-sources, design-mapping, workshop-intent, react-backlog, powerbi-build-matrix, or handoff-summary.');
+  throw new Error('Inspect subject must be components, drill-actions, data-requirements, design-sources, design-mapping, design-workflow, workshop-intent, react-backlog, powerbi-build-matrix, or handoff-summary.');
 };
 
 const optionValue = (name) => {
@@ -331,6 +336,56 @@ const csvOption = (...names) => {
 };
 
 const uniqueSorted = (values) => [...new Set(values.filter(Boolean))].sort();
+
+const createDesignWorkflow = (spec) => {
+  const entryPoint = spec.project?.designEntryPoint || 'phantom-led';
+  const mapping = createDesignMappingSummary(spec.project?.designSources || []);
+  const isFigmaLed = entryPoint === 'figma-led';
+  const status = !isFigmaLed
+    ? 'ready'
+    : mapping.totalSources === 0
+      ? 'needs-design-source'
+      : mapping.unmappedSources > 0
+        ? 'needs-mapping'
+        : 'ready';
+  const agentCommands = [
+    'npm run phantom:spec -- inspect <spec.json> design-workflow',
+    'npm run phantom:spec -- inspect <spec.json> handoff-summary',
+    'npm run phantom:spec -- export-handoff-pack <spec.json> <out-dir>',
+  ];
+
+  if (isFigmaLed) {
+    agentCommands.splice(
+      1,
+      0,
+      'npm run phantom:spec -- import-design-source <spec.json> --type figmaFrame --name "<name>" --url <figma-url> --views main --components <ids> --out <out-spec.json>',
+    );
+  }
+
+  return {
+    subject: 'design-workflow',
+    entryPoint,
+    designPlane: isFigmaLed ? 'figma' : 'phantom',
+    phantomRole: isFigmaLed
+      ? 'Import or link Figma frames/components, then attach analytics workflow, data contracts, drill-throughs, readiness checks, and React or Power BI handoff.'
+      : 'Use Phantom defaults for layout, analytical components, data contracts, drill-throughs, readiness checks, and React or Power BI handoff without requiring Figma.',
+    status,
+    mapping,
+    handoffModes: ['react-product', 'power-bi'],
+    requiredNextSteps: [
+      ...(isFigmaLed && mapping.totalSources === 0
+        ? ['Import or link at least one Figma frame, Figma component, screenshot, or external design reference.']
+        : []),
+      ...(isFigmaLed && mapping.unmappedSources > 0
+        ? ['Map every design source to at least one Phantom view or component before engineering handoff.']
+        : []),
+      'Capture workshop intent: business questions, audience, decisions/actions, and acceptance criteria.',
+      'Choose React Product Mode for custom analytical apps, Power BI Mode for constrained Power BI-safe report specs, or keep both tracks for comparison.',
+      'Export the handoff pack and use the generated readiness report, data contract, React backlog, and Power BI build matrix as the implementation source of truth.',
+    ],
+    agentCommands,
+  };
+};
 
 const mergeDesignSource = (spec) => {
   const positional = positionalOptions();
@@ -1340,6 +1395,7 @@ const writeHandoffPack = async (spec, outDir) => {
     },
     readiness,
     handoffRecommendation,
+    designWorkflow: handoffSummary.designWorkflow,
     designMapping: handoffSummary.designMapping,
     workshopIntent: handoffSummary.workshopIntent,
     workshopCompleteness: handoffSummary.workshopCompleteness,
@@ -1373,6 +1429,17 @@ Generated from Phantom Spec ${spec.specVersion}.
 ## Design Sources
 
 ${designSourcesMarkdown(spec.project?.designSources || [])}
+
+## Design Workflow
+
+- Design plane: ${handoffSummary.designWorkflow.designPlane}
+- Phantom role: ${handoffSummary.designWorkflow.phantomRole}
+- Status: ${handoffSummary.designWorkflow.status}
+- Handoff modes: ${handoffSummary.designWorkflow.handoffModes.join(', ')}
+
+### Design Workflow Next Steps
+
+${markdownList(handoffSummary.designWorkflow.requiredNextSteps)}
 
 ## Design Mapping
 
