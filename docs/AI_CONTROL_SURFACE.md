@@ -51,6 +51,7 @@ npm run phantom:spec -- summary path/to/spec.json
 npm run phantom:spec -- readiness path/to/spec.json react
 npm run phantom:spec -- readiness path/to/spec.json powerBi
 npm run phantom:spec -- export-react path/to/spec.json ./generated-app
+npm run phantom:spec -- export-data-contract path/to/spec.json ./handoff
 ```
 
 `validate` returns:
@@ -68,6 +69,8 @@ npm run phantom:spec -- export-react path/to/spec.json ./generated-app
 
 `export-react` creates a deterministic Vite/React starter with the Phantom Spec embedded, placeholder component cards, and a README that tells engineers what to wire next.
 
+`export-data-contract` creates `data-contract.json` and `DATA_CONTRACT.md` with fields, metrics, dimensions, component data requirements, filters, drill actions, design-source references, and implementation notes. This is the handoff artifact for client APIs, warehouse/dbt models, optional semantic endpoints, and agents that need a stable analytical contract.
+
 ## Intended CLI Roadmap
 
 Future commands should include:
@@ -78,6 +81,7 @@ Future commands should include:
 - `phantom spec readiness <file> react|powerBi`
 - `phantom export pbi-report <file> --out <dir>`
 - `phantom export data-contract <file> --out <dir>`
+- `phantom export react <file> --out <dir>`
 - `phantom inspect components <file>`
 - `phantom inspect drill-actions <file>`
 - `phantom inspect data-requirements <file>`

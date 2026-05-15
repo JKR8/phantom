@@ -12,12 +12,14 @@ Usage:
   npm run phantom:spec -- summary <spec.json>
   npm run phantom:spec -- readiness <spec.json> react|powerBi
   npm run phantom:spec -- export-react <spec.json> <dir>
+  npm run phantom:spec -- export-data-contract <spec.json> <dir>
 
 Commands:
-  validate  Validate a Phantom Spec JSON file for agent/build handoff.
-  summary   Print a compact machine-readable summary.
-  readiness Check React or Power BI handoff readiness.
-  export-react Generate a minimal React starter scaffold from a ready spec.
+  validate             Validate a Phantom Spec JSON file for agent/build handoff.
+  summary              Print a compact machine-readable summary.
+  readiness            Check React or Power BI handoff readiness.
+  export-react         Generate a minimal React starter scaffold from a ready spec.
+  export-data-contract Generate JSON and Markdown data contract handoff files.
 `);
 };
 
@@ -27,7 +29,7 @@ const readSpec = async (path) => {
   }
   const fullPath = resolve(path);
   const raw = await readFile(fullPath, 'utf8');
-  return JSON.parse(raw);
+  return JSON.parse(raw.replace(/^\uFEFF/, ''));
 };
 
 const assert = (condition, message, errors) => {
@@ -183,11 +185,11 @@ const toIdentifier = (value) => {
   return cleaned || 'View';
 };
 
-const getOutDir = () => {
+const getOutDir = (commandName) => {
   const outIndex = args.indexOf('--out');
   const outDir = outIndex >= 0 ? args[outIndex + 1] : args[0];
   if (!outDir) {
-    throw new Error('Missing output directory for export-react.');
+    throw new Error(`Missing output directory for ${commandName}.`);
   }
   return resolve(outDir);
 };
@@ -396,13 +398,139 @@ export default defineConfig({
   };
 };
 
+const fieldKind = (field, spec) => {
+  if ((spec.dataContract?.metrics || []).includes(field)) return 'metric';
+  if ((spec.dataContract?.dimensions || []).includes(field)) return 'dimension';
+  return 'field';
+};
+
+const createDataContract = (spec) => {
+  const components = (spec.views || []).flatMap((view) =>
+    (view.components || []).map((component) => ({
+      viewId: view.id,
+      viewName: view.name,
+      componentId: component.id,
+      title: component.title,
+      type: component.type,
+      fields: component.dataRequirements?.fields || [],
+      metrics: component.dataRequirements?.metrics || [],
+      dimensions: component.dataRequirements?.dimensions || [],
+      filters: component.props?.filters || [],
+      expectedGrain: component.props?.grain || null,
+      exportTargets: component.exportTargets,
+    })),
+  );
+  const allFields = [...new Set([
+    ...(spec.dataContract?.fields || []),
+    ...components.flatMap((component) => component.fields),
+  ])].sort();
+
+  return {
+    contractVersion: '0.1.0',
+    sourceSpecVersion: spec.specVersion,
+    generatedAt: new Date().toISOString(),
+    project: {
+      scenario: spec.project?.scenario,
+      mode: spec.mode,
+      designEntryPoint: spec.project?.designEntryPoint,
+      designSources: spec.project?.designSources || [],
+    },
+    dataSources: spec.project?.specification?.dataSources || [],
+    fields: allFields.map((name) => ({
+      name,
+      kind: fieldKind(name, spec),
+      requiredBy: components
+        .filter((component) => component.fields.includes(name))
+        .map((component) => component.componentId),
+    })),
+    metrics: spec.dataContract?.metrics || [],
+    dimensions: spec.dataContract?.dimensions || [],
+    filters: spec.filters || {},
+    components,
+    drillActions: spec.interactions?.drillActions || [],
+    implementationNotes: [
+      'Map each component to a client-owned API, warehouse/dbt model, or optional semantic endpoint.',
+      'Preserve component IDs in implementation so tests, agents, and drill actions can reference stable targets.',
+      'Use designSources for Figma-led visual fidelity, but treat this contract as the source of truth for analytical behavior.',
+    ],
+  };
+};
+
+const markdownList = (items) => (items.length ? items.map((item) => `- ${item}`).join('\n') : '- None specified');
+
+const writeDataContract = async (spec, outDir) => {
+  await mkdir(outDir, { recursive: true });
+  const contract = createDataContract(spec);
+  const componentRows = contract.components
+    .map((component) => `| ${component.componentId} | ${component.title} | ${component.type} | ${component.fields.join(', ') || 'None'} |`)
+    .join('\n');
+  const drillRows = contract.drillActions
+    .map((action) => `| ${action.id} | ${action.label} | ${action.sourceComponentId} | ${action.targetType}:${action.targetId} | ${(action.context || []).join(', ') || 'None'} |`)
+    .join('\n');
+  const fieldRows = contract.fields
+    .map((field) => `| ${field.name} | ${field.kind} | ${field.requiredBy.join(', ') || 'None'} |`)
+    .join('\n');
+
+  const markdown = `# ${contract.project.scenario} Data Contract
+
+Generated from Phantom Spec ${contract.sourceSpecVersion}.
+
+## Project
+
+- Mode: ${contract.project.mode}
+- Entry point: ${contract.project.designEntryPoint}
+- Design sources: ${contract.project.designSources.length}
+
+## Metrics
+
+${markdownList(contract.metrics)}
+
+## Dimensions
+
+${markdownList(contract.dimensions)}
+
+## Fields
+
+| Field | Kind | Required By |
+| --- | --- | --- |
+${fieldRows || '| None | field | None |'}
+
+## Components
+
+| Component ID | Title | Type | Required Fields |
+| --- | --- | --- | --- |
+${componentRows || '| None | None | None | None |'}
+
+## Drill Actions
+
+| Action ID | Label | Source | Target | Context |
+| --- | --- | --- | --- | --- |
+${drillRows || '| None | None | None | None | None |'}
+
+## Implementation Notes
+
+${markdownList(contract.implementationNotes)}
+`;
+
+  await writeFile(`${outDir}/data-contract.json`, `${JSON.stringify(contract, null, 2)}\n`);
+  await writeFile(`${outDir}/DATA_CONTRACT.md`, markdown);
+
+  return {
+    outDir,
+    files: ['data-contract.json', 'DATA_CONTRACT.md'],
+    components: contract.components.length,
+    fields: contract.fields.length,
+    drillActions: contract.drillActions.length,
+  };
+};
+
 try {
   if (!command || command === 'help' || command === '--help' || command === '-h') {
     usage();
     process.exit(0);
   }
 
-  if (!['validate', 'summary', 'readiness', 'export-react'].includes(command)) {
+  if (!['validate', 'summary', 'readiness', 'export-react', 'export-data-contract'].includes(command)) {
     throw new Error(`Unknown command: ${command}`);
   }
 
@@ -450,7 +578,15 @@ try {
       console.error(JSON.stringify(report, null, 2));
       process.exit(1);
     }
-    console.log(JSON.stringify(await writeReactStarter(spec, getOutDir()), null, 2));
+    console.log(JSON.stringify(await writeReactStarter(spec, getOutDir(command)), null, 2));
+  }
+
+  if (command === 'export-data-contract') {
+    if (errors.length > 0) {
+      console.error(JSON.stringify({ valid: false, errors }, null, 2));
+      process.exit(1);
+    }
+    console.log(JSON.stringify(await writeDataContract(spec, getOutDir(command)), null, 2));
   }
 } catch (error) {
   console.error(JSON.stringify({ error: error.message }, null, 2));

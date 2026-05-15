@@ -187,6 +187,7 @@ Acceptance criteria:
 - A component can be mapped to a custom endpoint, warehouse/dbt model, or optional semantic API query.
 - The export spec clearly tells engineers what data each component needs.
 - Phantom remains backend-agnostic.
+- Agents and engineering pipelines can export a standalone data contract from the Phantom spec without using the browser UI.
 
 ## Phase 6: Power BI Mode Hardening
 
