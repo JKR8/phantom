@@ -268,7 +268,7 @@ export const ExportButton: React.FC = () => {
           designHandoff: 'design-handoff.json',
           dataContract: ['data-contract/data-contract.json', 'data-contract/DATA_CONTRACT.md'],
           powerBi: ['power-bi/power-bi-implementation-guide.json', 'power-bi/POWER_BI_IMPLEMENTATION_GUIDE.md'],
-          react: ['react-product/REACT_IMPLEMENTATION_NOTES.md', 'react-product/react-implementation-backlog.json', 'react-product/REACT_IMPLEMENTATION_BACKLOG.md', 'react-product/phantom-spec.json', 'react-product/phantom-data-contract.json'],
+          react: ['react-product/REACT_IMPLEMENTATION_NOTES.md', 'react-product/react-implementation-backlog.json', 'react-product/REACT_IMPLEMENTATION_BACKLOG.md', 'react-product/phantom-spec.json', 'react-product/phantom-data-contract.json', 'react-product/implementation-gate.json', 'react-product/design-handoff.json'],
         },
         summary: {
           components: powerBiGuide.summary.components,
@@ -449,6 +449,8 @@ npm run phantom:spec -- export-react phantom-spec.json ./generated-app
       zip.file('react-product/REACT_IMPLEMENTATION_BACKLOG.md', createReactImplementationBacklogMarkdown(reactBacklog));
       zip.file('react-product/phantom-spec.json', JSON.stringify(spec, null, 2));
       zip.file('react-product/phantom-data-contract.json', JSON.stringify(contract, null, 2));
+      zip.file('react-product/implementation-gate.json', JSON.stringify(handoffSummary.implementationGate, null, 2));
+      zip.file('react-product/design-handoff.json', JSON.stringify(designHandoff, null, 2));
 
       const blob = await zip.generateAsync({ type: 'blob' });
       downloadBlob(blob, `${scenario}_Phantom_Handoff_Pack_${date}.zip`);

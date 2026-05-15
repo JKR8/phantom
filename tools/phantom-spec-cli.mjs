@@ -913,6 +913,7 @@ const writeReactStarter = async (spec, outDir) => {
   const designMapping = createDesignMappingSummary(spec.project?.designSources || []);
   const designWorkflow = createDesignWorkflow(spec);
   const designHandoff = createDesignHandoff(spec);
+  const implementationGate = createImplementationGate(spec);
   const routeDefinitions = (spec.views || []).map((view, index) => ({
     viewId: view.id,
     name: view.name,
@@ -967,6 +968,7 @@ import spec from './phantom-spec.json';
 import dataContract from './phantom-data-contract.json';
 import designWorkflow from './design-workflow.json';
 import designHandoff from './design-handoff.json';
+import implementationGate from './implementation-gate.json';
 import { getComponentDataRequest } from './data-adapter';
 import { componentContractsById, type ComponentContract } from './component-contracts';
 import { drillActions } from './drill-actions';
@@ -995,6 +997,7 @@ const App = () => (
         <span>{designWorkflow.designPlane}</span>
         <span>{designWorkflow.status}</span>
         <span>{designHandoff.sourceMode}</span>
+        <span>{implementationGate.readyForImplementation ? 'ready' : 'blocked'}</span>
         <span>{routeDefinitions.length} route(s)</span>
         <span>{dataContract.fields.length} field(s)</span>
         <span>{drillActions.length} drill action(s)</span>
@@ -1110,6 +1113,7 @@ It includes:
 - drill action definitions for routes/detail panels
 - a machine-readable design workflow contract
 - a component-level design handoff contract for Figma imports or Phantom defaults
+- a standalone implementation gate contract
 - a React/Vite shell
 - one placeholder card per Phantom component
 - data requirements visible in the UI
@@ -1122,12 +1126,27 @@ It includes:
 4. Implement drill actions from \`spec.interactions.drillActions\`.
 5. Review \`src/design-workflow.json\` before deciding whether to pull from Figma or continue with Phantom defaults.
 6. Review \`src/design-handoff.json\` to see which components map to Figma/design sources and which use Phantom defaults.
-7. Confirm sign-off status is approved before treating the starter as an implementation contract.
-8. Apply any Figma/design-source references from \`spec.project.designSources\`.
+7. Review \`src/implementation-gate.json\` before treating the starter as implementation-ready.
+8. Confirm sign-off status is approved before treating the starter as an implementation contract.
+9. Apply any Figma/design-source references from \`spec.project.designSources\`.
 
 ## Project Status
 
 - Sign-off: ${dataContract.project.signOffStatus || 'draft'}
+
+## Implementation Gate
+
+- Ready for implementation: ${implementationGate.readyForImplementation ? 'Yes' : 'No'}
+- Approved for implementation: ${implementationGate.approvedForImplementation ? 'Yes' : 'No'}
+- Design ready: ${implementationGate.designReady ? 'Yes' : 'No'}
+- Data path ready: ${implementationGate.dataPathReady ? 'Yes' : 'No'}
+- Workshop intent complete: ${implementationGate.workshopIntentComplete ? 'Yes' : 'No'}
+- React ready: ${implementationGate.reactReady ? 'Yes' : 'No'}
+- Power BI ready: ${implementationGate.powerBiReady ? 'Yes' : 'No'}
+
+### Implementation Gate Next Steps
+
+${markdownList(implementationGate.requiredNextSteps)}
 
 ## Design Workflow
 
@@ -1320,6 +1339,7 @@ export default defineConfig({
   await writeFile(`${outDir}/src/phantom-data-contract.json`, `${JSON.stringify(dataContract, null, 2)}\n`);
   await writeFile(`${outDir}/src/design-workflow.json`, `${JSON.stringify(designWorkflow, null, 2)}\n`);
   await writeFile(`${outDir}/src/design-handoff.json`, `${JSON.stringify(designHandoff, null, 2)}\n`);
+  await writeFile(`${outDir}/src/implementation-gate.json`, `${JSON.stringify(implementationGate, null, 2)}\n`);
   await writeFile(`${outDir}/src/data-adapter.ts`, dataAdapterTs);
   await writeFile(`${outDir}/src/drill-actions.ts`, drillActionsTs);
   await writeFile(`${outDir}/src/routes.ts`, routesTs);
@@ -1330,7 +1350,7 @@ export default defineConfig({
 
   return {
     outDir,
-    files: ['package.json', 'index.html', 'tsconfig.json', 'vite.config.ts', 'src/App.tsx', 'src/styles.css', 'src/phantom-spec.json', 'src/phantom-data-contract.json', 'src/design-workflow.json', 'src/design-handoff.json', 'src/data-adapter.ts', 'src/drill-actions.ts', 'src/routes.ts', 'src/component-contracts.ts', 'react-implementation-backlog.json', 'REACT_IMPLEMENTATION_BACKLOG.md', 'README.md'],
+    files: ['package.json', 'index.html', 'tsconfig.json', 'vite.config.ts', 'src/App.tsx', 'src/styles.css', 'src/phantom-spec.json', 'src/phantom-data-contract.json', 'src/design-workflow.json', 'src/design-handoff.json', 'src/implementation-gate.json', 'src/data-adapter.ts', 'src/drill-actions.ts', 'src/routes.ts', 'src/component-contracts.ts', 'react-implementation-backlog.json', 'REACT_IMPLEMENTATION_BACKLOG.md', 'README.md'],
     components: components.length,
     fields: dataContract.fields.length,
     drillActions: dataContract.drillActions.length,

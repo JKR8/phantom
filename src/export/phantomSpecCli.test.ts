@@ -135,6 +135,7 @@ describe('phantom spec CLI', () => {
       expect(result.files).toContain('src/routes.ts');
       expect(result.files).toContain('src/component-contracts.ts');
       expect(result.files).toContain('src/design-handoff.json');
+      expect(result.files).toContain('src/implementation-gate.json');
       expect(result.components).toBe(2);
       expect(result.drillActions).toBe(1);
 
@@ -161,8 +162,16 @@ describe('phantom spec CLI', () => {
       expect(designHandoff.components.map((component: { componentId: string }) => component.componentId))
         .toEqual(['visual-1', 'visual-2']);
 
+      const implementationGate = JSON.parse(await readFile(join(outDir, 'src/implementation-gate.json'), 'utf8'));
+      expect(implementationGate).toMatchObject({
+        subject: 'implementation-gate',
+        readyForImplementation: true,
+        approvedForImplementation: true,
+      });
+
       const app = await readFile(join(outDir, 'src/App.tsx'), 'utf8');
       expect(app).toContain("from './design-handoff.json'");
+      expect(app).toContain("from './implementation-gate.json'");
       expect(app).toContain("from './component-contracts'");
       expect(app).toContain("from './routes'");
     } finally {
