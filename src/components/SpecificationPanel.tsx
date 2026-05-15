@@ -14,12 +14,13 @@ import { useThemeStore } from '../store/useThemeStore';
 import {
   checkPhantomReadiness,
   createHandoffRecommendation,
+  createPhantomDataPath,
   createPhantomDesignMappingSummary,
   createPhantomDesignWorkflow,
   createPhantomSpec,
   createPhantomWorkshopIntentCompleteness,
 } from '../export';
-import type { DashboardSpecification, DesignSource, DesignSourceType } from '../types';
+import type { DashboardSpecification, DataSourceReference, DataSourceReferenceType, DesignSource, DesignSourceType } from '../types';
 
 const parseIdList = (value: string) =>
   value.split(',').map((item) => item.trim()).filter(Boolean);
@@ -177,6 +178,10 @@ export const SpecificationPanel: React.FC = () => {
     () => createPhantomWorkshopIntentCompleteness(currentSpec),
     [currentSpec],
   );
+  const dataPath = React.useMemo(
+    () => createPhantomDataPath(currentSpec),
+    [currentSpec],
+  );
   const handoffRecommendation = React.useMemo(
     () => createHandoffRecommendation(reactReadiness.ready, powerBiReadiness.ready),
     [powerBiReadiness.ready, reactReadiness.ready],
@@ -188,6 +193,7 @@ export const SpecificationPanel: React.FC = () => {
   };
 
   const primaryDesignSource = specification.designSources?.[0];
+  const primaryDataSource = specification.dataSources?.[0];
   const designEntryPoint = specification.designEntryPoint || 'phantom-led';
 
   const handleDesignSourceChange = (field: keyof DesignSource, value: string) => {
@@ -218,6 +224,37 @@ export const SpecificationPanel: React.FC = () => {
       ...(nextValues.length ? { [field]: nextValues } : { [field]: undefined }),
     };
     updateSpecification({ designSources: [nextSource] });
+  };
+
+  const handleDataSourceChange = (field: keyof DataSourceReference, value: string) => {
+    const currentSource: DataSourceReference = primaryDataSource || {
+      id: 'data-source-primary',
+      type: 'dbt',
+      name: '',
+    };
+    const nextSource = {
+      ...currentSource,
+      [field]: value,
+      id: currentSource.id || `data-source-${Date.now()}`,
+    };
+    updateSpecification({ dataSources: [nextSource] });
+  };
+
+  const handleDataSourceListChange = (
+    field: 'linkedComponentIds' | 'linkedFields',
+    value: string,
+  ) => {
+    const currentSource: DataSourceReference = primaryDataSource || {
+      id: 'data-source-primary',
+      type: 'dbt',
+      name: '',
+    };
+    const nextValues = parseIdList(value);
+    const nextSource = {
+      ...currentSource,
+      ...(nextValues.length ? { [field]: nextValues } : { [field]: undefined }),
+    };
+    updateSpecification({ dataSources: [nextSource] });
   };
 
   const getStatusColor = (status: string | undefined): 'warning' | 'success' | 'informative' => {
@@ -573,6 +610,115 @@ export const SpecificationPanel: React.FC = () => {
             placeholder="Where does the data come from?"
             value={specification.sourceSystems || ''}
             onChange={(_, d) => handleChange('sourceSystems', d.value)}
+            resize="vertical"
+          />
+        </div>
+
+        <div className={styles.metricGrid}>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Data Path</Text>
+            <Badge appearance="filled" color={dataPath.requiredNextSteps.length === 0 ? 'success' : 'warning'}>
+              {dataPath.requiredNextSteps.length === 0 ? 'Ready' : 'Needs mapping'}
+            </Badge>
+          </div>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Sources</Text>
+            <Text className={styles.metricValue}>{dataPath.dataSources.length}</Text>
+          </div>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Unmapped Components</Text>
+            <Text className={styles.metricValue}>{dataPath.unmappedComponents.length}</Text>
+          </div>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Unmapped Fields</Text>
+            <Text className={styles.metricValue}>{dataPath.unmappedFields.length}</Text>
+          </div>
+        </div>
+        <Text className={styles.hint}>
+          Next: {dataPath.requiredNextSteps[0] || 'data path ready for handoff'}
+        </Text>
+
+        <div className={styles.selectRow}>
+          <div className={`${styles.fieldRow} ${styles.selectField}`}>
+            <Label className={styles.fieldLabel}>Data Source Type</Label>
+            <Select
+              size="small"
+              value={primaryDataSource?.type || 'dbt'}
+              onChange={(_, d) => handleDataSourceChange('type', d.value as DataSourceReferenceType)}
+            >
+              <option value="dbt">dbt Model</option>
+              <option value="warehouse">Warehouse Table</option>
+              <option value="api">REST API</option>
+              <option value="graphql">GraphQL</option>
+              <option value="semantic">Semantic API</option>
+              <option value="file">File</option>
+              <option value="manual">Manual</option>
+              <option value="unknown">Unknown</option>
+            </Select>
+          </div>
+
+          <div className={`${styles.fieldRow} ${styles.selectField}`}>
+            <Label className={styles.fieldLabel}>Data Source Name</Label>
+            <Input
+              size="small"
+              placeholder="Orders mart"
+              value={primaryDataSource?.name || ''}
+              onChange={(_, d) => handleDataSourceChange('name', d.value)}
+            />
+          </div>
+        </div>
+
+        <div className={styles.selectRow}>
+          <div className={`${styles.fieldRow} ${styles.selectField}`}>
+            <Label className={styles.fieldLabel}>Model / Table</Label>
+            <Input
+              size="small"
+              placeholder="mart_orders"
+              value={primaryDataSource?.model || ''}
+              onChange={(_, d) => handleDataSourceChange('model', d.value)}
+            />
+          </div>
+
+          <div className={`${styles.fieldRow} ${styles.selectField}`}>
+            <Label className={styles.fieldLabel}>Endpoint URL</Label>
+            <Input
+              size="small"
+              placeholder="https://api.client.com/orders"
+              value={primaryDataSource?.url || ''}
+              onChange={(_, d) => handleDataSourceChange('url', d.value)}
+            />
+          </div>
+        </div>
+
+        <div className={styles.selectRow}>
+          <div className={`${styles.fieldRow} ${styles.selectField}`}>
+            <Label className={styles.fieldLabel}>Linked Components</Label>
+            <Input
+              size="small"
+              placeholder="visual-1, visual-2"
+              value={formatIdList(primaryDataSource?.linkedComponentIds)}
+              onChange={(_, d) => handleDataSourceListChange('linkedComponentIds', d.value)}
+            />
+          </div>
+
+          <div className={`${styles.fieldRow} ${styles.selectField}`}>
+            <Label className={styles.fieldLabel}>Linked Fields</Label>
+            <Input
+              size="small"
+              placeholder="Region, revenue"
+              value={formatIdList(primaryDataSource?.linkedFields)}
+              onChange={(_, d) => handleDataSourceListChange('linkedFields', d.value)}
+            />
+          </div>
+        </div>
+
+        <div className={styles.fieldRow}>
+          <Label className={styles.fieldLabel}>Data Source Notes</Label>
+          <Textarea
+            className={styles.textarea}
+            placeholder="Ownership, assumptions, transformations, or API notes..."
+            value={primaryDataSource?.description || ''}
+            onChange={(_, d) => handleDataSourceChange('description', d.value)}
             resize="vertical"
           />
         </div>
