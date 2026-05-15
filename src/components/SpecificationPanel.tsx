@@ -7,9 +7,10 @@ import {
   Select,
   Label,
   Badge,
+  Input,
 } from '@fluentui/react-components';
 import { useStore } from '../store/useStore';
-import type { DashboardSpecification } from '../types';
+import type { DashboardSpecification, DesignSource, DesignSourceType } from '../types';
 
 const useStyles = makeStyles({
   panel: {
@@ -92,6 +93,22 @@ export const SpecificationPanel: React.FC = () => {
     updateSpecification({ [field]: value });
   };
 
+  const primaryDesignSource = specification.designSources?.[0];
+  const designEntryPoint = specification.designEntryPoint || 'phantom-led';
+
+  const handleDesignSourceChange = (field: keyof DesignSource, value: string) => {
+    const currentSource: DesignSource = primaryDesignSource || {
+      id: 'design-source-primary',
+      type: 'figmaFrame',
+      name: '',
+    };
+    const nextSource = {
+      ...currentSource,
+      [field]: value,
+    };
+    updateSpecification({ designSources: [nextSource] });
+  };
+
   const getStatusColor = (status: string | undefined): 'warning' | 'success' | 'informative' => {
     if (status === 'approved') return 'success';
     if (status === 'in-review') return 'warning';
@@ -134,6 +151,98 @@ export const SpecificationPanel: React.FC = () => {
             placeholder="Who will use this dashboard?"
             value={specification.audience || ''}
             onChange={(_, d) => handleChange('audience', d.value)}
+            resize="vertical"
+          />
+        </div>
+      </div>
+
+      {/* Design Source */}
+      <div className={styles.section}>
+        <Text className={styles.sectionHeader}>Design Source</Text>
+
+        <div className={styles.fieldRow}>
+          <Label className={styles.fieldLabel}>Entry Point</Label>
+          <Select
+            size="small"
+            value={designEntryPoint}
+            onChange={(_, d) => updateSpecification({
+              designEntryPoint: d.value as DashboardSpecification['designEntryPoint'],
+            })}
+          >
+            <option value="phantom-led">Phantom Defaults</option>
+            <option value="figma-led">Figma-led</option>
+          </Select>
+          <Text className={styles.hint}>
+            Use Figma-led when visual design starts outside Phantom; use Phantom defaults when speed matters.
+          </Text>
+        </div>
+
+        <div className={styles.selectRow}>
+          <div className={`${styles.fieldRow} ${styles.selectField}`}>
+            <Label className={styles.fieldLabel}>Source Type</Label>
+            <Select
+              size="small"
+              value={primaryDesignSource?.type || 'figmaFrame'}
+              onChange={(_, d) => handleDesignSourceChange('type', d.value as DesignSourceType)}
+            >
+              <option value="figmaFrame">Figma Frame</option>
+              <option value="figmaComponent">Figma Component</option>
+              <option value="screenshot">Screenshot</option>
+              <option value="externalReference">External Reference</option>
+              <option value="phantomDefault">Phantom Default</option>
+            </Select>
+          </div>
+
+          <div className={`${styles.fieldRow} ${styles.selectField}`}>
+            <Label className={styles.fieldLabel}>Name</Label>
+            <Input
+              size="small"
+              placeholder="Exec dashboard frame"
+              value={primaryDesignSource?.name || ''}
+              onChange={(_, d) => handleDesignSourceChange('name', d.value)}
+            />
+          </div>
+        </div>
+
+        <div className={styles.fieldRow}>
+          <Label className={styles.fieldLabel}>Design Link</Label>
+          <Input
+            size="small"
+            placeholder="https://www.figma.com/file/..."
+            value={primaryDesignSource?.url || ''}
+            onChange={(_, d) => handleDesignSourceChange('url', d.value)}
+          />
+        </div>
+
+        <div className={styles.selectRow}>
+          <div className={`${styles.fieldRow} ${styles.selectField}`}>
+            <Label className={styles.fieldLabel}>Frame ID</Label>
+            <Input
+              size="small"
+              placeholder="Optional"
+              value={primaryDesignSource?.frameId || ''}
+              onChange={(_, d) => handleDesignSourceChange('frameId', d.value)}
+            />
+          </div>
+
+          <div className={`${styles.fieldRow} ${styles.selectField}`}>
+            <Label className={styles.fieldLabel}>Component ID</Label>
+            <Input
+              size="small"
+              placeholder="Optional"
+              value={primaryDesignSource?.componentId || ''}
+              onChange={(_, d) => handleDesignSourceChange('componentId', d.value)}
+            />
+          </div>
+        </div>
+
+        <div className={styles.fieldRow}>
+          <Label className={styles.fieldLabel}>Design Notes</Label>
+          <Textarea
+            className={styles.textarea}
+            placeholder="Brand, component, token, or handoff notes..."
+            value={primaryDesignSource?.notes || ''}
+            onChange={(_, d) => handleDesignSourceChange('notes', d.value)}
             resize="vertical"
           />
         </div>

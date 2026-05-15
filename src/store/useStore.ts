@@ -88,6 +88,7 @@ export const useStore = create<DashboardState>((set, get) => ({
   // Specification
   specification: {
     signOffStatus: 'draft',
+    designEntryPoint: 'phantom-led',
   } as DashboardSpecification,
   updateSpecification: (spec: Partial<DashboardSpecification>) =>
     set((state) => ({
@@ -289,7 +290,7 @@ export const useStore = create<DashboardState>((set, get) => ({
       shareId: db.share_id,
       isDirty: false,
       lastSavedAt: db.updated_at,
-      specification: db.specification || { signOffStatus: 'draft' },
+      specification: { signOffStatus: 'draft', designEntryPoint: 'phantom-led', ...(db.specification || {}) },
     });
   },
   getSerializableState: () => {
@@ -324,7 +325,7 @@ export const useStore = create<DashboardState>((set, get) => ({
       shareId: null,
       isDirty: false,
       lastSavedAt: null,
-      specification: { signOffStatus: 'draft' },
+      specification: { signOffStatus: 'draft', designEntryPoint: 'phantom-led' },
       // Reset whiteboard state
       canvasMode: 'pbi',
       canvasZoom: 1,
