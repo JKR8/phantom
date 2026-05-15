@@ -38,6 +38,7 @@
     "vega": "^6.2.0",
     "vega-embed": "^7.1.0",
     "vega-lite": "^6.4.2",
+    "yaml": "^2.9.0",
     "zustand": "^5.0.10"
   },
   "devDependencies": {

@@ -9,6 +9,7 @@ export * from './daxGenerator';
 export * from './layoutConverter';
 export * from './pbipWriter';
 export * from './phantomSpec';
+export * from './phantomSpecV2';
 
 // Re-export commonly used functions for convenience
 export { createPBIPPackage, downloadPBIPPackage } from './pbipWriter';
