@@ -30,6 +30,7 @@ import {
   CheckmarkCircleRegular,
 } from '@fluentui/react-icons';
 import html2canvas from 'html2canvas';
+import JSZip from 'jszip';
 import { useStore } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
 import {
@@ -100,6 +101,17 @@ export const ExportButton: React.FC = () => {
 
   const downloadTextFile = (contents: string, filename: string, type: string) => {
     const blob = new Blob([contents], { type });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadBlob = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -211,6 +223,92 @@ export const ExportButton: React.FC = () => {
     );
   };
 
+  const handleHandoffPackExport = async () => {
+    setIsExporting(true);
+    try {
+      const spec = createCurrentSpec();
+      const contract = createPhantomDataContract(spec);
+      const powerBiGuide = createPowerBiImplementationGuide(spec);
+      const date = new Date().toISOString().split('T')[0];
+      const zip = new JSZip();
+      const manifest = {
+        manifestVersion: '0.1.0',
+        sourceSpecVersion: spec.specVersion,
+        generatedAt: new Date().toISOString(),
+        project: {
+          scenario: spec.project.scenario,
+          mode: spec.mode,
+          designEntryPoint: spec.project.designEntryPoint,
+          designSources: spec.project.designSources,
+        },
+        readiness: {
+          powerBi: powerBiGuide.readiness,
+        },
+        artifacts: {
+          spec: 'phantom-spec.json',
+          dataContract: ['data-contract/data-contract.json', 'data-contract/DATA_CONTRACT.md'],
+          powerBi: ['power-bi/power-bi-implementation-guide.json', 'power-bi/POWER_BI_IMPLEMENTATION_GUIDE.md'],
+          react: ['react-product/REACT_IMPLEMENTATION_NOTES.md', 'react-product/phantom-spec.json', 'react-product/phantom-data-contract.json'],
+        },
+        summary: {
+          components: powerBiGuide.summary.components,
+          fields: contract.fields.length,
+          drillActions: powerBiGuide.summary.drillActions,
+          powerBiApproximateVisuals: powerBiGuide.summary.approximateVisuals,
+          powerBiUnsupportedVisuals: powerBiGuide.summary.unsupportedVisuals,
+        },
+      };
+      const readme = `# ${spec.project.scenario} Phantom Handoff Pack
+
+Generated from Phantom Spec ${spec.specVersion}.
+
+## Contents
+
+- \`phantom-spec.json\`: canonical workshop/spec artifact.
+- \`data-contract/\`: data requirements for API, warehouse/dbt, or semantic endpoint mapping.
+- \`power-bi/\`: Power BI build guide with readiness, visual support status, fields, and drill-through notes.
+- \`react-product/\`: React implementation starting notes plus the same spec and data contract.
+- \`HANDOFF_MANIFEST.json\`: machine-readable index for agents and engineering automation.
+`;
+      const reactNotes = `# React Product Implementation Notes
+
+Use \`phantom-spec.json\` and \`phantom-data-contract.json\` as the implementation contract.
+
+## Expected Work
+
+- Replace Phantom placeholder visuals with production React components.
+- Wire data requirements to client-owned APIs, warehouse/dbt models, or optional semantic endpoints.
+- Implement drill actions from \`phantom-spec.json > interactions.drillActions\`.
+- Apply Figma/design-source references from \`phantom-spec.json > project.designSources\` when present.
+
+For a runnable starter app, use:
+
+\`\`\`bash
+npm run phantom:spec -- export-react phantom-spec.json ./generated-app
+\`\`\`
+`;
+
+      zip.file('phantom-spec.json', JSON.stringify(spec, null, 2));
+      zip.file('HANDOFF_MANIFEST.json', JSON.stringify(manifest, null, 2));
+      zip.file('README.md', readme);
+      zip.file('data-contract/data-contract.json', JSON.stringify(contract, null, 2));
+      zip.file('data-contract/DATA_CONTRACT.md', createPhantomDataContractMarkdown(contract));
+      zip.file('power-bi/power-bi-implementation-guide.json', JSON.stringify(powerBiGuide, null, 2));
+      zip.file('power-bi/POWER_BI_IMPLEMENTATION_GUIDE.md', createPowerBiImplementationGuideMarkdown(powerBiGuide));
+      zip.file('react-product/REACT_IMPLEMENTATION_NOTES.md', reactNotes);
+      zip.file('react-product/phantom-spec.json', JSON.stringify(spec, null, 2));
+      zip.file('react-product/phantom-data-contract.json', JSON.stringify(contract, null, 2));
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      downloadBlob(blob, `${scenario}_Phantom_Handoff_Pack_${date}.zip`);
+    } catch (error) {
+      console.error('Handoff pack export failed:', error);
+      alert('Handoff pack export failed. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <>
       <Menu>
@@ -229,6 +327,9 @@ export const ExportButton: React.FC = () => {
           <MenuList>
             <MenuItem icon={<DocumentDataRegular />} onClick={handlePBIExport}>
               Power BI Project (PBIP)
+            </MenuItem>
+            <MenuItem icon={<DocumentDataRegular />} onClick={handleHandoffPackExport}>
+              Handoff Pack (.zip)
             </MenuItem>
             <MenuItem icon={<DocumentDataRegular />} onClick={handlePowerBiGuideExport}>
               Power BI Build Guide

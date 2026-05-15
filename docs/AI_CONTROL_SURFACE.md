@@ -82,6 +82,8 @@ npm run phantom:spec -- inspect path/to/spec.json data-requirements
 
 `export-handoff-pack` creates a bundled folder with `phantom-spec.json`, `HANDOFF_MANIFEST.json`, `README.md`, `data-contract/`, `power-bi/`, and `react-starter/`. This is the preferred consultant-to-engineering handoff when both React Product Mode and Power BI Mode artifacts should travel together.
 
+The browser export menu also provides `Handoff Pack (.zip)`, a workshop-friendly bundle with the canonical spec, data contract, Power BI guide, React implementation notes, and a machine-readable manifest. Use the CLI `export-handoff-pack` when a runnable React starter folder is required.
+
 ## Intended CLI Roadmap
 
 Future commands should include:
