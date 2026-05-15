@@ -21,6 +21,7 @@ import { useThemeStore } from '../store/useThemeStore';
 import {
   createHandoffRecommendation,
   createPhantomDataPath,
+  createPhantomHandoffSummary,
   createPhantomImplementationGate,
   createPhantomSpec,
   createPhantomWorkshopIntentCompleteness,
@@ -252,6 +253,7 @@ export const ConsultantWorkflowPanel: React.FC = () => {
     () => createHandoffRecommendation(gate.reactReady, gate.powerBiReady),
     [gate.powerBiReady, gate.reactReady],
   );
+  const handoffSummary = React.useMemo(() => createPhantomHandoffSummary(currentSpec), [currentSpec]);
   const requirements = specification.requirementItems || [];
   const designSources = specification.designSources || [];
   const dataSources = specification.dataSources || [];
@@ -394,6 +396,28 @@ export const ConsultantWorkflowPanel: React.FC = () => {
     updateSpecification({
       dataSources: dataSources.filter((_, sourceIndex) => sourceIndex !== index),
     });
+  };
+
+  const downloadJson = (payload: unknown, filename: string) => {
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadSpec = () => {
+    const date = new Date().toISOString().split('T')[0];
+    downloadJson(currentSpec, `${scenario}_Phantom_Spec_${date}.json`);
+  };
+
+  const downloadSummary = () => {
+    const date = new Date().toISOString().split('T')[0];
+    downloadJson(handoffSummary, `${scenario}_Handoff_Summary_${date}.json`);
   };
 
   const addJourney = () => {
@@ -930,67 +954,112 @@ export const ConsultantWorkflowPanel: React.FC = () => {
   );
 
   const renderReview = () => (
-    <div className={styles.section}>
-      <Text className={styles.sectionHeader}>Review And Approval</Text>
-      <div className={styles.metricGrid}>
-        <div className={styles.metric}>
-          <Text className={styles.smallText}>Intent</Text>
-          <Badge appearance="filled" color={intent.complete ? 'success' : 'warning'}>
-            {intent.complete ? 'Ready' : 'Missing'}
-          </Badge>
+    <>
+      <div className={styles.section}>
+        <Text className={styles.sectionHeader}>Client Review Pack</Text>
+        <div className={styles.metricGrid}>
+          <div className={styles.metric}>
+            <Text className={styles.smallText}>Client decisions</Text>
+            <Text className={styles.metricValue}>{handoffSummary.requirements.clientQuestions.length}</Text>
+          </div>
+          <div className={styles.metric}>
+            <Text className={styles.smallText}>Assumptions</Text>
+            <Text className={styles.metricValue}>{handoffSummary.requirements.assumptions.length}</Text>
+          </div>
+          <div className={styles.metric}>
+            <Text className={styles.smallText}>Accepted gaps</Text>
+            <Text className={styles.metricValue}>{handoffSummary.requirements.acceptedGaps.length}</Text>
+          </div>
+          <div className={styles.metric}>
+            <Text className={styles.smallText}>Export blockers</Text>
+            <Text className={styles.metricValue}>{handoffSummary.requirements.exportBlockers.length}</Text>
+          </div>
         </div>
-        <div className={styles.metric}>
-          <Text className={styles.smallText}>Gate</Text>
-          <Badge appearance="filled" color={gate.readyForImplementation ? 'success' : 'warning'}>
-            {gate.readyForImplementation ? 'Ready' : 'Not ready'}
-          </Badge>
+        {handoffSummary.requirements.clientQuestions.slice(0, 4).map((item) => (
+          <Text className={styles.smallText} key={item.id}>Ask client: {item.title}</Text>
+        ))}
+        {handoffSummary.requirements.assumptions.slice(0, 4).map((item) => (
+          <Text className={styles.smallText} key={item.id}>Assumption: {item.title}</Text>
+        ))}
+      </div>
+
+      <div className={styles.section}>
+        <Text className={styles.sectionHeader}>Review And Approval</Text>
+        <div className={styles.metricGrid}>
+          <div className={styles.metric}>
+            <Text className={styles.smallText}>Intent</Text>
+            <Badge appearance="filled" color={intent.complete ? 'success' : 'warning'}>
+              {intent.complete ? 'Ready' : 'Missing'}
+            </Badge>
+          </div>
+          <div className={styles.metric}>
+            <Text className={styles.smallText}>Gate</Text>
+            <Badge appearance="filled" color={gate.readyForImplementation ? 'success' : 'warning'}>
+              {gate.readyForImplementation ? 'Ready' : 'Not ready'}
+            </Badge>
+          </div>
         </div>
+        <div className={styles.field}>
+          <Label className={styles.label}>Sign-off status</Label>
+          <Select
+            size="small"
+            value={specification.signOffStatus || 'draft'}
+            onChange={(_, data) => updateSpecification({ signOffStatus: data.value as typeof specification.signOffStatus })}
+          >
+            <option value="draft">Draft</option>
+            <option value="in-review">In review</option>
+            <option value="approved">Approved</option>
+          </Select>
+        </div>
+        {gate.requiredNextSteps.slice(0, 6).map((step) => (
+          <Text className={styles.smallText} key={step}>Next: {step}</Text>
+        ))}
       </div>
-      <div className={styles.field}>
-        <Label className={styles.label}>Sign-off status</Label>
-        <Select
-          size="small"
-          value={specification.signOffStatus || 'draft'}
-          onChange={(_, data) => updateSpecification({ signOffStatus: data.value as typeof specification.signOffStatus })}
-        >
-          <option value="draft">Draft</option>
-          <option value="in-review">In review</option>
-          <option value="approved">Approved</option>
-        </Select>
-      </div>
-      {gate.requiredNextSteps.slice(0, 6).map((step) => (
-        <Text className={styles.smallText} key={step}>Next: {step}</Text>
-      ))}
-    </div>
+    </>
   );
 
   const renderExport = () => (
     <div className={styles.section}>
       <Text className={styles.sectionHeader}>Handoff Readiness</Text>
       <Badge appearance="filled" color={gate.readyForImplementation ? 'success' : 'warning'}>
-        {recommendation.target.replace(/-/g, ' ')}
+        {gate.readyForImplementation ? recommendation.target.replace(/-/g, ' ') : 'fix before handoff'}
       </Badge>
-      <Text className={styles.smallText}>{recommendation.guidance}</Text>
+      <Text className={styles.smallText}>
+        {gate.readyForImplementation
+          ? recommendation.guidance
+          : 'Resolve the implementation gate items before treating this as a build contract.'}
+      </Text>
       <div className={styles.metricGrid}>
         <div className={styles.metric}>
-          <Text className={styles.smallText}>Client decisions</Text>
-          <Text className={styles.metricValue}>{workflow.counts.client_decision}</Text>
+          <Text className={styles.smallText}>Open items</Text>
+          <Text className={styles.metricValue}>{handoffSummary.requirements.openItems.length}</Text>
         </div>
         <div className={styles.metric}>
-          <Text className={styles.smallText}>Consultant tasks</Text>
-          <Text className={styles.metricValue}>{workflow.counts.consultant_task}</Text>
+          <Text className={styles.smallText}>Components</Text>
+          <Text className={styles.metricValue}>{handoffSummary.counts.components}</Text>
         </div>
         <div className={styles.metric}>
-          <Text className={styles.smallText}>Assumptions</Text>
-          <Text className={styles.metricValue}>{workflow.counts.assumption}</Text>
+          <Text className={styles.smallText}>Fields</Text>
+          <Text className={styles.metricValue}>{handoffSummary.counts.fields}</Text>
         </div>
         <div className={styles.metric}>
-          <Text className={styles.smallText}>Export blockers</Text>
-          <Text className={styles.metricValue}>{workflow.counts.export_blocker}</Text>
+          <Text className={styles.smallText}>Journeys</Text>
+          <Text className={styles.metricValue}>{handoffSummary.counts.drillActions}</Text>
         </div>
       </div>
+      {gate.requiredNextSteps.slice(0, 5).map((step) => (
+        <Text className={styles.smallText} key={step}>Before handoff: {step}</Text>
+      ))}
+      <div className={styles.actionRow}>
+        <Button size="small" appearance="primary" onClick={downloadSpec}>
+          Download spec
+        </Button>
+        <Button size="small" onClick={downloadSummary}>
+          Download summary
+        </Button>
+      </div>
       <Text className={styles.smallText}>
-        Use the top Export menu when this gate is clear. The exported spec includes these requirement items.
+        Use the top Export menu for the full Handoff Pack, React Build Pack, Data Contract, or Power BI Build Guide.
       </Text>
     </div>
   );
