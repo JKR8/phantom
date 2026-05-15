@@ -10,6 +10,8 @@ import {
   Input,
 } from '@fluentui/react-components';
 import { useStore } from '../store/useStore';
+import { useThemeStore } from '../store/useThemeStore';
+import { checkPhantomReadiness, createPhantomSpec } from '../export';
 import type { DashboardSpecification, DesignSource, DesignSourceType } from '../types';
 
 const useStyles = makeStyles({
@@ -82,12 +84,66 @@ const useStyles = makeStyles({
     color: '#8A8886',
     marginTop: '2px',
   },
+  readinessGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '8px',
+  },
+  readinessCard: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+    ...shorthands.padding('8px'),
+    ...shorthands.border('1px', 'solid', '#E1DFDD'),
+    ...shorthands.borderRadius('6px'),
+    backgroundColor: '#FAFAF9',
+  },
+  readinessLabel: {
+    fontSize: '11px',
+    color: '#605E5C',
+    fontWeight: 600,
+  },
+  readinessCount: {
+    fontSize: '11px',
+    color: '#605E5C',
+  },
+  issueList: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+  },
+  issueText: {
+    fontSize: '11px',
+    color: '#605E5C',
+    lineHeight: '1.35',
+  },
 });
 
 export const SpecificationPanel: React.FC = () => {
   const styles = useStyles();
   const specification = useStore((s) => s.specification);
   const updateSpecification = useStore((s) => s.updateSpecification);
+  const scenario = useStore((s) => s.scenario);
+  const items = useStore((s) => s.items);
+  const filters = useStore((s) => s.filters);
+  const layoutMode = useStore((s) => s.layoutMode);
+  const exportMode = useStore((s) => s.exportMode);
+  const drillActions = useStore((s) => s.drillActions);
+  const activePalette = useThemeStore((s) => s.activePalette);
+
+  const currentSpec = React.useMemo(() => createPhantomSpec({
+    scenario,
+    items,
+    drillActions,
+    filters,
+    layoutMode,
+    exportMode,
+    themePalette: activePalette.name,
+    specification,
+  }), [activePalette.name, drillActions, exportMode, filters, items, layoutMode, scenario, specification]);
+  const reactReadiness = React.useMemo(() => checkPhantomReadiness(currentSpec, 'react'), [currentSpec]);
+  const powerBiReadiness = React.useMemo(() => checkPhantomReadiness(currentSpec, 'powerBi'), [currentSpec]);
+  const visibleIssues = [...powerBiReadiness.errors, ...powerBiReadiness.warnings].slice(0, 3);
 
   const handleChange = (field: keyof DashboardSpecification, value: string) => {
     updateSpecification({ [field]: value });
@@ -126,6 +182,43 @@ export const SpecificationPanel: React.FC = () => {
         >
           {specification.signOffStatus || 'draft'}
         </Badge>
+      </div>
+
+      {/* Export Readiness */}
+      <div className={styles.section}>
+        <Text className={styles.sectionHeader}>Export Readiness</Text>
+        <div className={styles.readinessGrid}>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>React Product</Text>
+            <Badge appearance="filled" color={reactReadiness.ready ? 'success' : 'danger'}>
+              {reactReadiness.ready ? 'Ready' : 'Blocked'}
+            </Badge>
+            <Text className={styles.readinessCount}>
+              {reactReadiness.errors.length} errors, {reactReadiness.warnings.length} warnings
+            </Text>
+          </div>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Power BI</Text>
+            <Badge appearance="filled" color={powerBiReadiness.ready ? 'success' : 'danger'}>
+              {powerBiReadiness.ready ? 'Ready' : 'Blocked'}
+            </Badge>
+            <Text className={styles.readinessCount}>
+              {powerBiReadiness.errors.length} errors, {powerBiReadiness.warnings.length} warnings
+            </Text>
+          </div>
+        </div>
+        <div className={styles.issueList}>
+          {visibleIssues.length === 0 ? (
+            <Text className={styles.issueText}>No Power BI blockers detected for the current spec.</Text>
+          ) : visibleIssues.map((issue) => (
+            <Text key={`${issue.code}-${issue.componentId || issue.drillActionId || issue.message}`} className={styles.issueText}>
+              {issue.severity.toUpperCase()} {issue.code}: {issue.message}
+            </Text>
+          ))}
+        </div>
+        <Text className={styles.hint}>
+          These checks match the Phantom Spec export and CLI readiness reports.
+        </Text>
       </div>
 
       {/* Business Context */}
