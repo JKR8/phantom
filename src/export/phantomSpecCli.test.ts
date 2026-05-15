@@ -429,6 +429,50 @@ describe('phantom spec CLI', () => {
     }
   }, 30000);
 
+  it('updates approval status through the CLI for implementation gates', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'phantom-set-approval-'));
+    const specPath = join(tempDir, 'spec.json');
+    const outPath = join(tempDir, 'spec.approved.json');
+    const spec = JSON.parse(JSON.stringify(createReadySpec()));
+    spec.project.specification.signOffStatus = 'draft';
+
+    try {
+      await writeFile(specPath, `${JSON.stringify(spec, null, 2)}\n`);
+      const { stdout } = await execFileAsync(
+        process.execPath,
+        [
+          'tools/phantom-spec-cli.mjs',
+          'set-approval',
+          specPath,
+          '--status',
+          'approved',
+          '--out',
+          outPath,
+        ],
+        { cwd: process.cwd() },
+      );
+      const result = JSON.parse(stdout);
+      const nextSpec = JSON.parse(await readFile(outPath, 'utf8'));
+
+      expect(result).toMatchObject({
+        outPath,
+        approval: {
+          subject: 'approval',
+          signOffStatus: 'approved',
+          approvedForImplementation: true,
+        },
+        implementationGate: {
+          subject: 'implementation-gate',
+          readyForImplementation: true,
+          approvedForImplementation: true,
+        },
+      });
+      expect(nextSpec.project.specification.signOffStatus).toBe('approved');
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  }, 30000);
+
   it('updates workshop intent through the CLI for implementation gates', async () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'phantom-set-workshop-intent-'));
     const specPath = join(tempDir, 'spec.json');

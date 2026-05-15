@@ -57,6 +57,7 @@ npm run phantom:spec -- export-powerbi-guide path/to/spec.json ./handoff
 npm run phantom:spec -- export-handoff-pack path/to/spec.json ./handoff-pack
 npm run phantom:spec -- set-mode path/to/spec.json powerBi path/to/spec.powerbi.json
 node tools/phantom-spec-cli.mjs set-mode path/to/spec.json --mode react-product --out path/to/spec.react.json
+node tools/phantom-spec-cli.mjs set-approval path/to/spec.json --status approved --out path/to/spec.approved.json
 node tools/phantom-spec-cli.mjs set-workshop-intent path/to/spec.json --business-questions "Which customers need attention?" --audience "Sales leadership" --decisions "Prioritise account follow-up" --acceptance-criteria "Leaders can identify and drill into priority accounts" --out path/to/spec.with-intent.json
 npm run phantom:spec -- inspect path/to/spec.json components
 npm run phantom:spec -- inspect path/to/spec.json drill-actions
@@ -91,6 +92,8 @@ node tools/phantom-spec-cli.mjs import-data-source path/to/spec.json --type dbt 
 `diff` returns project, mode, component, drill action, and data requirement changes between two Phantom specs. Use it after workshops or AI edits before regenerating implementation artifacts.
 
 `set-mode` writes a new spec with `mode` and `project.specification.exportMode` switched to React Product Mode or Power BI Mode. Use it when an agent needs to compare both delivery paths from the same workshop artifact before running `readiness`, `inspect implementation-gate`, or exports.
+
+`set-approval` writes a new spec with sign-off status set to `draft`, `in-review`, or `approved`. Use it after client or delivery-lead review to clear the approval portion of the implementation gate in a controlled, diffable spec update.
 
 `set-workshop-intent` writes a new spec with updated workshop intent fields: business questions, audience, decisions/actions, acceptance criteria, and optional build notes. Use it to repair `inspect workshop-intent` or `inspect implementation-gate` blockers from meeting notes before generating React or Power BI handoff artifacts.
 
@@ -142,6 +145,7 @@ Future commands should include:
 - `phantom spec summary <file>`
 - `phantom spec diff <before> <after>` implemented as `npm run phantom:spec -- diff <before> <after>`
 - `phantom spec set-mode <file> react|powerBi --out <file>` implemented as `npm run phantom:spec -- set-mode <file> react|powerBi <out>`
+- `phantom spec set-approval <file> draft|in-review|approved --out <file>` implemented as `npm run phantom:spec -- set-approval <file> approved <out>`
 - `phantom spec set-workshop-intent <file> --business-questions <text> --audience <text> --decisions <text> --acceptance-criteria <text> --out <file>` implemented as `npm run phantom:spec -- set-workshop-intent <file> ...`
 - `phantom spec readiness <file> react|powerBi`
 - `phantom export pbi-report <file> --out <dir>`
