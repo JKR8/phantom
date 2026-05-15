@@ -1053,6 +1053,7 @@ const createPowerBiGuide = (spec) => {
       designEntryPoint: spec.project?.designEntryPoint,
       designSources: spec.project?.designSources || [],
     },
+    workshopIntent: createWorkshopIntent(spec.project?.specification),
     readiness,
     summary: {
       views: spec.views?.length || 0,
@@ -1115,6 +1116,14 @@ Generated from Phantom Spec ${guide.sourceSpecVersion}.
 ## Design Sources
 
 ${designSourcesMarkdown(guide.project.designSources)}
+
+## Workshop Intent
+
+- Business questions: ${guide.workshopIntent.businessQuestions || 'Not specified'}
+- Audience: ${guide.workshopIntent.audience || 'Not specified'}
+- Decisions/actions: ${guide.workshopIntent.decisions || 'Not specified'}
+- Acceptance criteria: ${guide.workshopIntent.acceptanceCriteria || 'Not specified'}
+- Build notes: ${guide.workshopIntent.buildNotes || 'Not specified'}
 
 ## Issues
 

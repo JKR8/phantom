@@ -436,6 +436,11 @@ describe('phantomSpec', () => {
       generatedAt: '2026-05-15T00:00:00.000Z',
       specification: {
         signOffStatus: 'draft',
+        businessQuestions: 'Which regional variances need action?',
+        audience: 'Power BI report builders',
+        decisions: 'Pick regions for follow-up in the next trading meeting.',
+        acceptanceCriteria: 'All unsupported visuals have documented alternatives.',
+        buildNotes: 'Keep the first page Power BI native.',
         designEntryPoint: 'figma-led',
         designSources: [{
           id: 'figma-1',
@@ -454,10 +459,20 @@ describe('phantomSpec', () => {
     expect(guide.summary.readyVisuals).toBe(1);
     expect(guide.summary.approximateVisuals).toBe(1);
     expect(guide.summary.unsupportedVisuals).toBe(1);
+    expect(guide.workshopIntent).toMatchObject({
+      businessQuestions: 'Which regional variances need action?',
+      audience: 'Power BI report builders',
+      decisions: 'Pick regions for follow-up in the next trading meeting.',
+      acceptanceCriteria: 'All unsupported visuals have documented alternatives.',
+      buildNotes: 'Keep the first page Power BI native.',
+    });
     expect(guide.components.map((component) => component.powerBiStatus)).toEqual(['ready', 'approximate', 'unsupported']);
     expect(markdown).toContain('| visual-2 | Ranked variance | lollipop | approximate | Region, profit |');
     expect(markdown).toContain('ERROR POWER_BI_UNSUPPORTED_VISUAL');
     expect(markdown).toContain('| drill-1 | Open region detail | visual-1 | view:region-detail | Region->region | Yes |');
     expect(markdown).toContain('- Power BI concept (type: figmaFrame; url: https://www.figma.com/design/power-bi; frame: 3:4)');
+    expect(markdown).toContain('## Workshop Intent');
+    expect(markdown).toContain('- Business questions: Which regional variances need action?');
+    expect(markdown).toContain('- Acceptance criteria: All unsupported visuals have documented alternatives.');
   });
 });
