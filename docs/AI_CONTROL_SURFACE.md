@@ -83,7 +83,7 @@ npm run phantom:spec -- import-design-source path/to/spec.json figmaFrame "Clien
 
 `inspect design-sources` returns the current design entry point and linked design sources. Use it to decide whether the project is Figma-led or Phantom-led before generating implementation tasks.
 
-`inspect workshop-intent` returns the business questions, audience, decisions/actions, acceptance criteria, and build notes. Use it before generating React or Power BI implementation work so agents preserve the client workshop intent.
+`inspect workshop-intent` returns the business questions, audience, decisions/actions, acceptance criteria, build notes, and a completeness object with present/missing workshop fields. Use it before generating React or Power BI implementation work so agents preserve the client workshop intent and can pause when the brief is too thin.
 
 `inspect react-backlog` returns the same machine-readable implementation task list used by React starter and handoff pack exports. Use it when an agent needs to plan React work without generating files.
 

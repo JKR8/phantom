@@ -225,9 +225,11 @@ const inspectSpec = (spec, subject) => {
   }
 
   if (subject === 'workshop-intent') {
+    const workshopIntent = createWorkshopIntent(spec.project?.specification);
     return {
       subject,
-      ...createWorkshopIntent(spec.project?.specification),
+      ...workshopIntent,
+      completeness: createWorkshopIntentCompleteness(workshopIntent),
     };
   }
 

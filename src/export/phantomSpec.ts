@@ -235,6 +235,11 @@ export interface PhantomWorkshopIntentCompleteness {
   missing: string[];
 }
 
+export interface PhantomWorkshopIntentInspection extends PhantomWorkshopIntent {
+  subject: 'workshop-intent';
+  completeness: PhantomWorkshopIntentCompleteness;
+}
+
 export interface PhantomDesignSourceInput {
   id?: string;
   type: DesignSource['type'];
@@ -524,10 +529,17 @@ const createWorkshopIntentCompleteness = (
   };
 };
 
-export const createPhantomWorkshopIntent = (spec: PhantomSpec): PhantomWorkshopIntent => ({
-  subject: 'workshop-intent',
-  ...createWorkshopIntent(spec.project.specification),
-});
+export const createPhantomWorkshopIntentCompleteness = (spec: PhantomSpec): PhantomWorkshopIntentCompleteness =>
+  createWorkshopIntentCompleteness(createWorkshopIntent(spec.project.specification));
+
+export const createPhantomWorkshopIntent = (spec: PhantomSpec): PhantomWorkshopIntentInspection => {
+  const intent = createWorkshopIntent(spec.project.specification);
+  return {
+    subject: 'workshop-intent',
+    ...intent,
+    completeness: createWorkshopIntentCompleteness(intent),
+  };
+};
 
 export const createDesignSourcesMarkdown = (designSources: DesignSource[]) => {
   if (!designSources.length) return '- None specified';

@@ -9,6 +9,7 @@ import {
   createPhantomHandoffSummary,
   createPhantomSpec,
   createPhantomWorkshopIntent,
+  createPhantomWorkshopIntentCompleteness,
   createPowerBiImplementationGuide,
   createPowerBiImplementationGuideMarkdown,
   createReactImplementationBacklog,
@@ -278,6 +279,16 @@ describe('phantomSpec', () => {
       decisions: 'Approve the store recovery plan.',
       acceptanceCriteria: 'Client can trace every KPI to an agreed metric.',
       buildNotes: 'Keep drill-through under two clicks.',
+      completeness: {
+        complete: true,
+        present: ['business questions', 'audience', 'decisions/actions', 'acceptance criteria'],
+        missing: [],
+      },
+    });
+    expect(createPhantomWorkshopIntentCompleteness(spec)).toEqual({
+      complete: true,
+      present: ['business questions', 'audience', 'decisions/actions', 'acceptance criteria'],
+      missing: [],
     });
   });
 
