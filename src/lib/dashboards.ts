@@ -27,6 +27,12 @@ export async function saveDashboard(
     filters: snapshot.filters as any,
     layout_mode: snapshot.layoutMode,
     theme_palette: snapshot.themePalette,
+    specification: {
+      ...(snapshot.specification || {}),
+      exportMode: snapshot.exportMode,
+      drillActions: snapshot.drillActions || [],
+      annotations: snapshot.annotations || [],
+    } as any,
   };
 
   if (id) {

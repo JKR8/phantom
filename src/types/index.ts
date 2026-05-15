@@ -400,6 +400,7 @@ export interface DashboardSnapshot {
   drillActions?: DrillAction[];
   filters: Record<string, any>;
   layoutMode: LayoutMode;
+  exportMode: ExportMode;
   themePalette: string;
   /** Dashboard specification and requirements */
   specification?: DashboardSpecification;
@@ -421,7 +422,11 @@ export interface DbDashboard {
   created_at: string;
   updated_at: string;
   /** Dashboard specification (stored as JSON) */
-  specification?: DashboardSpecification;
+  specification?: DashboardSpecification & {
+    exportMode?: ExportMode;
+    drillActions?: DrillAction[];
+    annotations?: CanvasAnnotation[];
+  };
 }
 
 export interface HighlightState {
