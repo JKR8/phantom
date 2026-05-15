@@ -13,6 +13,7 @@ import { useStore } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
 import {
   checkPhantomReadiness,
+  createHandoffRecommendation,
   createPhantomDesignMappingSummary,
   createPhantomDesignWorkflow,
   createPhantomSpec,
@@ -176,6 +177,10 @@ export const SpecificationPanel: React.FC = () => {
     () => createPhantomWorkshopIntentCompleteness(currentSpec),
     [currentSpec],
   );
+  const handoffRecommendation = React.useMemo(
+    () => createHandoffRecommendation(reactReadiness.ready, powerBiReadiness.ready),
+    [powerBiReadiness.ready, reactReadiness.ready],
+  );
   const visibleIssues = [...powerBiReadiness.errors, ...powerBiReadiness.warnings].slice(0, 3);
 
   const handleChange = (field: keyof DashboardSpecification, value: string) => {
@@ -227,6 +232,13 @@ export const SpecificationPanel: React.FC = () => {
     return 'informative';
   };
 
+  const getHandoffTargetLabel = (target: string) => {
+    if (target === 'dual-track') return 'Dual Track';
+    if (target === 'react-product') return 'React Product';
+    if (target === 'power-bi') return 'Power BI';
+    return 'Fix First';
+  };
+
   return (
     <div className={styles.panel}>
       <div className={styles.header}>
@@ -262,6 +274,16 @@ export const SpecificationPanel: React.FC = () => {
               {powerBiReadiness.errors.length} errors, {powerBiReadiness.warnings.length} warnings
             </Text>
           </div>
+        </div>
+        <div className={styles.readinessCard}>
+          <Text className={styles.readinessLabel}>Recommended Handoff</Text>
+          <Badge
+            appearance="filled"
+            color={handoffRecommendation.target === 'fix-before-handoff' ? 'warning' : 'success'}
+          >
+            {getHandoffTargetLabel(handoffRecommendation.target)}
+          </Badge>
+          <Text className={styles.issueText}>{handoffRecommendation.guidance}</Text>
         </div>
         <div className={styles.issueList}>
           {visibleIssues.length === 0 ? (
