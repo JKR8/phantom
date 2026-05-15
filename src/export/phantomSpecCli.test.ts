@@ -182,17 +182,26 @@ describe('phantom spec CLI', () => {
         readyForImplementation: true,
         approvedForImplementation: true,
         designReady: true,
+        dataPathReady: true,
         workshopIntentComplete: true,
+      });
+      expect(manifest.dataPath).toMatchObject({
+        subject: 'data-path',
+        unmappedComponents: [],
+        unmappedFields: [],
       });
       expect(manifest.artifacts.reactStarter).toContain('react-starter/src/routes.ts');
       expect(manifest.artifacts.reactStarter).toContain('react-starter/src/component-contracts.ts');
 
       const handoffSummary = JSON.parse(await readFile(join(outDir, 'handoff-summary.json'), 'utf8'));
       expect(handoffSummary.implementationGate).toEqual(manifest.implementationGate);
+      expect(handoffSummary.dataPath).toEqual(manifest.dataPath);
 
       const readme = await readFile(join(outDir, 'README.md'), 'utf8');
       expect(readme).toContain('## Implementation Gate');
       expect(readme).toContain('Ready for implementation: Yes');
+      expect(readme).toContain('Data path ready: Yes');
+      expect(readme).toContain('## Data Path');
     } finally {
       await rm(tempDir, { recursive: true, force: true });
     }

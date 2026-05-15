@@ -276,6 +276,11 @@ describe('phantomSpec', () => {
       subject: 'implementation-gate',
       readyForImplementation: false,
       approvedForImplementation: false,
+      dataPathReady: false,
+    });
+    expect(summary.dataPath).toMatchObject({
+      subject: 'data-path',
+      unmappedComponents: ['visual-1', 'visual-2'],
     });
     expect(summary.designWorkflow.status).toBe('needs-mapping');
     expect(summary.designWorkflow.designPlane).toBe('figma');
@@ -464,6 +469,17 @@ describe('phantomSpec', () => {
         audience: 'Executives',
         decisions: 'Prioritise regional investment.',
         acceptanceCriteria: 'Revenue by region is clear and drillable.',
+        grain: 'daily',
+        refreshCadence: 'daily',
+        sourceSystems: 'Snowflake mart',
+        dataSources: [{
+          id: 'orders-mart',
+          type: 'dbt',
+          name: 'Orders mart',
+          model: 'mart_orders',
+          linkedComponentIds: ['visual-1'],
+          linkedFields: ['Region', 'revenue'],
+        }],
         designEntryPoint: 'figma-led',
         designSources: [{
           id: 'figma-1',
@@ -495,6 +511,7 @@ describe('phantomSpec', () => {
       readyForImplementation: true,
       approvedForImplementation: true,
       designReady: true,
+      dataPathReady: true,
       workshopIntentComplete: true,
       reactReady: true,
       powerBiReady: true,
@@ -508,6 +525,7 @@ describe('phantomSpec', () => {
       readyForImplementation: false,
       approvedForImplementation: false,
       designReady: false,
+      dataPathReady: false,
       workshopIntentComplete: false,
       reactReady: true,
       powerBiReady: true,

@@ -232,6 +232,7 @@ export interface PhantomImplementationGate {
   readyForImplementation: boolean;
   approvedForImplementation: boolean;
   designReady: boolean;
+  dataPathReady: boolean;
   workshopIntentComplete: boolean;
   reactReady: boolean;
   powerBiReady: boolean;
@@ -274,6 +275,7 @@ export interface PhantomHandoffSummary {
   };
   approval: PhantomApprovalStatus;
   implementationGate: PhantomImplementationGate;
+  dataPath: PhantomDataPath;
   designWorkflow: PhantomDesignWorkflow;
   designMapping: PhantomDesignMappingSummary;
   workshopIntent: PhantomWorkshopIntent;
@@ -909,6 +911,7 @@ export const createHandoffNextActions = (
 export const createPhantomImplementationGate = (spec: PhantomSpec): PhantomImplementationGate => {
   const approval = createPhantomApprovalStatus(spec);
   const designWorkflow = createPhantomDesignWorkflow(spec);
+  const dataPath = createPhantomDataPath(spec);
   const workshopIntent = createWorkshopIntent(spec.project.specification);
   const workshopCompleteness = createWorkshopIntentCompleteness(workshopIntent);
   const reactReadiness = checkPhantomReadiness(spec, 'react');
@@ -932,6 +935,7 @@ export const createPhantomImplementationGate = (spec: PhantomSpec): PhantomImple
   const blockingReasons = [
     ...(!approval.approvedForImplementation ? [approval.guidance] : []),
     ...designGateSteps,
+    ...dataPath.requiredNextSteps,
     ...(!workshopCompleteness.complete
       ? [`Workshop intent is missing: ${workshopCompleteness.missing.join(', ')}.`]
       : []),
@@ -949,10 +953,12 @@ export const createPhantomImplementationGate = (spec: PhantomSpec): PhantomImple
     target: recommendation.target,
     readyForImplementation: approval.approvedForImplementation
       && designWorkflow.status === 'ready'
+      && dataPath.requiredNextSteps.length === 0
       && workshopCompleteness.complete
       && targetReady,
     approvedForImplementation: approval.approvedForImplementation,
     designReady: designWorkflow.status === 'ready',
+    dataPathReady: dataPath.requiredNextSteps.length === 0,
     workshopIntentComplete: workshopCompleteness.complete,
     reactReady: reactReadiness.ready,
     powerBiReady: powerBiReadiness.ready,
@@ -961,6 +967,7 @@ export const createPhantomImplementationGate = (spec: PhantomSpec): PhantomImple
     requiredNextSteps: uniq([
       ...approval.requiredNextSteps,
       ...designGateSteps,
+      ...dataPath.requiredNextSteps,
       ...(!workshopCompleteness.complete
         ? [`Capture missing workshop intent: ${workshopCompleteness.missing.join(', ')}.`]
         : []),
@@ -1265,6 +1272,7 @@ export const createPhantomHandoffSummary = (spec: PhantomSpec): PhantomHandoffSu
     },
     approval: createPhantomApprovalStatus(spec),
     implementationGate: createPhantomImplementationGate(spec),
+    dataPath: createPhantomDataPath(spec),
     designWorkflow: createPhantomDesignWorkflow(spec),
     designMapping: createPhantomDesignMappingSummary(spec.project.designSources),
     workshopIntent,

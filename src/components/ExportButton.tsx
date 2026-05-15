@@ -252,6 +252,7 @@ export const ExportButton: React.FC = () => {
         handoffRecommendation: handoffSummary.handoffRecommendation,
         approval: handoffSummary.approval,
         implementationGate: handoffSummary.implementationGate,
+        dataPath: handoffSummary.dataPath,
         designWorkflow: handoffSummary.designWorkflow,
         designMapping: handoffSummary.designMapping,
         workshopIntent: handoffSummary.workshopIntent,
@@ -293,6 +294,7 @@ ${createDesignSourcesMarkdown(spec.project.designSources)}
 - Ready for implementation: ${handoffSummary.implementationGate.readyForImplementation ? 'Yes' : 'No'}
 - Approved for implementation: ${handoffSummary.implementationGate.approvedForImplementation ? 'Yes' : 'No'}
 - Design ready: ${handoffSummary.implementationGate.designReady ? 'Yes' : 'No'}
+- Data path ready: ${handoffSummary.implementationGate.dataPathReady ? 'Yes' : 'No'}
 - Workshop intent complete: ${handoffSummary.implementationGate.workshopIntentComplete ? 'Yes' : 'No'}
 - React ready: ${handoffSummary.implementationGate.reactReady ? 'Yes' : 'No'}
 - Power BI ready: ${handoffSummary.implementationGate.powerBiReady ? 'Yes' : 'No'}
@@ -304,6 +306,15 @@ ${handoffSummary.implementationGate.blockingReasons.map((reason) => `- ${reason}
 ### Implementation Gate Required Next Steps
 
 ${handoffSummary.implementationGate.requiredNextSteps.map((step) => `- ${step}`).join('\n') || '- None specified'}
+
+## Data Path
+
+- Grain: ${handoffSummary.dataPath.grain || 'Not specified'}
+- Refresh cadence: ${handoffSummary.dataPath.refreshCadence || 'Not specified'}
+- Source systems: ${handoffSummary.dataPath.sourceSystems.join(', ') || 'None'}
+- Structured data sources: ${handoffSummary.dataPath.dataSources.length}
+- Unmapped components: ${handoffSummary.dataPath.unmappedComponents.join(', ') || 'None'}
+- Unmapped fields: ${handoffSummary.dataPath.unmappedFields.join(', ') || 'None'}
 
 ## Design Workflow
 

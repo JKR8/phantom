@@ -298,6 +298,7 @@ const inspectSpec = (spec, subject) => {
       },
       approval: createApprovalStatus(spec),
       implementationGate: createImplementationGate(spec),
+      dataPath: createDataPath(spec),
       designWorkflow: createDesignWorkflow(spec),
       designMapping: createDesignMappingSummary(spec.project?.designSources || []),
       workshopIntent,
@@ -527,6 +528,7 @@ const getHandoffNextActions = (reactReadiness, powerBiReadiness) => [
 const createImplementationGate = (spec) => {
   const approval = createApprovalStatus(spec);
   const designWorkflow = createDesignWorkflow(spec);
+  const dataPath = createDataPath(spec);
   const workshopIntent = createWorkshopIntent(spec.project?.specification);
   const workshopCompleteness = createWorkshopIntentCompleteness(workshopIntent);
   const reactReadiness = checkReadiness(spec, 'react');
@@ -550,6 +552,7 @@ const createImplementationGate = (spec) => {
   const blockingReasons = uniqueSorted([
     ...(!approval.approvedForImplementation ? [approval.guidance] : []),
     ...designGateSteps,
+    ...dataPath.requiredNextSteps,
     ...(!workshopCompleteness.complete
       ? [`Workshop intent is missing: ${workshopCompleteness.missing.join(', ')}.`]
       : []),
@@ -567,10 +570,12 @@ const createImplementationGate = (spec) => {
     target: recommendation.target,
     readyForImplementation: approval.approvedForImplementation
       && designWorkflow.status === 'ready'
+      && dataPath.requiredNextSteps.length === 0
       && workshopCompleteness.complete
       && targetReady,
     approvedForImplementation: approval.approvedForImplementation,
     designReady: designWorkflow.status === 'ready',
+    dataPathReady: dataPath.requiredNextSteps.length === 0,
     workshopIntentComplete: workshopCompleteness.complete,
     reactReady: reactReadiness.ready,
     powerBiReady: powerBiReadiness.ready,
@@ -579,6 +584,7 @@ const createImplementationGate = (spec) => {
     requiredNextSteps: uniqueSorted([
       ...approval.requiredNextSteps,
       ...designGateSteps,
+      ...dataPath.requiredNextSteps,
       ...(!workshopCompleteness.complete
         ? [`Capture missing workshop intent: ${workshopCompleteness.missing.join(', ')}.`]
         : []),
@@ -1729,6 +1735,7 @@ const writeHandoffPack = async (spec, outDir) => {
     handoffRecommendation,
     approval: handoffSummary.approval,
     implementationGate: handoffSummary.implementationGate,
+    dataPath: handoffSummary.dataPath,
     designWorkflow: handoffSummary.designWorkflow,
     designMapping: handoffSummary.designMapping,
     workshopIntent: handoffSummary.workshopIntent,
@@ -1770,6 +1777,7 @@ ${designSourcesMarkdown(spec.project?.designSources || [])}
 - Ready for implementation: ${handoffSummary.implementationGate.readyForImplementation ? 'Yes' : 'No'}
 - Approved for implementation: ${handoffSummary.implementationGate.approvedForImplementation ? 'Yes' : 'No'}
 - Design ready: ${handoffSummary.implementationGate.designReady ? 'Yes' : 'No'}
+- Data path ready: ${handoffSummary.implementationGate.dataPathReady ? 'Yes' : 'No'}
 - Workshop intent complete: ${handoffSummary.implementationGate.workshopIntentComplete ? 'Yes' : 'No'}
 - React ready: ${handoffSummary.implementationGate.reactReady ? 'Yes' : 'No'}
 - Power BI ready: ${handoffSummary.implementationGate.powerBiReady ? 'Yes' : 'No'}
@@ -1781,6 +1789,15 @@ ${markdownList(handoffSummary.implementationGate.blockingReasons)}
 ### Implementation Gate Required Next Steps
 
 ${markdownList(handoffSummary.implementationGate.requiredNextSteps)}
+
+## Data Path
+
+- Grain: ${handoffSummary.dataPath.grain || 'Not specified'}
+- Refresh cadence: ${handoffSummary.dataPath.refreshCadence || 'Not specified'}
+- Source systems: ${handoffSummary.dataPath.sourceSystems.join(', ') || 'None'}
+- Structured data sources: ${handoffSummary.dataPath.dataSources.length}
+- Unmapped components: ${handoffSummary.dataPath.unmappedComponents.join(', ') || 'None'}
+- Unmapped fields: ${handoffSummary.dataPath.unmappedFields.join(', ') || 'None'}
 
 ## Design Workflow
 
