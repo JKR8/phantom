@@ -411,6 +411,7 @@ const getOutDir = (commandName) => {
 const writeReactStarter = async (spec, outDir) => {
   const components = (spec.views || []).flatMap((view) => view.components || []);
   const dataContract = createDataContract(spec);
+  const backlog = createReactBacklog(spec);
   await rm(outDir, { recursive: true, force: true });
   await mkdir(`${outDir}/src`, { recursive: true });
 
@@ -581,6 +582,10 @@ It includes:
 ## Design Sources
 
 ${designSourcesMarkdown(spec.project?.designSources || [])}
+
+## Component Backlog
+
+See \`REACT_IMPLEMENTATION_BACKLOG.md\` for the component-by-component implementation checklist.
 `;
 
   const dataAdapterTs = `import dataContract from './phantom-data-contract.json';
@@ -678,11 +683,12 @@ export default defineConfig({
   await writeFile(`${outDir}/src/phantom-data-contract.json`, `${JSON.stringify(dataContract, null, 2)}\n`);
   await writeFile(`${outDir}/src/data-adapter.ts`, dataAdapterTs);
   await writeFile(`${outDir}/src/drill-actions.ts`, drillActionsTs);
+  await writeFile(`${outDir}/REACT_IMPLEMENTATION_BACKLOG.md`, `# React Implementation Backlog\n\n${reactBacklogMarkdown(backlog)}\n`);
   await writeFile(`${outDir}/README.md`, readme);
 
   return {
     outDir,
-    files: ['package.json', 'index.html', 'tsconfig.json', 'vite.config.ts', 'src/App.tsx', 'src/styles.css', 'src/phantom-spec.json', 'src/phantom-data-contract.json', 'src/data-adapter.ts', 'src/drill-actions.ts', 'README.md'],
+    files: ['package.json', 'index.html', 'tsconfig.json', 'vite.config.ts', 'src/App.tsx', 'src/styles.css', 'src/phantom-spec.json', 'src/phantom-data-contract.json', 'src/data-adapter.ts', 'src/drill-actions.ts', 'REACT_IMPLEMENTATION_BACKLOG.md', 'README.md'],
     components: components.length,
     fields: dataContract.fields.length,
     drillActions: dataContract.drillActions.length,
@@ -763,6 +769,62 @@ const designSourcesMarkdown = (designSources = []) => {
       return `- ${source.name} (${details.join('; ')})`;
     })
     .join('\n');
+};
+
+const reactComponentName = (type) =>
+  `${String(type || 'Analytical')
+    .replace(/[^a-zA-Z0-9]+/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('') || 'Analytical'}Component`;
+
+const createReactBacklog = (spec) =>
+  (spec.views || []).flatMap((view) => (view.components || []).map((component) => {
+    const fields = component.dataRequirements?.fields || [];
+    const powerBiStatus = component.exportTargets?.powerBi?.status || 'unknown';
+    const workItems = [
+      `Replace placeholder with ${reactComponentName(component.type)}.`,
+      fields.length
+        ? `Bind data fields: ${fields.join(', ')}.`
+        : 'Confirm whether this component is design-only or needs a data binding.',
+      'Apply interaction, filter, and drill behavior from the Phantom Spec.',
+    ];
+    if ((spec.project?.designSources || []).length > 0) {
+      workItems.push('Apply linked design-source guidance for visual fidelity.');
+    }
+    if (powerBiStatus !== 'ready') {
+      workItems.push(`React implementation can exceed Power BI constraints; Power BI status is ${powerBiStatus}.`);
+    }
+
+    return {
+      componentId: component.id,
+      title: component.title,
+      type: component.type,
+      suggestedComponent: reactComponentName(component.type),
+      fields,
+      metrics: component.dataRequirements?.metrics || [],
+      dimensions: component.dataRequirements?.dimensions || [],
+      powerBiStatus,
+      workItems,
+    };
+  }));
+
+const reactBacklogMarkdown = (tasks = []) => {
+  if (!tasks.length) return '- No components to implement.';
+  return tasks
+    .map((task) => `### ${task.title}
+
+- Component ID: ${task.componentId}
+- Type: ${task.type}
+- Suggested React component: ${task.suggestedComponent}
+- Required fields: ${task.fields.join(', ') || 'None'}
+- Metrics: ${task.metrics.join(', ') || 'None'}
+- Dimensions: ${task.dimensions.join(', ') || 'None'}
+- Power BI compatibility: ${task.powerBiStatus}
+
+${task.workItems.map((item) => `- [ ] ${item}`).join('\n')}`)
+    .join('\n\n');
 };
 
 const formatDrillContext = (context = []) =>

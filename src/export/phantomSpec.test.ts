@@ -7,6 +7,8 @@ import {
   createPhantomSpec,
   createPowerBiImplementationGuide,
   createPowerBiImplementationGuideMarkdown,
+  createReactImplementationBacklog,
+  createReactImplementationBacklogMarkdown,
   mergeDesignSourceIntoSpec,
   getComponentDataRequirements,
   getPowerBiExportStatus,
@@ -164,6 +166,41 @@ describe('phantomSpec', () => {
       },
     ])).toBe('- Client workshop frame (type: figmaFrame; url: https://www.figma.com/design/example; frame: 1:2; notes: Approved visual direction)');
     expect(createDesignSourcesMarkdown([])).toBe('- None specified');
+  });
+
+  it('creates a React implementation backlog from component specs', () => {
+    const spec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [
+        item({}),
+        item({ id: 'visual-2', type: 'boxplot', title: 'Profit Distribution', props: { metric: 'profit' } }),
+      ],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      specification: {
+        signOffStatus: 'draft',
+        designEntryPoint: 'figma-led',
+        designSources: [{ id: 'figma-1', type: 'figmaFrame', name: 'Client frame' }],
+      },
+    });
+
+    const backlog = createReactImplementationBacklog(spec);
+    const markdown = createReactImplementationBacklogMarkdown(backlog);
+
+    expect(backlog).toHaveLength(2);
+    expect(backlog[0]).toMatchObject({
+      componentId: 'visual-1',
+      suggestedComponent: 'BarComponent',
+      fields: ['Region', 'revenue'],
+      powerBiStatus: 'ready',
+    });
+    expect(backlog[1].workItems).toContain('React implementation can exceed Power BI constraints; Power BI status is unsupported.');
+    expect(markdown).toContain('### Profit Distribution');
+    expect(markdown).toContain('- [ ] Apply linked design-source guidance for visual fidelity.');
+    expect(markdown).toContain('- Power BI compatibility: unsupported');
   });
 
   it('replaces design sources by id instead of duplicating them', () => {

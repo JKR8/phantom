@@ -169,6 +169,18 @@ export interface PhantomPowerBiImplementationGuide {
   buildChecklist: string[];
 }
 
+export interface PhantomReactImplementationTask {
+  componentId: string;
+  title: string;
+  type: string;
+  suggestedComponent: string;
+  fields: string[];
+  metrics: string[];
+  dimensions: string[];
+  powerBiStatus: PhantomExportStatus;
+  workItems: string[];
+}
+
 export interface PhantomDesignSourceInput {
   id?: string;
   type: DesignSource['type'];
@@ -439,6 +451,62 @@ export const createDesignSourcesMarkdown = (designSources: DesignSource[]) => {
       return `- ${source.name} (${details.join('; ')})`;
     })
     .join('\n');
+};
+
+const componentName = (type: string) =>
+  `${type
+    .replace(/[^a-zA-Z0-9]+/g, ' ')
+    .trim()
+    .split(/\s+/)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join('') || 'Analytical'}Component`;
+
+export const createReactImplementationBacklog = (spec: PhantomSpec): PhantomReactImplementationTask[] =>
+  getSpecComponents(spec).map((component) => {
+    const fields = component.dataRequirements.fields;
+    const workItems = [
+      `Replace placeholder with ${componentName(component.type)}.`,
+      fields.length
+        ? `Bind data fields: ${fields.join(', ')}.`
+        : 'Confirm whether this component is design-only or needs a data binding.',
+      'Apply interaction, filter, and drill behavior from the Phantom Spec.',
+    ];
+    if (spec.project.designSources.length > 0) {
+      workItems.push('Apply linked design-source guidance for visual fidelity.');
+    }
+    if (component.exportTargets.powerBi.status !== 'ready') {
+      workItems.push(`React implementation can exceed Power BI constraints; Power BI status is ${component.exportTargets.powerBi.status}.`);
+    }
+
+    return {
+      componentId: component.id,
+      title: component.title,
+      type: component.type,
+      suggestedComponent: componentName(component.type),
+      fields,
+      metrics: component.dataRequirements.metrics,
+      dimensions: component.dataRequirements.dimensions,
+      powerBiStatus: component.exportTargets.powerBi.status,
+      workItems,
+    };
+  });
+
+export const createReactImplementationBacklogMarkdown = (tasks: PhantomReactImplementationTask[]) => {
+  if (!tasks.length) return '- No components to implement.';
+
+  return tasks
+    .map((task) => `### ${task.title}
+
+- Component ID: ${task.componentId}
+- Type: ${task.type}
+- Suggested React component: ${task.suggestedComponent}
+- Required fields: ${task.fields.join(', ') || 'None'}
+- Metrics: ${task.metrics.join(', ') || 'None'}
+- Dimensions: ${task.dimensions.join(', ') || 'None'}
+- Power BI compatibility: ${task.powerBiStatus}
+
+${task.workItems.map((item) => `- [ ] ${item}`).join('\n')}`)
+    .join('\n\n');
 };
 
 export const createPhantomDataContract = (

@@ -40,6 +40,8 @@ import {
   createPhantomSpec,
   createPowerBiImplementationGuide,
   createPowerBiImplementationGuideMarkdown,
+  createReactImplementationBacklog,
+  createReactImplementationBacklogMarkdown,
   downloadPBIPPackage,
   generateAllMeasures,
   getSchemaForScenario,
@@ -230,6 +232,7 @@ export const ExportButton: React.FC = () => {
       const spec = createCurrentSpec();
       const contract = createPhantomDataContract(spec);
       const powerBiGuide = createPowerBiImplementationGuide(spec);
+      const reactBacklog = createReactImplementationBacklog(spec);
       const date = new Date().toISOString().split('T')[0];
       const zip = new JSZip();
       const manifest = {
@@ -249,7 +252,7 @@ export const ExportButton: React.FC = () => {
           spec: 'phantom-spec.json',
           dataContract: ['data-contract/data-contract.json', 'data-contract/DATA_CONTRACT.md'],
           powerBi: ['power-bi/power-bi-implementation-guide.json', 'power-bi/POWER_BI_IMPLEMENTATION_GUIDE.md'],
-          react: ['react-product/REACT_IMPLEMENTATION_NOTES.md', 'react-product/phantom-spec.json', 'react-product/phantom-data-contract.json'],
+          react: ['react-product/REACT_IMPLEMENTATION_NOTES.md', 'react-product/REACT_IMPLEMENTATION_BACKLOG.md', 'react-product/phantom-spec.json', 'react-product/phantom-data-contract.json'],
         },
         summary: {
           components: powerBiGuide.summary.components,
@@ -296,6 +299,10 @@ Use \`phantom-spec.json\` and \`phantom-data-contract.json\` as the implementati
 
 ${createDesignSourcesMarkdown(spec.project.designSources)}
 
+## Component Backlog
+
+${createReactImplementationBacklogMarkdown(reactBacklog)}
+
 For a runnable starter app, use:
 
 \`\`\`bash
@@ -311,6 +318,7 @@ npm run phantom:spec -- export-react phantom-spec.json ./generated-app
       zip.file('power-bi/power-bi-implementation-guide.json', JSON.stringify(powerBiGuide, null, 2));
       zip.file('power-bi/POWER_BI_IMPLEMENTATION_GUIDE.md', createPowerBiImplementationGuideMarkdown(powerBiGuide));
       zip.file('react-product/REACT_IMPLEMENTATION_NOTES.md', reactNotes);
+      zip.file('react-product/REACT_IMPLEMENTATION_BACKLOG.md', createReactImplementationBacklogMarkdown(reactBacklog));
       zip.file('react-product/phantom-spec.json', JSON.stringify(spec, null, 2));
       zip.file('react-product/phantom-data-contract.json', JSON.stringify(contract, null, 2));
 
