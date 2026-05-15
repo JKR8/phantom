@@ -141,8 +141,14 @@ The public TypeScript API should expose:
 - `validatePhantomSpec`
 - `summarizePhantomSpec`
 - `checkPhantomReadiness`
+- `mergeDesignSourceIntoSpec`
+- `createPhantomDesignMappingSummary`
+- `createPhantomWorkshopIntent`
+- `createPhantomWorkshopIntentCompleteness`
 - `createPhantomDataContract`
+- `createReactImplementationBacklog`
 - `createPowerBiImplementationGuide`
+- `createPhantomHandoffSummary`
 - `generateReactStarter`
 - `generatePowerBiImplementationPack`
 - `generateDataContract`
@@ -153,10 +159,11 @@ A strong agent workflow should look like:
 
 1. Export or receive a Phantom Spec JSON.
 2. Run CLI validation.
-3. Inspect missing data requirements and unsupported visuals.
-4. Generate an implementation plan.
-5. Generate React starter components or Power BI implementation notes.
-6. Run build/tests/readiness checks.
-7. Report exact blockers and next actions.
+3. Inspect design mapping and workshop intent completeness.
+4. Inspect missing data requirements and unsupported visuals.
+5. Generate an implementation plan.
+6. Generate React starter components or Power BI implementation notes.
+7. Run build/tests/readiness checks.
+8. Report exact blockers and next actions.
 
 This keeps Phantom useful in human workshops while making it controllable by AI agents and build automation.
