@@ -65,6 +65,7 @@ React handoff should include:
 - `data-contract/data-contract.json`
 - `data-contract/DATA_CONTRACT.md`
 - `react-starter/`
+- Browser `React Product Build Pack` zip when the team needs a lightweight workshop-to-engineering bundle before generating a runnable starter
 - React implementation backlog
 - Route/view definitions
 - Typed component prop contracts

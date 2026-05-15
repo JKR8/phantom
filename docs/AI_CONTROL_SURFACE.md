@@ -147,7 +147,13 @@ node tools/phantom-spec-cli.mjs import-data-source path/to/spec.json --type dbt 
 
 `export-handoff-pack` creates a bundled folder with `phantom-spec.json`, `handoff-summary.json`, `implementation-gate.json`, `design-handoff.json`, `HANDOFF_MANIFEST.json`, `README.md`, `data-contract/`, `power-bi/`, and `react-starter/`. `implementation-gate.json`, `handoff-summary.json`, and `HANDOFF_MANIFEST.json` include sign-off status, `implementationGate`, `dataPath`, `designWorkflow`, `designHandoff`, `designMapping`, `workshopIntent`, and `workshopCompleteness`, so agents can gate on approval state, data-path readiness, the Figma-led/Phantom-led workflow, component-level Figma/default provenance, unmapped design sources, or missing business questions, audience, decisions/actions, or acceptance criteria before generating implementation work. This is the preferred consultant-to-engineering handoff when both React Product Mode and Power BI Mode artifacts should travel together.
 
-The browser export menu also provides `Handoff Pack (.zip)`, a workshop-friendly bundle with the canonical spec, handoff summary, data contract, Power BI guide, React implementation notes, and a machine-readable manifest. Use the CLI `export-handoff-pack` when a runnable React starter folder is required.
+The browser export menu also provides workshop-friendly implementation exports:
+
+- `Handoff Pack (.zip)` bundles the canonical spec, handoff summary, implementation gate, design handoff, data contract, Power BI guide, React implementation notes, and a machine-readable manifest.
+- `React Product Build Pack` creates a React-focused zip with `phantom-spec.json`, `phantom-data-contract.json`, `design-handoff.json`, `implementation-gate.json`, `react-implementation-backlog.json`, `REACT_IMPLEMENTATION_BACKLOG.md`, `REACT_IMPLEMENTATION_NOTES.md`, and `REACT_BUILD_MANIFEST.json`.
+- `Power BI Build Guide` creates the Power BI implementation guide artifacts for constrained Power BI Mode delivery.
+
+Use the CLI `export-handoff-pack` when a runnable React starter folder is required.
 
 ## Intended CLI Roadmap
 
