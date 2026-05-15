@@ -18,9 +18,11 @@ Usage:
   npm run phantom:spec -- export-handoff-pack <spec.json> <dir>
   npm run phantom:spec -- inspect <spec.json> components|drill-actions|data-requirements|data-path|design-sources|design-mapping|design-workflow|design-handoff|approval|implementation-gate|workshop-intent|react-backlog|powerbi-build-matrix|handoff-summary
   npm run phantom:spec -- set-mode <spec.json> react|powerBi <out-spec.json>
+  npm run phantom:spec -- set-workshop-intent <spec.json> --business-questions "..." --audience "..." --decisions "..." --acceptance-criteria "..." --out <out-spec.json>
   npm run phantom:spec -- import-design-source <spec.json> figmaFrame "Client frame" <url> <frame-id> "notes" <out-spec.json>
   npm run phantom:spec -- import-data-source <spec.json> dbt "Orders mart" mart_orders Region,revenue visual-1 <out-spec.json>
   node tools/phantom-spec-cli.mjs set-mode <spec.json> --mode powerBi --out <out-spec.json>
+  node tools/phantom-spec-cli.mjs set-workshop-intent <spec.json> --business-questions "..." --audience "..." --decisions "..." --acceptance-criteria "..." --build-notes "..." --out <out-spec.json>
   node tools/phantom-spec-cli.mjs import-design-source <spec.json> --type figmaFrame --name "Client frame" --url <url> --frame-id <frame-id> --views main --components kpi-1,chart-1 --out <out-spec.json>
   node tools/phantom-spec-cli.mjs import-data-source <spec.json> --type dbt --name "Orders mart" --model mart_orders --fields Region,revenue --components visual-1 --out <out-spec.json>
 
@@ -35,6 +37,7 @@ Commands:
   export-handoff-pack  Generate a bundled React and Power BI handoff pack.
   inspect              Print a focused machine-readable view of a spec section.
   set-mode             Write a spec copy switched to React Product or Power BI Mode.
+  set-workshop-intent  Write a spec copy with updated client workshop intent fields.
   import-design-source Add or update a Figma/screenshot/reference design source in a spec.
   import-data-source   Add or update an API/warehouse/dbt/semantic/file data source in a spec.
 `);
@@ -677,6 +680,49 @@ const setSpecMode = (spec) => {
       react: checkReadiness(nextSpec, 'react'),
       powerBi: checkReadiness(nextSpec, 'powerBi'),
     },
+    implementationGate: createImplementationGate(nextSpec),
+  };
+};
+
+const setWorkshopIntent = (spec) => {
+  const positional = positionalOptions();
+  const outPath = optionValue('--out') || positional[0];
+  if (!outPath) {
+    throw new Error('Missing --out path for set-workshop-intent.');
+  }
+
+  const updates = {
+    businessQuestions: optionValue('--business-questions') || optionValue('--questions'),
+    audience: optionValue('--audience'),
+    decisions: optionValue('--decisions') || optionValue('--actions'),
+    acceptanceCriteria: optionValue('--acceptance-criteria') || optionValue('--acceptance'),
+    buildNotes: optionValue('--build-notes') || optionValue('--notes'),
+  };
+  const compactUpdates = Object.fromEntries(
+    Object.entries(updates).filter(([, value]) => value !== undefined),
+  );
+  if (Object.keys(compactUpdates).length === 0) {
+    throw new Error('Provide at least one workshop field to update.');
+  }
+
+  const specification = {
+    ...(spec.project?.specification || {}),
+    ...compactUpdates,
+  };
+  const nextSpec = {
+    ...spec,
+    project: {
+      ...spec.project,
+      specification,
+    },
+  };
+  const workshopIntent = createWorkshopIntent(specification);
+
+  return {
+    nextSpec,
+    outPath: resolve(outPath),
+    workshopIntent,
+    completeness: createWorkshopIntentCompleteness(workshopIntent),
     implementationGate: createImplementationGate(nextSpec),
   };
 };
@@ -2144,7 +2190,7 @@ try {
     process.exit(0);
   }
 
-  if (!['validate', 'summary', 'diff', 'readiness', 'export-react', 'export-data-contract', 'export-powerbi-guide', 'export-handoff-pack', 'inspect', 'set-mode', 'import-design-source', 'import-data-source'].includes(command)) {
+  if (!['validate', 'summary', 'diff', 'readiness', 'export-react', 'export-data-contract', 'export-powerbi-guide', 'export-handoff-pack', 'inspect', 'set-mode', 'set-workshop-intent', 'import-design-source', 'import-data-source'].includes(command)) {
     throw new Error(`Unknown command: ${command}`);
   }
 
@@ -2217,6 +2263,21 @@ try {
         react: readiness.react.ready,
         powerBi: readiness.powerBi.ready,
       },
+      implementationGate,
+    }, null, 2));
+  }
+
+  if (command === 'set-workshop-intent') {
+    if (errors.length > 0) {
+      console.error(JSON.stringify({ valid: false, errors }, null, 2));
+      process.exit(1);
+    }
+    const { nextSpec, outPath, workshopIntent, completeness, implementationGate } = setWorkshopIntent(spec);
+    await writeFile(outPath, `${JSON.stringify(nextSpec, null, 2)}\n`);
+    console.log(JSON.stringify({
+      outPath,
+      workshopIntent,
+      completeness,
       implementationGate,
     }, null, 2));
   }

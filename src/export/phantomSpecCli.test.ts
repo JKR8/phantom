@@ -429,6 +429,68 @@ describe('phantom spec CLI', () => {
     }
   }, 30000);
 
+  it('updates workshop intent through the CLI for implementation gates', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'phantom-set-workshop-intent-'));
+    const specPath = join(tempDir, 'spec.json');
+    const outPath = join(tempDir, 'spec.intent.json');
+    const spec = JSON.parse(JSON.stringify(createReadySpec()));
+    delete spec.project.specification.businessQuestions;
+    delete spec.project.specification.audience;
+    delete spec.project.specification.decisions;
+    delete spec.project.specification.acceptanceCriteria;
+    delete spec.project.specification.buildNotes;
+
+    try {
+      await writeFile(specPath, `${JSON.stringify(spec, null, 2)}\n`);
+      const { stdout } = await execFileAsync(
+        process.execPath,
+        [
+          'tools/phantom-spec-cli.mjs',
+          'set-workshop-intent',
+          specPath,
+          '--business-questions',
+          'Which regions are growing and why?',
+          '--audience',
+          'Executive sponsors and regional managers',
+          '--decisions',
+          'Prioritise regional investment and follow-up actions.',
+          '--acceptance-criteria',
+          'Stakeholders can trace revenue movement to region and account detail.',
+          '--build-notes',
+          'Preserve the workshop-approved drill path.',
+          '--out',
+          outPath,
+        ],
+        { cwd: process.cwd() },
+      );
+      const result = JSON.parse(stdout);
+      const nextSpec = JSON.parse(await readFile(outPath, 'utf8'));
+
+      expect(result).toMatchObject({
+        outPath,
+        workshopIntent: {
+          businessQuestions: 'Which regions are growing and why?',
+          audience: 'Executive sponsors and regional managers',
+          decisions: 'Prioritise regional investment and follow-up actions.',
+          acceptanceCriteria: 'Stakeholders can trace revenue movement to region and account detail.',
+          buildNotes: 'Preserve the workshop-approved drill path.',
+        },
+        completeness: {
+          complete: true,
+          missing: [],
+        },
+        implementationGate: {
+          subject: 'implementation-gate',
+          workshopIntentComplete: true,
+        },
+      });
+      expect(nextSpec.project.specification.businessQuestions).toBe('Which regions are growing and why?');
+      expect(nextSpec.project.specification.buildNotes).toBe('Preserve the workshop-approved drill path.');
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  }, 30000);
+
   it('exports Power BI guides with implementation gate context', async () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'phantom-powerbi-guide-'));
     const specPath = join(tempDir, 'spec.json');
