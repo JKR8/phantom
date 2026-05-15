@@ -1239,6 +1239,14 @@ Generated from Phantom Spec ${spec.specVersion}.
 
 ${designSourcesMarkdown(spec.project?.designSources || [])}
 
+## Workshop Intent
+
+- Business questions: ${handoffSummary.workshopIntent.businessQuestions || 'Not specified'}
+- Audience: ${handoffSummary.workshopIntent.audience || 'Not specified'}
+- Decisions/actions: ${handoffSummary.workshopIntent.decisions || 'Not specified'}
+- Acceptance criteria: ${handoffSummary.workshopIntent.acceptanceCriteria || 'Not specified'}
+- Build notes: ${handoffSummary.workshopIntent.buildNotes || 'Not specified'}
+
 ## Contents
 
 - \`phantom-spec.json\`: canonical workshop/spec artifact.

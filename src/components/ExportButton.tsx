@@ -280,6 +280,14 @@ Generated from Phantom Spec ${spec.specVersion}.
 
 ${createDesignSourcesMarkdown(spec.project.designSources)}
 
+## Workshop Intent
+
+- Business questions: ${contract.workshopIntent.businessQuestions || 'Not specified'}
+- Audience: ${contract.workshopIntent.audience || 'Not specified'}
+- Decisions/actions: ${contract.workshopIntent.decisions || 'Not specified'}
+- Acceptance criteria: ${contract.workshopIntent.acceptanceCriteria || 'Not specified'}
+- Build notes: ${contract.workshopIntent.buildNotes || 'Not specified'}
+
 ## Contents
 
 - \`phantom-spec.json\`: canonical workshop/spec artifact.
