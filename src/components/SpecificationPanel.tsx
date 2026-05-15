@@ -15,6 +15,7 @@ import {
   checkPhantomReadiness,
   createHandoffRecommendation,
   createPhantomDataPath,
+  createPhantomDesignHandoff,
   createPhantomDesignMappingSummary,
   createPhantomDesignWorkflow,
   createPhantomSpec,
@@ -174,6 +175,10 @@ export const SpecificationPanel: React.FC = () => {
     () => createPhantomDesignWorkflow(currentSpec),
     [currentSpec],
   );
+  const designHandoff = React.useMemo(
+    () => createPhantomDesignHandoff(currentSpec),
+    [currentSpec],
+  );
   const workshopCompleteness = React.useMemo(
     () => createPhantomWorkshopIntentCompleteness(currentSpec),
     [currentSpec],
@@ -274,6 +279,13 @@ export const SpecificationPanel: React.FC = () => {
     if (target === 'react-product') return 'React Product';
     if (target === 'power-bi') return 'Power BI';
     return 'Fix First';
+  };
+
+  const getSourceModeLabel = (sourceMode: string) => {
+    if (sourceMode === 'figma-imported') return 'Figma imported';
+    if (sourceMode === 'phantom-defaults') return 'Phantom defaults';
+    if (sourceMode === 'needs-source') return 'Needs source';
+    return 'Mixed';
   };
 
   return (
@@ -464,12 +476,23 @@ export const SpecificationPanel: React.FC = () => {
               {designMapping.linkedViewIds.length + designMapping.linkedComponentIds.length}
             </Text>
           </div>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Source Mode</Text>
+            <Text className={styles.metricValue}>{getSourceModeLabel(designHandoff.sourceMode)}</Text>
+          </div>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Missing Component Maps</Text>
+            <Text className={styles.metricValue}>{designHandoff.missingMappings.length}</Text>
+          </div>
         </div>
         <Text className={styles.hint}>
           Next: {designWorkflow.requiredNextSteps[0] || 'ready for implementation handoff'}
         </Text>
         <Text className={styles.hint}>
           Linked views: {designMapping.linkedViewIds.join(', ') || 'none'}; linked components: {designMapping.linkedComponentIds.join(', ') || 'none'}
+        </Text>
+        <Text className={styles.hint}>
+          Component design handoff: {designHandoff.canSkipFigma ? 'Figma optional' : 'Figma/design source required'}; missing maps: {designHandoff.missingMappings.join(', ') || 'none'}
         </Text>
 
         <div className={styles.selectRow}>
