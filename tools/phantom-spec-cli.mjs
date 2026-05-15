@@ -429,6 +429,7 @@ const checkReadiness = (spec, target = spec.mode) => {
   const warnings = [];
   const components = (spec.views || []).flatMap((view) => view.components || []);
   const componentIds = new Set(components.map((component) => component.id));
+  const viewIds = new Set((spec.views || []).map((view) => view.id));
 
   if (components.length === 0) {
     errors.push({ severity: 'error', code: 'NO_COMPONENTS', message: 'Spec has no components to hand off.' });
@@ -491,6 +492,27 @@ const checkReadiness = (spec, target = spec.mode) => {
       code: 'FIGMA_LED_WITHOUT_SOURCE',
       message: 'Project is marked Figma-led but has no linked design sources.',
     });
+  }
+
+  for (const source of spec.project?.designSources || []) {
+    const missingViewIds = (source.linkedViewIds || []).filter((viewId) => !viewIds.has(viewId));
+    const missingComponentIds = (source.linkedComponentIds || []).filter((componentId) => !componentIds.has(componentId));
+
+    if (missingViewIds.length > 0) {
+      warnings.push({
+        severity: 'warning',
+        code: 'BROKEN_DESIGN_SOURCE_VIEW_LINK',
+        message: `${source.name} maps to missing Phantom view IDs: ${missingViewIds.join(', ')}.`,
+      });
+    }
+
+    if (missingComponentIds.length > 0) {
+      warnings.push({
+        severity: 'warning',
+        code: 'BROKEN_DESIGN_SOURCE_COMPONENT_LINK',
+        message: `${source.name} maps to missing Phantom component IDs: ${missingComponentIds.join(', ')}.`,
+      });
+    }
   }
 
   if (!hasText(spec.project?.specification?.businessQuestions)) {

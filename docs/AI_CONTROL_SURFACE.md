@@ -94,7 +94,7 @@ node tools/phantom-spec-cli.mjs import-design-source path/to/spec.json --type fi
 
 `import-design-source` adds or updates a Figma frame, Figma component, screenshot, Phantom default, or external reference in a Phantom Spec. Use the npm-friendly positional form `type name url frame-id notes out-spec`; direct `node tools/phantom-spec-cli.mjs ...` usage can also pass named flags such as `--type`, `--name`, `--url`, `--views`, `--components`, and `--out`. It writes a new spec to the positional output path or `--out`, marks non-Phantom sources as `figma-led`, and mirrors the source into `project.specification` so browser exports, CLI exports, readiness checks, and agents see the same design context.
 
-`readiness` returns a machine-readable report with `ready`, `errors`, and `warnings`. It exits non-zero when blockers exist, which lets agents and CI stop before generating misleading implementation output.
+`readiness` returns a machine-readable report with `ready`, `errors`, and `warnings`. It exits non-zero when blockers exist, which lets agents and CI stop before generating misleading implementation output. It also warns when Figma/design-source mappings reference missing Phantom view IDs or component IDs, so agents can repair handoff links before implementation work starts.
 
 `export-react` creates a deterministic Vite/React starter with the Phantom Spec, data contract, typed data adapter stub, drill action definitions, placeholder component cards, and a README that tells engineers what to wire next.
 

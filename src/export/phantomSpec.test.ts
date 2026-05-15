@@ -403,6 +403,41 @@ describe('phantomSpec', () => {
     expect(report.warnings.map((issue) => issue.code)).not.toContain('MISSING_BUSINESS_QUESTIONS');
   });
 
+  it('warns when design source mappings reference missing Phantom targets', () => {
+    const spec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [item({})],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      specification: {
+        signOffStatus: 'draft',
+        designEntryPoint: 'figma-led',
+        designSources: [{
+          id: 'figma-1',
+          type: 'figmaFrame',
+          name: 'Client concept',
+          linkedViewIds: ['main', 'missing-view'],
+          linkedComponentIds: ['visual-1', 'missing-component'],
+        }],
+      },
+    });
+
+    const report = checkPhantomReadiness(spec, 'react');
+
+    expect(report.ready).toBe(true);
+    expect(report.warnings.map((issue) => issue.code)).toEqual(expect.arrayContaining([
+      'BROKEN_DESIGN_SOURCE_VIEW_LINK',
+      'BROKEN_DESIGN_SOURCE_COMPONENT_LINK',
+    ]));
+    expect(report.warnings.find((issue) => issue.code === 'BROKEN_DESIGN_SOURCE_VIEW_LINK')?.message)
+      .toContain('missing-view');
+    expect(report.warnings.find((issue) => issue.code === 'BROKEN_DESIGN_SOURCE_COMPONENT_LINK')?.message)
+      .toContain('missing-component');
+  });
+
   it('creates a data contract from a Phantom spec', () => {
     const spec = createPhantomSpec({
       scenario: 'Retail',
