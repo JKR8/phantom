@@ -1052,6 +1052,15 @@ export const checkPhantomReadiness = (spec: PhantomSpec, target: ExportMode = sp
   for (const source of spec.project.designSources) {
     const missingViewIds = (source.linkedViewIds || []).filter((viewId) => !viewIds.has(viewId));
     const missingComponentIds = (source.linkedComponentIds || []).filter((componentId) => !componentIds.has(componentId));
+    const isUnmapped = (source.linkedViewIds || []).length === 0 && (source.linkedComponentIds || []).length === 0;
+
+    if (spec.project.designEntryPoint === 'figma-led' && isUnmapped) {
+      warnings.push({
+        severity: 'warning',
+        code: 'UNMAPPED_DESIGN_SOURCE',
+        message: `${source.name} is not mapped to any Phantom view or component.`,
+      });
+    }
 
     if (missingViewIds.length > 0) {
       warnings.push({

@@ -500,6 +500,33 @@ describe('phantomSpec', () => {
       .toContain('missing-component');
   });
 
+  it('warns when Figma-led design sources are not mapped to Phantom targets', () => {
+    const spec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [item({})],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      specification: {
+        signOffStatus: 'draft',
+        designEntryPoint: 'figma-led',
+        designSources: [{
+          id: 'figma-1',
+          type: 'figmaFrame',
+          name: 'Unmapped client concept',
+        }],
+      },
+    });
+
+    const report = checkPhantomReadiness(spec, 'react');
+
+    expect(report.ready).toBe(true);
+    expect(report.warnings.find((issue) => issue.code === 'UNMAPPED_DESIGN_SOURCE')?.message)
+      .toContain('Unmapped client concept');
+  });
+
   it('creates a data contract from a Phantom spec', () => {
     const spec = createPhantomSpec({
       scenario: 'Retail',
