@@ -385,6 +385,50 @@ describe('phantom spec CLI', () => {
     }
   }, 30000);
 
+  it('switches target mode through the CLI for agent workflows', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'phantom-set-mode-'));
+    const specPath = join(tempDir, 'spec.json');
+    const outPath = join(tempDir, 'spec.powerbi.json');
+    const spec = createReadySpec();
+
+    try {
+      await writeFile(specPath, `${JSON.stringify(spec, null, 2)}\n`);
+      const { stdout } = await execFileAsync(
+        process.execPath,
+        [
+          'tools/phantom-spec-cli.mjs',
+          'set-mode',
+          specPath,
+          '--mode',
+          'power-bi',
+          '--out',
+          outPath,
+        ],
+        { cwd: process.cwd() },
+      );
+      const result = JSON.parse(stdout);
+      const nextSpec = JSON.parse(await readFile(outPath, 'utf8'));
+
+      expect(result).toMatchObject({
+        outPath,
+        mode: 'powerBi',
+        readiness: {
+          react: true,
+          powerBi: true,
+        },
+        implementationGate: {
+          subject: 'implementation-gate',
+          readyForImplementation: true,
+          powerBiReady: true,
+        },
+      });
+      expect(nextSpec.mode).toBe('powerBi');
+      expect(nextSpec.project.specification.exportMode).toBe('powerBi');
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  }, 30000);
+
   it('exports Power BI guides with implementation gate context', async () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'phantom-powerbi-guide-'));
     const specPath = join(tempDir, 'spec.json');

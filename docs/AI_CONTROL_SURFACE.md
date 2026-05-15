@@ -55,6 +55,8 @@ npm run phantom:spec -- export-react path/to/spec.json ./generated-app
 npm run phantom:spec -- export-data-contract path/to/spec.json ./handoff
 npm run phantom:spec -- export-powerbi-guide path/to/spec.json ./handoff
 npm run phantom:spec -- export-handoff-pack path/to/spec.json ./handoff-pack
+npm run phantom:spec -- set-mode path/to/spec.json powerBi path/to/spec.powerbi.json
+node tools/phantom-spec-cli.mjs set-mode path/to/spec.json --mode react-product --out path/to/spec.react.json
 npm run phantom:spec -- inspect path/to/spec.json components
 npm run phantom:spec -- inspect path/to/spec.json drill-actions
 npm run phantom:spec -- inspect path/to/spec.json data-requirements
@@ -86,6 +88,8 @@ node tools/phantom-spec-cli.mjs import-data-source path/to/spec.json --type dbt 
 `summary` returns a compact JSON payload with scenario, mode, component count, data requirements, and Power BI support counts.
 
 `diff` returns project, mode, component, drill action, and data requirement changes between two Phantom specs. Use it after workshops or AI edits before regenerating implementation artifacts.
+
+`set-mode` writes a new spec with `mode` and `project.specification.exportMode` switched to React Product Mode or Power BI Mode. Use it when an agent needs to compare both delivery paths from the same workshop artifact before running `readiness`, `inspect implementation-gate`, or exports.
 
 `inspect` returns focused JSON for `components`, `drill-actions`, `data-requirements`, `data-path`, `design-sources`, `design-mapping`, `design-workflow`, `design-handoff`, `approval`, `implementation-gate`, `workshop-intent`, `react-backlog`, `powerbi-build-matrix`, or `handoff-summary`, so agents can query the spec before deciding what to generate or validate.
 
@@ -134,6 +138,7 @@ Future commands should include:
 - `phantom spec validate <file>`
 - `phantom spec summary <file>`
 - `phantom spec diff <before> <after>` implemented as `npm run phantom:spec -- diff <before> <after>`
+- `phantom spec set-mode <file> react|powerBi --out <file>` implemented as `npm run phantom:spec -- set-mode <file> react|powerBi <out>`
 - `phantom spec readiness <file> react|powerBi`
 - `phantom export pbi-report <file> --out <dir>`
 - `phantom export powerbi-guide <file> --out <dir>`

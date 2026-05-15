@@ -17,8 +17,10 @@ Usage:
   npm run phantom:spec -- export-powerbi-guide <spec.json> <dir>
   npm run phantom:spec -- export-handoff-pack <spec.json> <dir>
   npm run phantom:spec -- inspect <spec.json> components|drill-actions|data-requirements|data-path|design-sources|design-mapping|design-workflow|design-handoff|approval|implementation-gate|workshop-intent|react-backlog|powerbi-build-matrix|handoff-summary
+  npm run phantom:spec -- set-mode <spec.json> react|powerBi <out-spec.json>
   npm run phantom:spec -- import-design-source <spec.json> figmaFrame "Client frame" <url> <frame-id> "notes" <out-spec.json>
   npm run phantom:spec -- import-data-source <spec.json> dbt "Orders mart" mart_orders Region,revenue visual-1 <out-spec.json>
+  node tools/phantom-spec-cli.mjs set-mode <spec.json> --mode powerBi --out <out-spec.json>
   node tools/phantom-spec-cli.mjs import-design-source <spec.json> --type figmaFrame --name "Client frame" --url <url> --frame-id <frame-id> --views main --components kpi-1,chart-1 --out <out-spec.json>
   node tools/phantom-spec-cli.mjs import-data-source <spec.json> --type dbt --name "Orders mart" --model mart_orders --fields Region,revenue --components visual-1 --out <out-spec.json>
 
@@ -32,6 +34,7 @@ Commands:
   export-powerbi-guide Generate a Power BI implementation guide.
   export-handoff-pack  Generate a bundled React and Power BI handoff pack.
   inspect              Print a focused machine-readable view of a spec section.
+  set-mode             Write a spec copy switched to React Product or Power BI Mode.
   import-design-source Add or update a Figma/screenshot/reference design source in a spec.
   import-data-source   Add or update an API/warehouse/dbt/semantic/file data source in a spec.
 `);
@@ -361,6 +364,12 @@ const csvOption = (...names) => {
 
 const uniqueSorted = (values) => [...new Set(values.filter(Boolean))].sort();
 
+const normalizeMode = (value) => {
+  if (value === 'react' || value === 'react-product' || value === 'reactProduct') return 'react';
+  if (value === 'powerBi' || value === 'power-bi' || value === 'pbi') return 'powerBi';
+  return undefined;
+};
+
 const createApprovalStatus = (spec) => {
   const signOffStatus = spec.project?.specification?.signOffStatus || 'draft';
   const approvedForImplementation = signOffStatus === 'approved';
@@ -634,6 +643,41 @@ const mergeDataSource = (spec) => {
     },
     outPath: resolve(outPath),
     dataSource,
+  };
+};
+
+const setSpecMode = (spec) => {
+  const positional = positionalOptions();
+  const mode = normalizeMode(optionValue('--mode') || positional[0]);
+  const outPath = optionValue('--out') || positional[1];
+  if (!mode) {
+    throw new Error('Mode must be react, react-product, powerBi, power-bi, or pbi.');
+  }
+  if (!outPath) {
+    throw new Error('Missing --out path for set-mode.');
+  }
+
+  const nextSpec = {
+    ...spec,
+    mode,
+    project: {
+      ...spec.project,
+      specification: {
+        ...(spec.project?.specification || {}),
+        exportMode: mode,
+      },
+    },
+  };
+
+  return {
+    nextSpec,
+    outPath: resolve(outPath),
+    mode,
+    readiness: {
+      react: checkReadiness(nextSpec, 'react'),
+      powerBi: checkReadiness(nextSpec, 'powerBi'),
+    },
+    implementationGate: createImplementationGate(nextSpec),
   };
 };
 
@@ -2100,7 +2144,7 @@ try {
     process.exit(0);
   }
 
-  if (!['validate', 'summary', 'diff', 'readiness', 'export-react', 'export-data-contract', 'export-powerbi-guide', 'export-handoff-pack', 'inspect', 'import-design-source', 'import-data-source'].includes(command)) {
+  if (!['validate', 'summary', 'diff', 'readiness', 'export-react', 'export-data-contract', 'export-powerbi-guide', 'export-handoff-pack', 'inspect', 'set-mode', 'import-design-source', 'import-data-source'].includes(command)) {
     throw new Error(`Unknown command: ${command}`);
   }
 
@@ -2156,6 +2200,24 @@ try {
       designEntryPoint: nextSpec.project.designEntryPoint,
       designSources: nextSpec.project.designSources.length,
       imported: designSource,
+    }, null, 2));
+  }
+
+  if (command === 'set-mode') {
+    if (errors.length > 0) {
+      console.error(JSON.stringify({ valid: false, errors }, null, 2));
+      process.exit(1);
+    }
+    const { nextSpec, outPath, mode, readiness, implementationGate } = setSpecMode(spec);
+    await writeFile(outPath, `${JSON.stringify(nextSpec, null, 2)}\n`);
+    console.log(JSON.stringify({
+      outPath,
+      mode,
+      readiness: {
+        react: readiness.react.ready,
+        powerBi: readiness.powerBi.ready,
+      },
+      implementationGate,
     }, null, 2));
   }
 
