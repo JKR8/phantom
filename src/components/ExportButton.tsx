@@ -288,6 +288,23 @@ Generated from Phantom Spec ${spec.specVersion}.
 
 ${createDesignSourcesMarkdown(spec.project.designSources)}
 
+## Implementation Gate
+
+- Ready for implementation: ${handoffSummary.implementationGate.readyForImplementation ? 'Yes' : 'No'}
+- Approved for implementation: ${handoffSummary.implementationGate.approvedForImplementation ? 'Yes' : 'No'}
+- Design ready: ${handoffSummary.implementationGate.designReady ? 'Yes' : 'No'}
+- Workshop intent complete: ${handoffSummary.implementationGate.workshopIntentComplete ? 'Yes' : 'No'}
+- React ready: ${handoffSummary.implementationGate.reactReady ? 'Yes' : 'No'}
+- Power BI ready: ${handoffSummary.implementationGate.powerBiReady ? 'Yes' : 'No'}
+
+### Implementation Gate Blockers
+
+${handoffSummary.implementationGate.blockingReasons.map((reason) => `- ${reason}`).join('\n') || '- None specified'}
+
+### Implementation Gate Required Next Steps
+
+${handoffSummary.implementationGate.requiredNextSteps.map((step) => `- ${step}`).join('\n') || '- None specified'}
+
 ## Design Workflow
 
 - Design plane: ${handoffSummary.designWorkflow.designPlane}
@@ -339,9 +356,11 @@ Use \`phantom-spec.json\` and \`phantom-data-contract.json\` as the implementati
 - Sign-off: ${contract.project.signOffStatus || 'draft'}
 - Recommended handoff: ${handoffSummary.handoffRecommendation.target}
 - Guidance: ${handoffSummary.handoffRecommendation.guidance}
+- Ready for implementation: ${handoffSummary.implementationGate.readyForImplementation ? 'Yes' : 'No'}
 
 ## Expected Work
 
+- Clear any implementation gate blockers before treating this as a final build contract.
 - Replace Phantom placeholder visuals with production React components.
 - Wire data requirements to client-owned APIs, warehouse/dbt models, or optional semantic endpoints.
 - Implement drill actions from \`phantom-spec.json > interactions.drillActions\`.
