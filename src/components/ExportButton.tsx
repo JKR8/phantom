@@ -34,6 +34,7 @@ import JSZip from 'jszip';
 import { useStore } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
 import {
+  checkPhantomReadiness,
   createPhantomDataContract,
   createPhantomDataContractMarkdown,
   createDesignSourcesMarkdown,
@@ -233,6 +234,7 @@ export const ExportButton: React.FC = () => {
       const contract = createPhantomDataContract(spec);
       const powerBiGuide = createPowerBiImplementationGuide(spec);
       const reactBacklog = createReactImplementationBacklog(spec);
+      const reactReadiness = checkPhantomReadiness(spec, 'react');
       const date = new Date().toISOString().split('T')[0];
       const zip = new JSZip();
       const manifest = {
@@ -246,6 +248,7 @@ export const ExportButton: React.FC = () => {
           designSources: spec.project.designSources,
         },
         readiness: {
+          react: reactReadiness,
           powerBi: powerBiGuide.readiness,
         },
         artifacts: {
