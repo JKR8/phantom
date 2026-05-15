@@ -94,6 +94,7 @@ Preferred first pass:
 ```bash
 npm run phantom:spec -- validate path/to/spec.json
 npm run phantom:spec -- inspect path/to/spec.json handoff-summary
+npm run phantom:spec -- inspect path/to/spec.json workshop-intent
 npm run phantom:spec -- inspect path/to/spec.json design-sources
 npm run phantom:spec -- inspect path/to/spec.json data-requirements
 ```
@@ -110,7 +111,7 @@ For full implementation handoff:
 npm run phantom:spec -- export-handoff-pack path/to/spec.json ./handoff-pack
 ```
 
-Agents should read `handoff-summary.json` before generating code or build notes. It gives the entry point, readiness state, recommended handoff target, counts, and next actions in one small payload.
+Agents should read `handoff-summary.json` or `HANDOFF_MANIFEST.json` before generating code or build notes. These include the entry point, workshop intent, workshop completeness, readiness state, recommended handoff target, counts, and next actions in one small payload.
 
 ## Workshop Output
 

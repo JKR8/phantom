@@ -89,7 +89,7 @@ npm run phantom:spec -- import-design-source path/to/spec.json figmaFrame "Clien
 
 `inspect powerbi-build-matrix` returns the same readiness summary, visual support statuses, field requirements, drill-through rows, and build checklist used by the Power BI implementation guide. Use it when an agent needs to assess Power BI Mode fit without generating guide files.
 
-`inspect handoff-summary` returns project metadata, React and Power BI readiness, a recommended handoff target, field/component/task counts, Power BI visual support counts, and next actions in one JSON payload. Use it as the first agent check after a workshop.
+`inspect handoff-summary` returns project metadata, workshop intent, workshop completeness, React and Power BI readiness, a recommended handoff target, field/component/task counts, Power BI visual support counts, and next actions in one JSON payload. Use it as the first agent check after a workshop.
 
 `import-design-source` adds or updates a Figma frame, Figma component, screenshot, Phantom default, or external reference in a Phantom Spec. Use the npm-friendly positional form `type name url frame-id notes out-spec`; direct `node tools/phantom-spec-cli.mjs ...` usage can also pass named flags such as `--type`, `--name`, `--url`, and `--out`. It writes a new spec to the positional output path or `--out`, marks non-Phantom sources as `figma-led`, and mirrors the source into `project.specification` so browser exports, CLI exports, readiness checks, and agents see the same design context.
 
@@ -101,7 +101,7 @@ npm run phantom:spec -- import-design-source path/to/spec.json figmaFrame "Clien
 
 `export-powerbi-guide` creates `power-bi-implementation-guide.json` and `POWER_BI_IMPLEMENTATION_GUIDE.md` with Power BI readiness, visual support statuses, field requirements, drill-through notes, blockers, and a build checklist.
 
-`export-handoff-pack` creates a bundled folder with `phantom-spec.json`, `handoff-summary.json`, `HANDOFF_MANIFEST.json`, `README.md`, `data-contract/`, `power-bi/`, and `react-starter/`. This is the preferred consultant-to-engineering handoff when both React Product Mode and Power BI Mode artifacts should travel together.
+`export-handoff-pack` creates a bundled folder with `phantom-spec.json`, `handoff-summary.json`, `HANDOFF_MANIFEST.json`, `README.md`, `data-contract/`, `power-bi/`, and `react-starter/`. `handoff-summary.json` and `HANDOFF_MANIFEST.json` both include `workshopIntent` and `workshopCompleteness`, so agents can gate on missing business questions, audience, decisions/actions, or acceptance criteria before generating implementation work. This is the preferred consultant-to-engineering handoff when both React Product Mode and Power BI Mode artifacts should travel together.
 
 The browser export menu also provides `Handoff Pack (.zip)`, a workshop-friendly bundle with the canonical spec, handoff summary, data contract, Power BI guide, React implementation notes, and a machine-readable manifest. Use the CLI `export-handoff-pack` when a runnable React starter folder is required.
 
