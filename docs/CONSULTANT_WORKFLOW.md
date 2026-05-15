@@ -96,6 +96,7 @@ npm run phantom:spec -- validate path/to/spec.json
 npm run phantom:spec -- inspect path/to/spec.json handoff-summary
 npm run phantom:spec -- inspect path/to/spec.json design-workflow
 npm run phantom:spec -- inspect path/to/spec.json approval
+npm run phantom:spec -- inspect path/to/spec.json implementation-gate
 npm run phantom:spec -- inspect path/to/spec.json workshop-intent
 npm run phantom:spec -- inspect path/to/spec.json design-sources
 npm run phantom:spec -- inspect path/to/spec.json data-requirements
@@ -113,7 +114,7 @@ For full implementation handoff:
 npm run phantom:spec -- export-handoff-pack path/to/spec.json ./handoff-pack
 ```
 
-Agents should read `handoff-summary.json` or `HANDOFF_MANIFEST.json` before generating code or build notes. These include sign-off status, the entry point, design mapping coverage, workshop intent, workshop completeness, readiness state, recommended handoff target, counts, and next actions in one small payload.
+Agents should read `implementation-gate`, `handoff-summary.json`, or `HANDOFF_MANIFEST.json` before generating code or build notes. These include sign-off status, implementation readiness, the entry point, design mapping coverage, workshop intent, workshop completeness, readiness state, recommended handoff target, counts, and next actions in one small payload.
 
 ## Workshop Output
 

@@ -16,7 +16,7 @@ Usage:
   npm run phantom:spec -- export-data-contract <spec.json> <dir>
   npm run phantom:spec -- export-powerbi-guide <spec.json> <dir>
   npm run phantom:spec -- export-handoff-pack <spec.json> <dir>
-  npm run phantom:spec -- inspect <spec.json> components|drill-actions|data-requirements|design-sources|design-mapping|design-workflow|approval|workshop-intent|react-backlog|powerbi-build-matrix|handoff-summary
+  npm run phantom:spec -- inspect <spec.json> components|drill-actions|data-requirements|design-sources|design-mapping|design-workflow|approval|implementation-gate|workshop-intent|react-backlog|powerbi-build-matrix|handoff-summary
   npm run phantom:spec -- import-design-source <spec.json> figmaFrame "Client frame" <url> <frame-id> "notes" <out-spec.json>
   node tools/phantom-spec-cli.mjs import-design-source <spec.json> --type figmaFrame --name "Client frame" --url <url> --frame-id <frame-id> --views main --components kpi-1,chart-1 --out <out-spec.json>
 
@@ -241,6 +241,10 @@ const inspectSpec = (spec, subject) => {
     return createApprovalStatus(spec);
   }
 
+  if (subject === 'implementation-gate') {
+    return createImplementationGate(spec);
+  }
+
   if (subject === 'workshop-intent') {
     const workshopIntent = createWorkshopIntent(spec.project?.specification);
     return {
@@ -289,6 +293,7 @@ const inspectSpec = (spec, subject) => {
         designSources: spec.project?.designSources || [],
       },
       approval: createApprovalStatus(spec),
+      implementationGate: createImplementationGate(spec),
       designWorkflow: createDesignWorkflow(spec),
       designMapping: createDesignMappingSummary(spec.project?.designSources || []),
       workshopIntent,
@@ -314,7 +319,7 @@ const inspectSpec = (spec, subject) => {
     };
   }
 
-  throw new Error('Inspect subject must be components, drill-actions, data-requirements, design-sources, design-mapping, design-workflow, approval, workshop-intent, react-backlog, powerbi-build-matrix, or handoff-summary.');
+  throw new Error('Inspect subject must be components, drill-actions, data-requirements, design-sources, design-mapping, design-workflow, approval, implementation-gate, workshop-intent, react-backlog, powerbi-build-matrix, or handoff-summary.');
 };
 
 const optionValue = (name) => {
@@ -373,6 +378,7 @@ const createDesignWorkflow = (spec) => {
         : 'ready';
   const agentCommands = [
     'npm run phantom:spec -- inspect <spec.json> design-workflow',
+    'npm run phantom:spec -- inspect <spec.json> implementation-gate',
     'npm run phantom:spec -- inspect <spec.json> handoff-summary',
     'npm run phantom:spec -- export-handoff-pack <spec.json> <out-dir>',
   ];
@@ -513,6 +519,70 @@ const getHandoffNextActions = (reactReadiness, powerBiReadiness) => [
   ...powerBiReadiness.errors.map((issue) => `Power BI blocker: ${issue.message}`),
   ...powerBiReadiness.warnings.map((issue) => `Power BI warning: ${issue.message}`),
 ];
+
+const createImplementationGate = (spec) => {
+  const approval = createApprovalStatus(spec);
+  const designWorkflow = createDesignWorkflow(spec);
+  const workshopIntent = createWorkshopIntent(spec.project?.specification);
+  const workshopCompleteness = createWorkshopIntentCompleteness(workshopIntent);
+  const reactReadiness = checkReadiness(spec, 'react');
+  const powerBiReadiness = checkReadiness(spec, 'powerBi');
+  const recommendation = getHandoffRecommendation(reactReadiness.ready, powerBiReadiness.ready);
+  const targetReady = recommendation.target === 'dual-track'
+    ? reactReadiness.ready && powerBiReadiness.ready
+    : recommendation.target === 'react-product'
+      ? reactReadiness.ready
+      : recommendation.target === 'power-bi'
+        ? powerBiReadiness.ready
+        : false;
+  const designGateSteps = [
+    ...(designWorkflow.status === 'needs-design-source'
+      ? ['Import or link at least one Figma frame, Figma component, screenshot, or external design reference.']
+      : []),
+    ...(designWorkflow.status === 'needs-mapping'
+      ? ['Map every design source to at least one Phantom view or component before engineering handoff.']
+      : []),
+  ];
+  const blockingReasons = uniqueSorted([
+    ...(!approval.approvedForImplementation ? [approval.guidance] : []),
+    ...designGateSteps,
+    ...(!workshopCompleteness.complete
+      ? [`Workshop intent is missing: ${workshopCompleteness.missing.join(', ')}.`]
+      : []),
+    ...(recommendation.target === 'fix-before-handoff' ? [recommendation.guidance] : []),
+    ...reactReadiness.errors.map((issue) => `React blocker: ${issue.message}`),
+    ...powerBiReadiness.errors.map((issue) => `Power BI blocker: ${issue.message}`),
+  ]);
+  const warnings = uniqueSorted([
+    ...reactReadiness.warnings.map((issue) => `React warning: ${issue.message}`),
+    ...powerBiReadiness.warnings.map((issue) => `Power BI warning: ${issue.message}`),
+  ]);
+
+  return {
+    subject: 'implementation-gate',
+    target: recommendation.target,
+    readyForImplementation: approval.approvedForImplementation
+      && designWorkflow.status === 'ready'
+      && workshopCompleteness.complete
+      && targetReady,
+    approvedForImplementation: approval.approvedForImplementation,
+    designReady: designWorkflow.status === 'ready',
+    workshopIntentComplete: workshopCompleteness.complete,
+    reactReady: reactReadiness.ready,
+    powerBiReady: powerBiReadiness.ready,
+    blockingReasons,
+    warnings,
+    requiredNextSteps: uniqueSorted([
+      ...approval.requiredNextSteps,
+      ...designGateSteps,
+      ...(!workshopCompleteness.complete
+        ? [`Capture missing workshop intent: ${workshopCompleteness.missing.join(', ')}.`]
+        : []),
+      ...reactReadiness.errors.map((issue) => `React blocker: ${issue.message}`),
+      ...powerBiReadiness.errors.map((issue) => `Power BI blocker: ${issue.message}`),
+    ]),
+  };
+};
 
 const checkReadiness = (spec, target = spec.mode) => {
   const errors = [];
@@ -1479,6 +1549,7 @@ const writeHandoffPack = async (spec, outDir) => {
     readiness,
     handoffRecommendation,
     approval: handoffSummary.approval,
+    implementationGate: handoffSummary.implementationGate,
     designWorkflow: handoffSummary.designWorkflow,
     designMapping: handoffSummary.designMapping,
     workshopIntent: handoffSummary.workshopIntent,
@@ -1554,7 +1625,7 @@ ${markdownList(handoffSummary.designWorkflow.requiredNextSteps)}
 - \`data-contract/\`: JSON and Markdown data contract for APIs, warehouse/dbt models, or semantic endpoints.
 - \`power-bi/\`: Power BI implementation guide with readiness, visual statuses, fields, drill-through notes, and blockers.
 - \`react-starter/\`: Vite/React starter app with the spec, data contract, and typed drill actions embedded.
-- \`handoff-summary.json\`: first-pass readiness, recommendation, counts, and next actions for agents.
+- \`handoff-summary.json\`: first-pass implementation gate, readiness, recommendation, counts, and next actions for agents.
 - \`HANDOFF_MANIFEST.json\`: machine-readable index for agents and implementation pipelines.
 
 ## Readiness

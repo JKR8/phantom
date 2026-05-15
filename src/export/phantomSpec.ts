@@ -205,6 +205,20 @@ export interface PhantomApprovalStatus {
   requiredNextSteps: string[];
 }
 
+export interface PhantomImplementationGate {
+  subject: 'implementation-gate';
+  target: PhantomHandoffTarget;
+  readyForImplementation: boolean;
+  approvedForImplementation: boolean;
+  designReady: boolean;
+  workshopIntentComplete: boolean;
+  reactReady: boolean;
+  powerBiReady: boolean;
+  blockingReasons: string[];
+  warnings: string[];
+  requiredNextSteps: string[];
+}
+
 export interface PhantomDesignMappingSummary {
   totalSources: number;
   mappedSources: number;
@@ -238,6 +252,7 @@ export interface PhantomHandoffSummary {
     designSources: DesignSource[];
   };
   approval: PhantomApprovalStatus;
+  implementationGate: PhantomImplementationGate;
   designWorkflow: PhantomDesignWorkflow;
   designMapping: PhantomDesignMappingSummary;
   workshopIntent: PhantomWorkshopIntent;
@@ -653,6 +668,7 @@ export const createPhantomDesignWorkflow = (spec: PhantomSpec): PhantomDesignWor
         : 'ready';
   const agentCommands = [
     'npm run phantom:spec -- inspect <spec.json> design-workflow',
+    'npm run phantom:spec -- inspect <spec.json> implementation-gate',
     'npm run phantom:spec -- inspect <spec.json> handoff-summary',
     'npm run phantom:spec -- export-handoff-pack <spec.json> <out-dir>',
   ];
@@ -788,6 +804,70 @@ export const createHandoffNextActions = (
   ...powerBiReadiness.errors.map((issue) => `Power BI blocker: ${issue.message}`),
   ...powerBiReadiness.warnings.map((issue) => `Power BI warning: ${issue.message}`),
 ];
+
+export const createPhantomImplementationGate = (spec: PhantomSpec): PhantomImplementationGate => {
+  const approval = createPhantomApprovalStatus(spec);
+  const designWorkflow = createPhantomDesignWorkflow(spec);
+  const workshopIntent = createWorkshopIntent(spec.project.specification);
+  const workshopCompleteness = createWorkshopIntentCompleteness(workshopIntent);
+  const reactReadiness = checkPhantomReadiness(spec, 'react');
+  const powerBiReadiness = checkPhantomReadiness(spec, 'powerBi');
+  const recommendation = createHandoffRecommendation(reactReadiness.ready, powerBiReadiness.ready);
+  const targetReady = recommendation.target === 'dual-track'
+    ? reactReadiness.ready && powerBiReadiness.ready
+    : recommendation.target === 'react-product'
+      ? reactReadiness.ready
+      : recommendation.target === 'power-bi'
+        ? powerBiReadiness.ready
+        : false;
+  const designGateSteps = [
+    ...(designWorkflow.status === 'needs-design-source'
+      ? ['Import or link at least one Figma frame, Figma component, screenshot, or external design reference.']
+      : []),
+    ...(designWorkflow.status === 'needs-mapping'
+      ? ['Map every design source to at least one Phantom view or component before engineering handoff.']
+      : []),
+  ];
+  const blockingReasons = [
+    ...(!approval.approvedForImplementation ? [approval.guidance] : []),
+    ...designGateSteps,
+    ...(!workshopCompleteness.complete
+      ? [`Workshop intent is missing: ${workshopCompleteness.missing.join(', ')}.`]
+      : []),
+    ...(recommendation.target === 'fix-before-handoff' ? [recommendation.guidance] : []),
+    ...reactReadiness.errors.map((issue) => `React blocker: ${issue.message}`),
+    ...powerBiReadiness.errors.map((issue) => `Power BI blocker: ${issue.message}`),
+  ];
+  const warnings = [
+    ...reactReadiness.warnings.map((issue) => `React warning: ${issue.message}`),
+    ...powerBiReadiness.warnings.map((issue) => `Power BI warning: ${issue.message}`),
+  ];
+
+  return {
+    subject: 'implementation-gate',
+    target: recommendation.target,
+    readyForImplementation: approval.approvedForImplementation
+      && designWorkflow.status === 'ready'
+      && workshopCompleteness.complete
+      && targetReady,
+    approvedForImplementation: approval.approvedForImplementation,
+    designReady: designWorkflow.status === 'ready',
+    workshopIntentComplete: workshopCompleteness.complete,
+    reactReady: reactReadiness.ready,
+    powerBiReady: powerBiReadiness.ready,
+    blockingReasons: uniq(blockingReasons),
+    warnings: uniq(warnings),
+    requiredNextSteps: uniq([
+      ...approval.requiredNextSteps,
+      ...designGateSteps,
+      ...(!workshopCompleteness.complete
+        ? [`Capture missing workshop intent: ${workshopCompleteness.missing.join(', ')}.`]
+        : []),
+      ...reactReadiness.errors.map((issue) => `React blocker: ${issue.message}`),
+      ...powerBiReadiness.errors.map((issue) => `Power BI blocker: ${issue.message}`),
+    ]),
+  };
+};
 
 export const createPhantomDataContract = (
   spec: PhantomSpec,
@@ -1079,6 +1159,7 @@ export const createPhantomHandoffSummary = (spec: PhantomSpec): PhantomHandoffSu
       designSources: spec.project.designSources,
     },
     approval: createPhantomApprovalStatus(spec),
+    implementationGate: createPhantomImplementationGate(spec),
     designWorkflow: createPhantomDesignWorkflow(spec),
     designMapping: createPhantomDesignMappingSummary(spec.project.designSources),
     workshopIntent,

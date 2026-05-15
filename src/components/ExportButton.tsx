@@ -251,6 +251,7 @@ export const ExportButton: React.FC = () => {
         readiness: handoffSummary.readiness,
         handoffRecommendation: handoffSummary.handoffRecommendation,
         approval: handoffSummary.approval,
+        implementationGate: handoffSummary.implementationGate,
         designWorkflow: handoffSummary.designWorkflow,
         designMapping: handoffSummary.designMapping,
         workshopIntent: handoffSummary.workshopIntent,
@@ -326,7 +327,7 @@ ${handoffSummary.designWorkflow.requiredNextSteps.map((step) => `- ${step}`).joi
 - \`data-contract/\`: data requirements for API, warehouse/dbt, or semantic endpoint mapping.
 - \`power-bi/\`: Power BI build guide with readiness, visual support status, fields, and drill-through notes.
 - \`react-product/\`: React implementation starting notes plus the same spec and data contract.
-- \`handoff-summary.json\`: first-pass design workflow, design mapping, readiness, recommendation, counts, and next actions for agents.
+- \`handoff-summary.json\`: first-pass implementation gate, design workflow, design mapping, readiness, recommendation, counts, and next actions for agents.
 - \`HANDOFF_MANIFEST.json\`: machine-readable index for agents and engineering automation.
 `;
       const reactNotes = `# React Product Implementation Notes

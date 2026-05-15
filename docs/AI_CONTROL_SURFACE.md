@@ -62,6 +62,7 @@ npm run phantom:spec -- inspect path/to/spec.json design-sources
 npm run phantom:spec -- inspect path/to/spec.json design-mapping
 npm run phantom:spec -- inspect path/to/spec.json design-workflow
 npm run phantom:spec -- inspect path/to/spec.json approval
+npm run phantom:spec -- inspect path/to/spec.json implementation-gate
 npm run phantom:spec -- inspect path/to/spec.json workshop-intent
 npm run phantom:spec -- inspect path/to/spec.json react-backlog
 npm run phantom:spec -- inspect path/to/spec.json powerbi-build-matrix
@@ -83,7 +84,7 @@ node tools/phantom-spec-cli.mjs import-design-source path/to/spec.json --type fi
 
 `diff` returns project, mode, component, drill action, and data requirement changes between two Phantom specs. Use it after workshops or AI edits before regenerating implementation artifacts.
 
-`inspect` returns focused JSON for `components`, `drill-actions`, `data-requirements`, `design-sources`, `design-mapping`, `design-workflow`, `approval`, `workshop-intent`, `react-backlog`, `powerbi-build-matrix`, or `handoff-summary`, so agents can query the spec before deciding what to generate or validate.
+`inspect` returns focused JSON for `components`, `drill-actions`, `data-requirements`, `design-sources`, `design-mapping`, `design-workflow`, `approval`, `implementation-gate`, `workshop-intent`, `react-backlog`, `powerbi-build-matrix`, or `handoff-summary`, so agents can query the spec before deciding what to generate or validate.
 
 `inspect design-sources` returns the current design entry point and linked design sources, including any mapped Phantom view IDs or component IDs. Use it to decide whether the project is Figma-led or Phantom-led before generating implementation tasks.
 
@@ -92,6 +93,8 @@ node tools/phantom-spec-cli.mjs import-design-source path/to/spec.json --type fi
 `inspect design-workflow` returns the current design plane (`figma` or `phantom`), Phantom's role in that workflow, mapping status, required next steps, supported handoff modes, and suggested agent commands. Use it first when deciding whether to pull in Figma references or proceed with Phantom defaults.
 
 `inspect approval` returns sign-off status, whether the spec is approved for implementation, guidance, and required next steps. Use it before generating code or Power BI build notes.
+
+`inspect implementation-gate` returns a single implementation readiness decision that combines approval, design-source mapping, workshop intent completeness, React readiness, Power BI readiness, blocking reasons, warnings, and required next steps. Use it as the safest first command before any agent starts engineering work.
 
 `inspect workshop-intent` returns the business questions, audience, decisions/actions, acceptance criteria, build notes, and a completeness object with present/missing workshop fields. Use it before generating React or Power BI implementation work so agents preserve the client workshop intent and can pause when the brief is too thin.
 
@@ -111,7 +114,7 @@ node tools/phantom-spec-cli.mjs import-design-source path/to/spec.json --type fi
 
 `export-powerbi-guide` creates `power-bi-implementation-guide.json` and `POWER_BI_IMPLEMENTATION_GUIDE.md` with the design workflow, Power BI readiness, visual support statuses, field requirements, drill-through notes, blockers, and a build checklist.
 
-`export-handoff-pack` creates a bundled folder with `phantom-spec.json`, `handoff-summary.json`, `HANDOFF_MANIFEST.json`, `README.md`, `data-contract/`, `power-bi/`, and `react-starter/`. `handoff-summary.json` and `HANDOFF_MANIFEST.json` both include sign-off status, `designWorkflow`, `designMapping`, `workshopIntent`, and `workshopCompleteness`, so agents can gate on approval state, the Figma-led/Phantom-led workflow, unmapped design sources, or missing business questions, audience, decisions/actions, or acceptance criteria before generating implementation work. This is the preferred consultant-to-engineering handoff when both React Product Mode and Power BI Mode artifacts should travel together.
+`export-handoff-pack` creates a bundled folder with `phantom-spec.json`, `handoff-summary.json`, `HANDOFF_MANIFEST.json`, `README.md`, `data-contract/`, `power-bi/`, and `react-starter/`. `handoff-summary.json` and `HANDOFF_MANIFEST.json` both include sign-off status, `implementationGate`, `designWorkflow`, `designMapping`, `workshopIntent`, and `workshopCompleteness`, so agents can gate on approval state, the Figma-led/Phantom-led workflow, unmapped design sources, or missing business questions, audience, decisions/actions, or acceptance criteria before generating implementation work. This is the preferred consultant-to-engineering handoff when both React Product Mode and Power BI Mode artifacts should travel together.
 
 The browser export menu also provides `Handoff Pack (.zip)`, a workshop-friendly bundle with the canonical spec, handoff summary, data contract, Power BI guide, React implementation notes, and a machine-readable manifest. Use the CLI `export-handoff-pack` when a runnable React starter folder is required.
 
@@ -135,6 +138,7 @@ Future commands should include:
 - `phantom inspect design-mapping <file>` implemented as `npm run phantom:spec -- inspect <file> design-mapping`
 - `phantom inspect design-workflow <file>` implemented as `npm run phantom:spec -- inspect <file> design-workflow`
 - `phantom inspect approval <file>` implemented as `npm run phantom:spec -- inspect <file> approval`
+- `phantom inspect implementation-gate <file>` implemented as `npm run phantom:spec -- inspect <file> implementation-gate`
 - `phantom inspect workshop-intent <file>` implemented as `npm run phantom:spec -- inspect <file> workshop-intent`
 - `phantom inspect react-backlog <file>` implemented as `npm run phantom:spec -- inspect <file> react-backlog`
 - `phantom inspect powerbi-build-matrix <file>` implemented as `npm run phantom:spec -- inspect <file> powerbi-build-matrix`

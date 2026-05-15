@@ -10,6 +10,7 @@ import {
   createPhantomDesignMappingSummary,
   createPhantomDesignWorkflow,
   createPhantomHandoffSummary,
+  createPhantomImplementationGate,
   createPhantomSpec,
   createPhantomWorkshopIntent,
   createPhantomWorkshopIntentCompleteness,
@@ -270,6 +271,11 @@ describe('phantomSpec', () => {
       signOffStatus: 'draft',
       approvedForImplementation: false,
     });
+    expect(summary.implementationGate).toMatchObject({
+      subject: 'implementation-gate',
+      readyForImplementation: false,
+      approvedForImplementation: false,
+    });
     expect(summary.designWorkflow.status).toBe('needs-mapping');
     expect(summary.designWorkflow.designPlane).toBe('figma');
     expect(summary.designWorkflow.requiredNextSteps).toContain(
@@ -382,6 +388,77 @@ describe('phantomSpec', () => {
       guidance: 'Spec is approved for implementation handoff.',
       requiredNextSteps: [],
     });
+  });
+
+  it('creates a single implementation gate for agents', () => {
+    const approvedSpec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [item({})],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      specification: {
+        signOffStatus: 'approved',
+        businessQuestions: 'Which regions are growing?',
+        audience: 'Executives',
+        decisions: 'Prioritise regional investment.',
+        acceptanceCriteria: 'Revenue by region is clear and drillable.',
+        designEntryPoint: 'figma-led',
+        designSources: [{
+          id: 'figma-1',
+          type: 'figmaFrame',
+          name: 'Client frame',
+          linkedViewIds: ['main'],
+          linkedComponentIds: ['visual-1'],
+        }],
+      },
+    });
+    const draftSpec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [item({})],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      specification: {
+        signOffStatus: 'draft',
+        designEntryPoint: 'figma-led',
+        designSources: [{ id: 'figma-1', type: 'figmaFrame', name: 'Client frame' }],
+      },
+    });
+
+    expect(createPhantomImplementationGate(approvedSpec)).toEqual({
+      subject: 'implementation-gate',
+      target: 'dual-track',
+      readyForImplementation: true,
+      approvedForImplementation: true,
+      designReady: true,
+      workshopIntentComplete: true,
+      reactReady: true,
+      powerBiReady: true,
+      blockingReasons: [],
+      warnings: [],
+      requiredNextSteps: [],
+    });
+    expect(createPhantomImplementationGate(draftSpec)).toMatchObject({
+      subject: 'implementation-gate',
+      target: 'dual-track',
+      readyForImplementation: false,
+      approvedForImplementation: false,
+      designReady: false,
+      workshopIntentComplete: false,
+      reactReady: true,
+      powerBiReady: true,
+    });
+    expect(createPhantomImplementationGate(draftSpec).blockingReasons).toContain(
+      'Spec sign-off is draft; confirm client approval before treating this as an implementation contract.',
+    );
+    expect(createPhantomImplementationGate(draftSpec).requiredNextSteps).toContain(
+      'Map every design source to at least one Phantom view or component before engineering handoff.',
+    );
   });
 
   it('summarizes design-source mapping coverage for handoff agents', () => {
