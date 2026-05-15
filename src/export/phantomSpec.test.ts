@@ -218,6 +218,11 @@ describe('phantomSpec', () => {
       exportMode: 'react',
       themePalette: 'Default',
       generatedAt: '2026-05-15T00:00:00.000Z',
+      specification: {
+        signOffStatus: 'draft',
+        businessQuestions: 'Which regions need intervention?',
+        decisions: 'Prioritize stores for margin recovery.',
+      },
     });
 
     const summary = createPhantomHandoffSummary(spec);
@@ -227,6 +232,8 @@ describe('phantomSpec', () => {
     expect(summary.handoffRecommendation.target).toBe('react-product');
     expect(summary.readiness.react.ready).toBe(true);
     expect(summary.readiness.powerBi.ready).toBe(false);
+    expect(summary.workshopIntent.businessQuestions).toBe('Which regions need intervention?');
+    expect(summary.workshopIntent.decisions).toBe('Prioritize stores for margin recovery.');
     expect(summary.counts).toMatchObject({
       components: 2,
       fields: 3,
@@ -341,6 +348,11 @@ describe('phantomSpec', () => {
       generatedAt: '2026-05-15T00:00:00.000Z',
       specification: {
         signOffStatus: 'draft',
+        businessQuestions: 'Which regions are underperforming?',
+        audience: 'Retail executives',
+        decisions: 'Choose regions for follow-up.',
+        acceptanceCriteria: 'Every visual has approved fields and drill behavior.',
+        buildNotes: 'Use the client sales mart.',
         designEntryPoint: 'figma-led',
         designSources: [{ id: 'figma-1', type: 'figmaFrame', name: 'Executive concept' }],
       },
@@ -350,6 +362,13 @@ describe('phantomSpec', () => {
     const markdown = createPhantomDataContractMarkdown(contract);
 
     expect(contract.project.designEntryPoint).toBe('figma-led');
+    expect(contract.workshopIntent).toMatchObject({
+      businessQuestions: 'Which regions are underperforming?',
+      audience: 'Retail executives',
+      decisions: 'Choose regions for follow-up.',
+      acceptanceCriteria: 'Every visual has approved fields and drill behavior.',
+      buildNotes: 'Use the client sales mart.',
+    });
     expect(contract.fields).toEqual([
       { name: 'Region', kind: 'dimension', requiredBy: ['visual-1'] },
       { name: 'revenue', kind: 'metric', requiredBy: ['visual-1'] },
@@ -360,6 +379,9 @@ describe('phantomSpec', () => {
     expect(markdown).toContain('| drill-1 | Open region detail | visual-1 | detailPanel:region-detail | Region->region |');
     expect(markdown).toContain('## Design Sources');
     expect(markdown).toContain('- Executive concept (type: figmaFrame)');
+    expect(markdown).toContain('## Workshop Intent');
+    expect(markdown).toContain('- Decisions/actions: Choose regions for follow-up.');
+    expect(markdown).toContain('- Acceptance criteria: Every visual has approved fields and drill behavior.');
   });
 
   it('creates a Power BI implementation guide with readiness and visual statuses', () => {

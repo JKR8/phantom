@@ -126,6 +126,13 @@ export interface PhantomDataContract {
     designEntryPoint: 'figma-led' | 'phantom-led';
     designSources: DesignSource[];
   };
+  workshopIntent: {
+    businessQuestions?: string;
+    audience?: string;
+    decisions?: string;
+    acceptanceCriteria?: string;
+    buildNotes?: string;
+  };
   dataSources: unknown;
   fields: PhantomDataContractField[];
   metrics: string[];
@@ -196,6 +203,7 @@ export interface PhantomHandoffSummary {
     designEntryPoint: 'figma-led' | 'phantom-led';
     designSources: DesignSource[];
   };
+  workshopIntent: PhantomDataContract['workshopIntent'];
   readiness: {
     react: PhantomReadinessReport;
     powerBi: PhantomReadinessReport;
@@ -471,6 +479,14 @@ const getDataContractFieldKind = (spec: PhantomSpec, field: string): PhantomData
 
 const markdownList = (items: string[]) => (items.length ? items.map((item) => `- ${item}`).join('\n') : '- None specified');
 
+const createWorkshopIntent = (specification: DashboardSpecification): PhantomDataContract['workshopIntent'] => ({
+  businessQuestions: specification.businessQuestions,
+  audience: specification.audience,
+  decisions: specification.decisions,
+  acceptanceCriteria: specification.acceptanceCriteria,
+  buildNotes: specification.buildNotes,
+});
+
 export const createDesignSourcesMarkdown = (designSources: DesignSource[]) => {
   if (!designSources.length) return '- None specified';
 
@@ -615,6 +631,7 @@ export const createPhantomDataContract = (
       designEntryPoint: spec.project.designEntryPoint,
       designSources: spec.project.designSources,
     },
+    workshopIntent: createWorkshopIntent(spec.project.specification),
     dataSources: (spec.project.specification as Record<string, unknown>).dataSources || [],
     fields: fields.map((name) => ({
       name,
@@ -660,6 +677,14 @@ Generated from Phantom Spec ${contract.sourceSpecVersion}.
 ## Design Sources
 
 ${createDesignSourcesMarkdown(contract.project.designSources)}
+
+## Workshop Intent
+
+- Business questions: ${contract.workshopIntent.businessQuestions || 'Not specified'}
+- Audience: ${contract.workshopIntent.audience || 'Not specified'}
+- Decisions/actions: ${contract.workshopIntent.decisions || 'Not specified'}
+- Acceptance criteria: ${contract.workshopIntent.acceptanceCriteria || 'Not specified'}
+- Build notes: ${contract.workshopIntent.buildNotes || 'Not specified'}
 
 ## Metrics
 
@@ -812,6 +837,7 @@ export const createPhantomHandoffSummary = (spec: PhantomSpec): PhantomHandoffSu
       designEntryPoint: spec.project.designEntryPoint,
       designSources: spec.project.designSources,
     },
+    workshopIntent: createWorkshopIntent(spec.project.specification),
     readiness: {
       react: reactReadiness,
       powerBi: powerBiGuide.readiness,

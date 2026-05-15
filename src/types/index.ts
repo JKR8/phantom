@@ -360,6 +360,10 @@ export interface DashboardSpecification {
   refreshCadence?: 'real-time' | 'daily' | 'weekly' | 'monthly' | 'on-demand';
   /** Who will use this dashboard */
   audience?: string;
+  /** Decisions or actions the report should support */
+  decisions?: string;
+  /** Acceptance criteria for client sign-off or implementation QA */
+  acceptanceCriteria?: string;
   /** Distribution method */
   distribution?: string;
   /** Current sign-off status */

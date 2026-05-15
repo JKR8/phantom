@@ -247,6 +247,28 @@ export const SpecificationPanel: React.FC = () => {
             resize="vertical"
           />
         </div>
+
+        <div className={styles.fieldRow}>
+          <Label className={styles.fieldLabel}>Decisions / Actions</Label>
+          <Textarea
+            className={styles.textarea}
+            placeholder="What decisions or actions should this experience support?"
+            value={specification.decisions || ''}
+            onChange={(_, d) => handleChange('decisions', d.value)}
+            resize="vertical"
+          />
+        </div>
+
+        <div className={styles.fieldRow}>
+          <Label className={styles.fieldLabel}>Acceptance Criteria</Label>
+          <Textarea
+            className={styles.textarea}
+            placeholder="What must be true before the client or delivery team signs this off?"
+            value={specification.acceptanceCriteria || ''}
+            onChange={(_, d) => handleChange('acceptanceCriteria', d.value)}
+            resize="vertical"
+          />
+        </div>
       </div>
 
       {/* Design Source */}

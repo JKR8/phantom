@@ -260,6 +260,7 @@ const inspectSpec = (spec, subject) => {
         designEntryPoint: spec.project?.designEntryPoint || 'phantom-led',
         designSources: spec.project?.designSources || [],
       },
+      workshopIntent: createWorkshopIntent(spec.project?.specification),
       readiness: {
         react: reactReadiness,
         powerBi: powerBiGuide.readiness,
@@ -822,6 +823,7 @@ const createDataContract = (spec) => {
       designEntryPoint: spec.project?.designEntryPoint,
       designSources: spec.project?.designSources || [],
     },
+    workshopIntent: createWorkshopIntent(spec.project?.specification),
     dataSources: spec.project?.specification?.dataSources || [],
     fields: allFields.map((name) => ({
       name,
@@ -844,6 +846,14 @@ const createDataContract = (spec) => {
 };
 
 const markdownList = (items) => (items.length ? items.map((item) => `- ${item}`).join('\n') : '- None specified');
+
+const createWorkshopIntent = (specification = {}) => ({
+  businessQuestions: specification.businessQuestions,
+  audience: specification.audience,
+  decisions: specification.decisions,
+  acceptanceCriteria: specification.acceptanceCriteria,
+  buildNotes: specification.buildNotes,
+});
 
 const designSourcesMarkdown = (designSources = []) => {
   if (!designSources.length) return '- None specified';
@@ -950,6 +960,14 @@ Generated from Phantom Spec ${contract.sourceSpecVersion}.
 ## Design Sources
 
 ${designSourcesMarkdown(contract.project.designSources)}
+
+## Workshop Intent
+
+- Business questions: ${contract.workshopIntent.businessQuestions || 'Not specified'}
+- Audience: ${contract.workshopIntent.audience || 'Not specified'}
+- Decisions/actions: ${contract.workshopIntent.decisions || 'Not specified'}
+- Acceptance criteria: ${contract.workshopIntent.acceptanceCriteria || 'Not specified'}
+- Build notes: ${contract.workshopIntent.buildNotes || 'Not specified'}
 
 ## Metrics
 
