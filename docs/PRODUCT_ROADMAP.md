@@ -128,23 +128,23 @@ Acceptance criteria:
 - Drill-through routes and filters are represented in code.
 - Export output is deterministic and diff-friendly.
 
-## Phase 5: Backend Adapter Mapping
+## Phase 5: Data Contract Mapping
 
-Goal: let Phantom plug into real client stacks without becoming the backend.
+Goal: let Phantom plug into real client stacks through a simple explicit data contract without becoming the backend.
 
 Required changes:
 
-- Add adapter mapping concepts for:
-  - Metabase questions/cards
-  - Cube or semantic APIs
-  - Custom REST/GraphQL endpoints
-- Let components declare their intended backend binding.
-- Export backend implementation notes.
-- Keep backend adapters optional.
+- Add data mapping concepts for:
+  - Client REST/GraphQL endpoints
+  - Warehouse/dbt models
+  - Optional semantic APIs
+- Let components declare their required data contract.
+- Export implementation notes for the agreed client data path.
+- Keep third-party backend integrations optional and out of the core product identity.
 
 Acceptance criteria:
 
-- A component can be mapped to a Metabase card/question, semantic API query, or custom endpoint.
+- A component can be mapped to a custom endpoint, warehouse/dbt model, or optional semantic API query.
 - The export spec clearly tells engineers what data each component needs.
 - Phantom remains backend-agnostic.
 
@@ -230,4 +230,3 @@ The first implementation sequence should be:
 7. Add workshop notes and business question capture.
 
 This order creates the core spine before adding more visuals or backend integrations.
-

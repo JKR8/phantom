@@ -4,7 +4,7 @@
 
 Build Phantom into the analytical design toolkit that helps consultants, report builders, and product teams turn a stakeholder workshop into a polished reporting experience, a complete implementation specification, and an exportable build starting point.
 
-Phantom should not try to become Metabase, Power BI, Tableau, or a full BI backend. Its job is to sit between vague business requirements and production implementation:
+Phantom should not try to become Power BI, Tableau, or a full BI backend. Its job is to sit between vague business requirements and production implementation:
 
 ```text
 Client workshop -> analytical mockup -> approved product/report spec -> React or Power BI implementation handoff
@@ -78,7 +78,7 @@ Success means a consultant can mock up a report with a client and avoid fantasy 
 ## Product Principles
 
 - Do not become a full BI platform.
-- Do not compete head-on with Metabase, Superset, Tableau, or Power BI on querying, governance, hosting, and permissions.
+- Do not compete head-on with BI platforms on querying, governance, hosting, and permissions.
 - Own the space between requirements, design, specification, and implementation.
 - Make drill-through and analytical journeys first-class concepts.
 - Make every mockup buildable, not just attractive.

@@ -7,14 +7,14 @@ Use Phantom to sell and deliver premium custom analytical React apps without try
 The delivery promise is:
 
 ```text
-Client workshop -> Phantom analytical design/spec -> React BI app implementation -> governed backend/data connection
+Client workshop -> Phantom analytical design/spec -> React BI app implementation -> thin governed data/API contract
 ```
 
 Phantom owns the workshop, design plane, analytical journey, implementation spec, and export handoff. It should plug into BI and data tools when useful, but it should not compete with them on query builders, warehouse governance, permissions engines, or hosted BI operations.
 
 ## Position
 
-We should not sell "Metabase replacement" or "Power BI clone."
+We should not sell "BI platform replacement" or "Power BI clone."
 
 We should sell:
 
@@ -27,8 +27,8 @@ The best client-facing offer is a packaged service:
 3. Design the target analytical journeys, including filters, drill-throughs, detail pages, and actions.
 4. Produce approved mockups and a build-ready spec.
 5. Export React implementation assets.
-6. Connect the app to the right backend for the client.
-7. Keep Power BI or Metabase for commodity/self-service reporting where it is the better fit.
+6. Connect the app to the client's existing data platform through a thin, explicit API/data contract.
+7. Keep commodity/self-service reporting outside Phantom when a client already has a tool for it.
 
 ## Recommended Architecture
 
@@ -66,49 +66,63 @@ It should own:
 - Client branding.
 - Custom UX that BI tools cannot deliver well.
 
-### Backend/Data Layer
+### Data/API Layer
 
-The backend should be chosen per client. Phantom should support adapters, not one mandatory backend.
+The data layer should be intentionally boring. Phantom should export the contract the app needs, then the implementation should connect that contract to the client's warehouse, semantic layer, dbt models, REST API, GraphQL API, or other existing data platform.
 
-## Backend Options
+Phantom should not make a named third-party BI tool part of the default delivery model.
 
-### Option A: Metabase-Assisted Delivery
+## Data Connection Options
 
-Use Metabase when the client needs fast database connectivity, saved analytical questions, internal self-service, and lower engineering overhead.
+### Option A: Client API Delivery
 
 Best for:
 
-- Internal reporting portals.
-- Clients with simple warehouse/database access.
-- Teams that want analysts to maintain some questions.
-- Fast prototypes that need real data quickly.
-- Commodity dashboards that do not justify custom engineering.
+- Clients with an existing product/data engineering team.
+- Operational analytics tied to workflows.
+- Apps that need authentication, permissions, writeback, or source-system actions.
+- Analytics experiences that combine reporting with process.
 
-Use Metabase for:
+Use client APIs for:
 
-- Database connections.
-- Saved questions/cards.
-- Lightweight models.
-- Internal dashboards.
-- Simple embedded charts where quality is acceptable.
-- Permission handling where it fits the client shape.
-
-Use React for:
-
-- Premium shell.
-- Client-facing UX.
-- Drill-through journeys.
-- Entity pages.
-- Custom tables.
-- Polished filters.
+- Metric endpoints.
+- Entity endpoints.
+- Drill-through detail endpoints.
+- Export endpoints.
+- Authentication and authorization.
 - Workflow actions.
-- Branded executive dashboards.
 
-Phantom should export a mapping from components to Metabase cards/questions where this path is chosen.
+Use Phantom as the contract between the workshop and engineering build.
 
-### Option B: Cube Or Semantic API Delivery
+### Option B: Warehouse Or dbt Delivery
 
-Use Cube or another semantic/query API when the client needs product-grade analytics, repeatable metric definitions, caching, and multi-tenant patterns.
+Best for:
+
+- Clients with Snowflake, BigQuery, Databricks, Postgres, or similar analytical stores.
+- Teams with dbt or modeled warehouse tables.
+- Reporting apps where read-only analytics is enough.
+- Engagements where speed matters and a thin API can sit over known tables/models.
+
+Use the warehouse/dbt layer for:
+
+- Governed source tables.
+- Reusable marts.
+- Metric SQL.
+- Entity detail queries.
+- Refresh cadence and data quality notes.
+
+Use Phantom to define:
+
+- Required tables or marts.
+- Required metrics and dimensions.
+- Grain and entity identity.
+- Drill-through payloads.
+- Filter contracts.
+- React data adapter interfaces.
+
+### Option C: Semantic API Delivery
+
+Use a semantic/query API only when the client genuinely needs product-grade metric reuse, caching, and multi-tenant query patterns.
 
 Best for:
 
@@ -119,7 +133,7 @@ Best for:
 - Performance-sensitive dashboards.
 - Teams with engineering ownership.
 
-Use the semantic layer for:
+Use the semantic API for:
 
 - Metric definitions.
 - Dimensions.
@@ -134,32 +148,7 @@ Use Phantom to define:
 - Drill-through payloads.
 - Filter contracts.
 - Data adapter interfaces.
-- React components consuming the semantic API.
-
-This is the strongest long-term architecture for custom analytical products.
-
-### Option C: Custom API Delivery
-
-Use a custom backend when the client already has a mature data stack or product engineering team.
-
-Best for:
-
-- Clients with existing APIs.
-- Snowflake/dbt/Postgres-heavy stacks.
-- Highly bespoke workflows.
-- Operational analytics with writeback or actions.
-- Apps that combine analytics with business process.
-
-Use custom APIs for:
-
-- Metric endpoints.
-- Entity endpoints.
-- Drill-through detail endpoints.
-- Export endpoints.
-- Authentication and authorization.
-- Workflow actions.
-
-Use Phantom as the contract between the workshop and engineering build.
+- React components consuming the API.
 
 ## Delivery Workflow
 
@@ -227,7 +216,7 @@ For Power BI Mode, export:
 ### 6. Build And Connect
 
 - Implement the React app shell.
-- Wire components to Metabase, Cube, or custom APIs.
+- Wire components to the agreed API, warehouse, dbt, or semantic data contract.
 - Replace mock data with real data adapters.
 - Validate filters and drill-throughs.
 - Run responsive and accessibility QA.
@@ -235,7 +224,7 @@ For Power BI Mode, export:
 
 ### 7. Support And Expansion
 
-- Keep commodity reports in Power BI/Metabase where appropriate.
+- Keep commodity reports in the client's existing BI/reporting tooling where appropriate.
 - Add new React analytical modules for high-value workflows.
 - Convert successful Phantom patterns into reusable templates.
 - Feed common components back into the open-source Phantom visual pack.
@@ -259,14 +248,7 @@ Use Power BI Mode when:
 - The value is in faster mockup/approval, not custom app UX.
 - Export realism matters more than design freedom.
 
-Use Metabase when:
-
-- Fast database-backed reporting is more important than bespoke UX.
-- The client wants self-service internal analytics.
-- Analysts should maintain questions/dashboards.
-- Embedded charts are acceptable for part of the experience.
-
-Use Cube/semantic APIs when:
+Use a semantic API when:
 
 - The app is productized or customer-facing.
 - Metrics need to be governed and reused.
@@ -274,7 +256,7 @@ Use Cube/semantic APIs when:
 - Multi-tenant filtering matters.
 - React should fully own the presentation layer.
 
-Use custom APIs when:
+Use client APIs when:
 
 - Analytics are tied to operational workflows.
 - The client already has API/data platform maturity.
@@ -292,7 +274,7 @@ To support this delivery model, Phantom needs:
 - A view/page/entity model.
 - A stable spec JSON.
 - React export scaffolding.
-- Backend adapter mapping for Metabase, Cube, and custom APIs.
+- Data contract mapping for client APIs, warehouses, dbt models, and optional semantic APIs.
 - Power BI compatibility warnings and export reports.
 - Workshop notes, comments, approvals, and implementation checklists.
 - Quality checks for design, export, and data completeness.
@@ -301,7 +283,7 @@ To support this delivery model, Phantom needs:
 
 - Building a full visual query builder too early.
 - Building our own permissions/governance platform.
-- Competing with Metabase on self-service BI.
+- Competing with self-service BI tools.
 - Competing with Power BI on enterprise BI administration.
 - Making React Product Mode weaker to preserve Power BI compatibility.
 - Exporting mockups without data contracts.
@@ -323,4 +305,3 @@ Potential service offers:
 The first wedge should be:
 
 > We redesign your most important reports into product-grade analytical experiences and give your team a build-ready React or Power BI implementation path.
-
