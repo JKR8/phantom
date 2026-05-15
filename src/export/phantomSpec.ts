@@ -1084,6 +1084,14 @@ export const checkPhantomReadiness = (spec: PhantomSpec, target: ExportMode = sp
     });
   }
 
+  if (spec.project.specification.signOffStatus !== 'approved') {
+    warnings.push({
+      severity: 'warning',
+      code: 'SPEC_NOT_APPROVED',
+      message: `Spec sign-off is ${spec.project.specification.signOffStatus || 'draft'}; confirm client approval before treating this as an implementation contract.`,
+    });
+  }
+
   for (const component of components) {
     if (component.dataRequirements.fields.length === 0 && !['textBox', 'banner'].includes(component.type)) {
       warnings.push({

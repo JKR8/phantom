@@ -502,6 +502,14 @@ const checkReadiness = (spec, target = spec.mode) => {
     errors.push({ severity: 'error', code: 'NO_COMPONENTS', message: 'Spec has no components to hand off.' });
   }
 
+  if (spec.project?.specification?.signOffStatus !== 'approved') {
+    warnings.push({
+      severity: 'warning',
+      code: 'SPEC_NOT_APPROVED',
+      message: `Spec sign-off is ${spec.project?.specification?.signOffStatus || 'draft'}; confirm client approval before treating this as an implementation contract.`,
+    });
+  }
+
   for (const component of components) {
     const fields = component.dataRequirements?.fields || [];
     if (fields.length === 0 && !['textBox', 'banner'].includes(component.type)) {

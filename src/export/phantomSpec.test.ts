@@ -551,6 +551,46 @@ describe('phantomSpec', () => {
     expect(report.warnings.map((issue) => issue.code)).not.toContain('MISSING_BUSINESS_QUESTIONS');
   });
 
+  it('warns when a spec has not been approved for implementation handoff', () => {
+    const draftSpec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [item({})],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      specification: {
+        signOffStatus: 'in-review',
+        businessQuestions: 'Which regions need intervention?',
+        audience: 'Executive sponsors',
+        decisions: 'Approve regional recovery actions.',
+        acceptanceCriteria: 'All agreed metrics and drill paths are present.',
+      },
+    });
+    const approvedSpec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [item({})],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      specification: {
+        signOffStatus: 'approved',
+        businessQuestions: 'Which regions need intervention?',
+        audience: 'Executive sponsors',
+        decisions: 'Approve regional recovery actions.',
+        acceptanceCriteria: 'All agreed metrics and drill paths are present.',
+      },
+    });
+
+    expect(checkPhantomReadiness(draftSpec, 'react').warnings.find((issue) => issue.code === 'SPEC_NOT_APPROVED')?.message)
+      .toContain('in-review');
+    expect(checkPhantomReadiness(approvedSpec, 'react').warnings.map((issue) => issue.code))
+      .not.toContain('SPEC_NOT_APPROVED');
+  });
+
   it('warns when design source mappings reference missing Phantom targets', () => {
     const spec = createPhantomSpec({
       scenario: 'Retail',
