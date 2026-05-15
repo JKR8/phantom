@@ -6,6 +6,7 @@ import {
   createDesignSourcesMarkdown,
   createHandoffNextActions,
   createHandoffRecommendation,
+  createPhantomDesignMappingSummary,
   createPhantomHandoffSummary,
   createPhantomSpec,
   createPhantomWorkshopIntent,
@@ -230,6 +231,21 @@ describe('phantomSpec', () => {
         signOffStatus: 'draft',
         businessQuestions: 'Which regions need intervention?',
         decisions: 'Prioritize stores for margin recovery.',
+        designEntryPoint: 'figma-led',
+        designSources: [
+          {
+            id: 'figma-1',
+            type: 'figmaFrame',
+            name: 'Executive concept',
+            linkedViewIds: ['main'],
+            linkedComponentIds: ['visual-1'],
+          },
+          {
+            id: 'figma-2',
+            type: 'screenshot',
+            name: 'Stakeholder sketch',
+          },
+        ],
       },
     });
 
@@ -246,6 +262,14 @@ describe('phantomSpec', () => {
       complete: false,
       present: ['business questions', 'decisions/actions'],
       missing: ['audience', 'acceptance criteria'],
+    });
+    expect(summary.designMapping).toEqual({
+      totalSources: 2,
+      mappedSources: 1,
+      unmappedSources: 1,
+      linkedViewIds: ['main'],
+      linkedComponentIds: ['visual-1'],
+      sourceIdsWithoutMappings: ['figma-2'],
     });
     expect(summary.counts).toMatchObject({
       components: 2,
@@ -295,6 +319,36 @@ describe('phantomSpec', () => {
       complete: true,
       present: ['business questions', 'audience', 'decisions/actions', 'acceptance criteria'],
       missing: [],
+    });
+  });
+
+  it('summarizes design-source mapping coverage for handoff agents', () => {
+    expect(createPhantomDesignMappingSummary([
+      {
+        id: 'figma-1',
+        type: 'figmaFrame',
+        name: 'Executive concept',
+        linkedViewIds: ['main'],
+        linkedComponentIds: ['visual-2', 'visual-1'],
+      },
+      {
+        id: 'screenshot-1',
+        type: 'screenshot',
+        name: 'Workshop sketch',
+        linkedViewIds: ['main'],
+      },
+      {
+        id: 'reference-1',
+        type: 'externalReference',
+        name: 'Brand guide',
+      },
+    ])).toEqual({
+      totalSources: 3,
+      mappedSources: 2,
+      unmappedSources: 1,
+      linkedViewIds: ['main'],
+      linkedComponentIds: ['visual-1', 'visual-2'],
+      sourceIdsWithoutMappings: ['reference-1'],
     });
   });
 

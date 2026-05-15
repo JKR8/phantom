@@ -111,7 +111,7 @@ For full implementation handoff:
 npm run phantom:spec -- export-handoff-pack path/to/spec.json ./handoff-pack
 ```
 
-Agents should read `handoff-summary.json` or `HANDOFF_MANIFEST.json` before generating code or build notes. These include the entry point, workshop intent, workshop completeness, readiness state, recommended handoff target, counts, and next actions in one small payload.
+Agents should read `handoff-summary.json` or `HANDOFF_MANIFEST.json` before generating code or build notes. These include the entry point, design mapping coverage, workshop intent, workshop completeness, readiness state, recommended handoff target, counts, and next actions in one small payload.
 
 ## Workshop Output
 

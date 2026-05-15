@@ -271,6 +271,7 @@ const inspectSpec = (spec, subject) => {
         designEntryPoint: spec.project?.designEntryPoint || 'phantom-led',
         designSources: spec.project?.designSources || [],
       },
+      designMapping: createDesignMappingSummary(spec.project?.designSources || []),
       workshopIntent,
       workshopCompleteness: createWorkshopIntentCompleteness(workshopIntent),
       readiness: {
@@ -320,6 +321,8 @@ const csvOption = (...names) => {
     ? value.split(',').map((item) => item.trim()).filter(Boolean)
     : [];
 };
+
+const uniqueSorted = (values) => [...new Set(values.filter(Boolean))].sort();
 
 const mergeDesignSource = (spec) => {
   const positional = positionalOptions();
@@ -982,6 +985,23 @@ const designSourcesMarkdown = (designSources = []) => {
     .join('\n');
 };
 
+const createDesignMappingSummary = (designSources = []) => {
+  const mappedSources = designSources.filter((source) =>
+    (source.linkedViewIds || []).length > 0 || (source.linkedComponentIds || []).length > 0,
+  );
+
+  return {
+    totalSources: designSources.length,
+    mappedSources: mappedSources.length,
+    unmappedSources: designSources.length - mappedSources.length,
+    linkedViewIds: uniqueSorted(designSources.flatMap((source) => source.linkedViewIds || [])),
+    linkedComponentIds: uniqueSorted(designSources.flatMap((source) => source.linkedComponentIds || [])),
+    sourceIdsWithoutMappings: designSources
+      .filter((source) => (source.linkedViewIds || []).length === 0 && (source.linkedComponentIds || []).length === 0)
+      .map((source) => source.id),
+  };
+};
+
 const reactComponentName = (type) =>
   `${String(type || 'Analytical')
     .replace(/[^a-zA-Z0-9]+/g, ' ')
@@ -1278,6 +1298,7 @@ const writeHandoffPack = async (spec, outDir) => {
     },
     readiness,
     handoffRecommendation,
+    designMapping: handoffSummary.designMapping,
     workshopIntent: handoffSummary.workshopIntent,
     workshopCompleteness: handoffSummary.workshopCompleteness,
     nextActions,
@@ -1310,6 +1331,14 @@ Generated from Phantom Spec ${spec.specVersion}.
 ## Design Sources
 
 ${designSourcesMarkdown(spec.project?.designSources || [])}
+
+## Design Mapping
+
+- Sources: ${handoffSummary.designMapping.totalSources}
+- Mapped sources: ${handoffSummary.designMapping.mappedSources}
+- Unmapped sources: ${handoffSummary.designMapping.unmappedSources}
+- Linked views: ${handoffSummary.designMapping.linkedViewIds.join(', ') || 'None'}
+- Linked components: ${handoffSummary.designMapping.linkedComponentIds.join(', ') || 'None'}
 
 ## Workshop Intent
 

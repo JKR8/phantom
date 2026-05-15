@@ -190,6 +190,15 @@ export interface PhantomHandoffRecommendation {
   guidance: string;
 }
 
+export interface PhantomDesignMappingSummary {
+  totalSources: number;
+  mappedSources: number;
+  unmappedSources: number;
+  linkedViewIds: string[];
+  linkedComponentIds: string[];
+  sourceIdsWithoutMappings: string[];
+}
+
 export interface PhantomHandoffSummary {
   subject: 'handoff-summary';
   project: {
@@ -198,6 +207,7 @@ export interface PhantomHandoffSummary {
     designEntryPoint: 'figma-led' | 'phantom-led';
     designSources: DesignSource[];
   };
+  designMapping: PhantomDesignMappingSummary;
   workshopIntent: PhantomWorkshopIntent;
   workshopCompleteness: PhantomWorkshopIntentCompleteness;
   readiness: {
@@ -564,6 +574,23 @@ export const createDesignSourcesMarkdown = (designSources: DesignSource[]) => {
     .join('\n');
 };
 
+export const createPhantomDesignMappingSummary = (designSources: DesignSource[]): PhantomDesignMappingSummary => {
+  const mappedSources = designSources.filter((source) =>
+    (source.linkedViewIds || []).length > 0 || (source.linkedComponentIds || []).length > 0,
+  );
+
+  return {
+    totalSources: designSources.length,
+    mappedSources: mappedSources.length,
+    unmappedSources: designSources.length - mappedSources.length,
+    linkedViewIds: uniq(designSources.flatMap((source) => source.linkedViewIds || [])),
+    linkedComponentIds: uniq(designSources.flatMap((source) => source.linkedComponentIds || [])),
+    sourceIdsWithoutMappings: designSources
+      .filter((source) => (source.linkedViewIds || []).length === 0 && (source.linkedComponentIds || []).length === 0)
+      .map((source) => source.id),
+  };
+};
+
 const componentName = (type: string) =>
   `${type
     .replace(/[^a-zA-Z0-9]+/g, ' ')
@@ -907,6 +934,7 @@ export const createPhantomHandoffSummary = (spec: PhantomSpec): PhantomHandoffSu
       designEntryPoint: spec.project.designEntryPoint,
       designSources: spec.project.designSources,
     },
+    designMapping: createPhantomDesignMappingSummary(spec.project.designSources),
     workshopIntent,
     workshopCompleteness: createWorkshopIntentCompleteness(workshopIntent),
     readiness: {
