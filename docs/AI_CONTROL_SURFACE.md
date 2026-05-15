@@ -59,6 +59,7 @@ npm run phantom:spec -- inspect path/to/spec.json components
 npm run phantom:spec -- inspect path/to/spec.json drill-actions
 npm run phantom:spec -- inspect path/to/spec.json data-requirements
 npm run phantom:spec -- inspect path/to/spec.json design-sources
+npm run phantom:spec -- inspect path/to/spec.json workshop-intent
 npm run phantom:spec -- inspect path/to/spec.json react-backlog
 npm run phantom:spec -- inspect path/to/spec.json powerbi-build-matrix
 npm run phantom:spec -- inspect path/to/spec.json handoff-summary
@@ -78,9 +79,11 @@ npm run phantom:spec -- import-design-source path/to/spec.json figmaFrame "Clien
 
 `diff` returns project, mode, component, drill action, and data requirement changes between two Phantom specs. Use it after workshops or AI edits before regenerating implementation artifacts.
 
-`inspect` returns focused JSON for `components`, `drill-actions`, `data-requirements`, `react-backlog`, `powerbi-build-matrix`, or `handoff-summary`, so agents can query the spec before deciding what to generate or validate.
+`inspect` returns focused JSON for `components`, `drill-actions`, `data-requirements`, `design-sources`, `workshop-intent`, `react-backlog`, `powerbi-build-matrix`, or `handoff-summary`, so agents can query the spec before deciding what to generate or validate.
 
 `inspect design-sources` returns the current design entry point and linked design sources. Use it to decide whether the project is Figma-led or Phantom-led before generating implementation tasks.
+
+`inspect workshop-intent` returns the business questions, audience, decisions/actions, acceptance criteria, and build notes. Use it before generating React or Power BI implementation work so agents preserve the client workshop intent.
 
 `inspect react-backlog` returns the same machine-readable implementation task list used by React starter and handoff pack exports. Use it when an agent needs to plan React work without generating files.
 
@@ -119,6 +122,7 @@ Future commands should include:
 - `phantom inspect drill-actions <file>` implemented as `npm run phantom:spec -- inspect <file> drill-actions`
 - `phantom inspect data-requirements <file>` implemented as `npm run phantom:spec -- inspect <file> data-requirements`
 - `phantom inspect design-sources <file>` implemented as `npm run phantom:spec -- inspect <file> design-sources`
+- `phantom inspect workshop-intent <file>` implemented as `npm run phantom:spec -- inspect <file> workshop-intent`
 - `phantom inspect react-backlog <file>` implemented as `npm run phantom:spec -- inspect <file> react-backlog`
 - `phantom inspect powerbi-build-matrix <file>` implemented as `npm run phantom:spec -- inspect <file> powerbi-build-matrix`
 - `phantom inspect handoff-summary <file>` implemented as `npm run phantom:spec -- inspect <file> handoff-summary`

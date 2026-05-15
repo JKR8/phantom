@@ -8,6 +8,7 @@ import {
   createHandoffRecommendation,
   createPhantomHandoffSummary,
   createPhantomSpec,
+  createPhantomWorkshopIntent,
   createPowerBiImplementationGuide,
   createPowerBiImplementationGuideMarkdown,
   createReactImplementationBacklog,
@@ -244,6 +245,35 @@ describe('phantomSpec', () => {
       'Power BI blocker: Profit Distribution is design-only and cannot be treated as Power BI-ready.',
     );
     expect(createHandoffNextActions(summary.readiness.react, summary.readiness.powerBi)).toEqual(summary.nextActions);
+  });
+
+  it('creates a focused workshop intent payload for agents', () => {
+    const spec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [item({})],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      specification: {
+        signOffStatus: 'draft',
+        businessQuestions: 'Which regions need intervention?',
+        audience: 'Executive sponsors',
+        decisions: 'Approve the store recovery plan.',
+        acceptanceCriteria: 'Client can trace every KPI to an agreed metric.',
+        buildNotes: 'Keep drill-through under two clicks.',
+      },
+    });
+
+    expect(createPhantomWorkshopIntent(spec)).toEqual({
+      subject: 'workshop-intent',
+      businessQuestions: 'Which regions need intervention?',
+      audience: 'Executive sponsors',
+      decisions: 'Approve the store recovery plan.',
+      acceptanceCriteria: 'Client can trace every KPI to an agreed metric.',
+      buildNotes: 'Keep drill-through under two clicks.',
+    });
   });
 
   it('replaces design sources by id instead of duplicating them', () => {

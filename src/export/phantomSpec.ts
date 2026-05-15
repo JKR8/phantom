@@ -126,13 +126,7 @@ export interface PhantomDataContract {
     designEntryPoint: 'figma-led' | 'phantom-led';
     designSources: DesignSource[];
   };
-  workshopIntent: {
-    businessQuestions?: string;
-    audience?: string;
-    decisions?: string;
-    acceptanceCriteria?: string;
-    buildNotes?: string;
-  };
+  workshopIntent: PhantomWorkshopIntent;
   dataSources: unknown;
   fields: PhantomDataContractField[];
   metrics: string[];
@@ -153,7 +147,7 @@ export interface PhantomPowerBiImplementationGuide {
     designEntryPoint: 'figma-led' | 'phantom-led';
     designSources: DesignSource[];
   };
-  workshopIntent: PhantomDataContract['workshopIntent'];
+  workshopIntent: PhantomWorkshopIntent;
   readiness: PhantomReadinessReport;
   summary: {
     views: number;
@@ -204,7 +198,7 @@ export interface PhantomHandoffSummary {
     designEntryPoint: 'figma-led' | 'phantom-led';
     designSources: DesignSource[];
   };
-  workshopIntent: PhantomDataContract['workshopIntent'];
+  workshopIntent: PhantomWorkshopIntent;
   readiness: {
     react: PhantomReadinessReport;
     powerBi: PhantomReadinessReport;
@@ -223,6 +217,15 @@ export interface PhantomHandoffSummary {
     powerBiUnsupportedVisuals: number;
   };
   nextActions: string[];
+}
+
+export interface PhantomWorkshopIntent {
+  subject?: 'workshop-intent';
+  businessQuestions?: string;
+  audience?: string;
+  decisions?: string;
+  acceptanceCriteria?: string;
+  buildNotes?: string;
 }
 
 export interface PhantomDesignSourceInput {
@@ -480,7 +483,7 @@ const getDataContractFieldKind = (spec: PhantomSpec, field: string): PhantomData
 
 const markdownList = (items: string[]) => (items.length ? items.map((item) => `- ${item}`).join('\n') : '- None specified');
 
-const createWorkshopIntent = (specification: DashboardSpecification): PhantomDataContract['workshopIntent'] => ({
+const createWorkshopIntent = (specification: DashboardSpecification): PhantomWorkshopIntent => ({
   businessQuestions: specification.businessQuestions,
   audience: specification.audience,
   decisions: specification.decisions,
@@ -489,6 +492,11 @@ const createWorkshopIntent = (specification: DashboardSpecification): PhantomDat
 });
 
 const hasText = (value: unknown) => typeof value === 'string' && value.trim().length > 0;
+
+export const createPhantomWorkshopIntent = (spec: PhantomSpec): PhantomWorkshopIntent => ({
+  subject: 'workshop-intent',
+  ...createWorkshopIntent(spec.project.specification),
+});
 
 export const createDesignSourcesMarkdown = (designSources: DesignSource[]) => {
   if (!designSources.length) return '- None specified';
