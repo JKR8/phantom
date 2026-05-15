@@ -37,6 +37,7 @@ import {
   createPhantomDataContract,
   createPhantomDataContractMarkdown,
   createDesignSourcesMarkdown,
+  createPhantomDesignHandoff,
   createPhantomHandoffSummary,
   createPhantomSpec,
   createPowerBiImplementationGuide,
@@ -235,6 +236,7 @@ export const ExportButton: React.FC = () => {
       const powerBiGuide = createPowerBiImplementationGuide(spec);
       const reactBacklog = createReactImplementationBacklog(spec);
       const handoffSummary = createPhantomHandoffSummary(spec);
+      const designHandoff = createPhantomDesignHandoff(spec);
       const date = new Date().toISOString().split('T')[0];
       const zip = new JSZip();
       const manifest = {
@@ -254,6 +256,7 @@ export const ExportButton: React.FC = () => {
         implementationGate: handoffSummary.implementationGate,
         dataPath: handoffSummary.dataPath,
         designWorkflow: handoffSummary.designWorkflow,
+        designHandoff,
         designMapping: handoffSummary.designMapping,
         workshopIntent: handoffSummary.workshopIntent,
         workshopCompleteness: handoffSummary.workshopCompleteness,
@@ -261,6 +264,7 @@ export const ExportButton: React.FC = () => {
         artifacts: {
           spec: 'phantom-spec.json',
           handoffSummary: 'handoff-summary.json',
+          designHandoff: 'design-handoff.json',
           dataContract: ['data-contract/data-contract.json', 'data-contract/DATA_CONTRACT.md'],
           powerBi: ['power-bi/power-bi-implementation-guide.json', 'power-bi/POWER_BI_IMPLEMENTATION_GUIDE.md'],
           react: ['react-product/REACT_IMPLEMENTATION_NOTES.md', 'react-product/react-implementation-backlog.json', 'react-product/REACT_IMPLEMENTATION_BACKLOG.md', 'react-product/phantom-spec.json', 'react-product/phantom-data-contract.json'],
@@ -335,6 +339,12 @@ ${handoffSummary.designWorkflow.requiredNextSteps.map((step) => `- ${step}`).joi
 - Linked views: ${handoffSummary.designMapping.linkedViewIds.join(', ') || 'None'}
 - Linked components: ${handoffSummary.designMapping.linkedComponentIds.join(', ') || 'None'}
 
+## Design Handoff
+
+- Source mode: ${designHandoff.sourceMode}
+- Can skip Figma: ${designHandoff.canSkipFigma ? 'Yes' : 'No'}
+- Missing component mappings: ${designHandoff.missingMappings.join(', ') || 'None'}
+
 ## Workshop Intent
 
 - Business questions: ${contract.workshopIntent.businessQuestions || 'Not specified'}
@@ -356,6 +366,7 @@ ${handoffSummary.designWorkflow.requiredNextSteps.map((step) => `- ${step}`).joi
 - \`power-bi/\`: Power BI build guide with readiness, visual support status, fields, and drill-through notes.
 - \`react-product/\`: React implementation starting notes plus the same spec and data contract.
 - \`handoff-summary.json\`: first-pass implementation gate, design workflow, design mapping, readiness, recommendation, counts, and next actions for agents.
+- \`design-handoff.json\`: component-level Figma/default provenance and missing design mappings for agents and engineers.
 - \`HANDOFF_MANIFEST.json\`: machine-readable index for agents and engineering automation.
 `;
       const reactNotes = `# React Product Implementation Notes
@@ -404,6 +415,12 @@ ${createDesignSourcesMarkdown(spec.project.designSources)}
 - Linked views: ${handoffSummary.designMapping.linkedViewIds.join(', ') || 'None'}
 - Linked components: ${handoffSummary.designMapping.linkedComponentIds.join(', ') || 'None'}
 
+## Design Handoff
+
+- Source mode: ${designHandoff.sourceMode}
+- Can skip Figma: ${designHandoff.canSkipFigma ? 'Yes' : 'No'}
+- Missing component mappings: ${designHandoff.missingMappings.join(', ') || 'None'}
+
 ## Component Backlog
 
 ${createReactImplementationBacklogMarkdown(reactBacklog)}
@@ -417,6 +434,7 @@ npm run phantom:spec -- export-react phantom-spec.json ./generated-app
 
       zip.file('phantom-spec.json', JSON.stringify(spec, null, 2));
       zip.file('handoff-summary.json', JSON.stringify(handoffSummary, null, 2));
+      zip.file('design-handoff.json', JSON.stringify(designHandoff, null, 2));
       zip.file('HANDOFF_MANIFEST.json', JSON.stringify(manifest, null, 2));
       zip.file('README.md', readme);
       zip.file('data-contract/data-contract.json', JSON.stringify(contract, null, 2));

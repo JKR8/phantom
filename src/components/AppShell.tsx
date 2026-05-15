@@ -258,6 +258,8 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
   const setLayoutMode = useStore((state) => state.setLayoutMode);
   const selectedArchetype = useStore((state) => state.selectedArchetype);
   const setArchetype = useStore((state) => state.setArchetype);
+  const exportMode = useStore((state) => state.exportMode);
+  const setExportMode = useStore((state) => state.setExportMode);
   const useVegaRendering = useStore((state) => state.useVegaRendering);
   const setUseVegaRendering = useStore((state) => state.setUseVegaRendering);
   const canvasMode = useStore((state) => state.canvasMode);
@@ -389,6 +391,34 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
                   Visual Lab
                 </Button>
               </Tooltip>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '8px', paddingLeft: '8px', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>
+                <Tooltip content="React Product Mode: unconstrained analytical app handoff" relationship="description">
+                  <Button
+                    appearance={exportMode === 'react' ? 'primary' : 'subtle'}
+                    size="small"
+                    onClick={() => setExportMode('react')}
+                    style={{
+                      color: exportMode === 'react' ? 'white' : 'rgba(255,255,255,0.7)',
+                      minWidth: '112px',
+                    }}
+                  >
+                    React Product
+                  </Button>
+                </Tooltip>
+                <Tooltip content="Power BI Mode: constrain visuals and specs to realistic Power BI implementation" relationship="description">
+                  <Button
+                    appearance={exportMode === 'powerBi' ? 'primary' : 'subtle'}
+                    size="small"
+                    onClick={() => setExportMode('powerBi')}
+                    style={{
+                      color: exportMode === 'powerBi' ? 'white' : 'rgba(255,255,255,0.7)',
+                      minWidth: '82px',
+                    }}
+                  >
+                    Power BI
+                  </Button>
+                </Tooltip>
+              </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: '8px', paddingLeft: '8px', borderLeft: '1px solid rgba(255,255,255,0.2)' }}>
                 <Tooltip content="Toggle between PBI mode (fixed canvas) and Whiteboard mode (zoom, pan, annotations)" relationship="description">
                   <Button
