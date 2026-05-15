@@ -20,6 +20,7 @@ import {
   createPhantomDesignMappingSummary,
   createPhantomDesignWorkflow,
   createPhantomSpec,
+  createPhantomImplementationGate,
   createPhantomWorkshopIntentCompleteness,
 } from '../export';
 import type { DashboardSpecification, DataSourceReference, DataSourceReferenceType, DesignSource, DesignSourceType } from '../types';
@@ -217,7 +218,12 @@ export const SpecificationPanel: React.FC = () => {
     () => createHandoffRecommendation(reactReadiness.ready, powerBiReadiness.ready),
     [powerBiReadiness.ready, reactReadiness.ready],
   );
+  const implementationGate = React.useMemo(
+    () => createPhantomImplementationGate(currentSpec),
+    [currentSpec],
+  );
   const visibleIssues = [...powerBiReadiness.errors, ...powerBiReadiness.warnings].slice(0, 3);
+  const visibleGateNextSteps = implementationGate.requiredNextSteps.slice(0, 3);
 
   const handleChange = (field: keyof DashboardSpecification, value: string) => {
     updateSpecification({ [field]: value });
@@ -404,6 +410,73 @@ export const SpecificationPanel: React.FC = () => {
         </div>
         <Text className={styles.hint}>
           These checks match the Phantom Spec export and CLI readiness reports.
+        </Text>
+      </div>
+
+      {/* Implementation Gate */}
+      <div className={styles.section}>
+        <Text className={styles.sectionHeader}>Implementation Gate</Text>
+        <div className={styles.readinessCard}>
+          <Text className={styles.readinessLabel}>Build Contract</Text>
+          <Badge
+            appearance="filled"
+            color={implementationGate.readyForImplementation ? 'success' : 'warning'}
+          >
+            {implementationGate.readyForImplementation ? 'Ready' : 'Not Ready'}
+          </Badge>
+          <Text className={styles.issueText}>
+            Target: {getHandoffTargetLabel(implementationGate.target)}
+          </Text>
+        </div>
+        <div className={styles.metricGrid}>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Approved</Text>
+            <Badge appearance="filled" color={implementationGate.approvedForImplementation ? 'success' : 'warning'}>
+              {implementationGate.approvedForImplementation ? 'Yes' : 'No'}
+            </Badge>
+          </div>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Design</Text>
+            <Badge appearance="filled" color={implementationGate.designReady ? 'success' : 'warning'}>
+              {implementationGate.designReady ? 'Ready' : 'Blocked'}
+            </Badge>
+          </div>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Data Path</Text>
+            <Badge appearance="filled" color={implementationGate.dataPathReady ? 'success' : 'warning'}>
+              {implementationGate.dataPathReady ? 'Ready' : 'Blocked'}
+            </Badge>
+          </div>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Workshop Intent</Text>
+            <Badge appearance="filled" color={implementationGate.workshopIntentComplete ? 'success' : 'warning'}>
+              {implementationGate.workshopIntentComplete ? 'Ready' : 'Missing'}
+            </Badge>
+          </div>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>React Product</Text>
+            <Badge appearance="filled" color={implementationGate.reactReady ? 'success' : 'danger'}>
+              {implementationGate.reactReady ? 'Ready' : 'Blocked'}
+            </Badge>
+          </div>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Power BI</Text>
+            <Badge appearance="filled" color={implementationGate.powerBiReady ? 'success' : 'danger'}>
+              {implementationGate.powerBiReady ? 'Ready' : 'Blocked'}
+            </Badge>
+          </div>
+        </div>
+        <div className={styles.issueList}>
+          {visibleGateNextSteps.length === 0 ? (
+            <Text className={styles.issueText}>No implementation gate blockers detected.</Text>
+          ) : visibleGateNextSteps.map((step) => (
+            <Text key={step} className={styles.issueText}>
+              Next: {step}
+            </Text>
+          ))}
+        </div>
+        <Text className={styles.hint}>
+          The exported handoff pack includes this same gate as implementation-gate.json for agents and engineers.
         </Text>
       </div>
 
