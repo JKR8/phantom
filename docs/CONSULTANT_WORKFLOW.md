@@ -66,6 +66,8 @@ React handoff should include:
 - `data-contract/DATA_CONTRACT.md`
 - `react-starter/`
 - React implementation backlog
+- Route/view definitions
+- Typed component prop contracts
 - Drill action definitions
 - Data adapter stubs
 - Design-source references when Figma-led

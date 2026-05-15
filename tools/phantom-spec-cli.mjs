@@ -757,6 +757,28 @@ const writeReactStarter = async (spec, outDir) => {
   const backlog = createReactBacklog(spec);
   const designMapping = createDesignMappingSummary(spec.project?.designSources || []);
   const designWorkflow = createDesignWorkflow(spec);
+  const routeDefinitions = (spec.views || []).map((view, index) => ({
+    viewId: view.id,
+    name: view.name,
+    path: index === 0 ? '/' : `/${slug(view.name || view.id)}`,
+    componentIds: (view.components || []).map((component) => component.id),
+    drillTargets: (spec.interactions?.drillActions || [])
+      .filter((action) => action.targetType === 'view' && action.targetId === view.id)
+      .map((action) => action.id),
+  }));
+  const componentContracts = components.map((component) => ({
+    id: component.id,
+    title: component.title,
+    type: component.type,
+    viewId: (spec.views || []).find((view) => (view.components || []).some((item) => item.id === component.id))?.id,
+    layout: component.layout,
+    props: component.props || {},
+    dataRequirements: component.dataRequirements,
+    exportTargets: component.exportTargets,
+    designSources: (spec.project?.designSources || [])
+      .filter((source) => (source.linkedComponentIds || []).includes(component.id))
+      .map((source) => source.id),
+  }));
   await rm(outDir, { recursive: true, force: true });
   await mkdir(`${outDir}/src`, { recursive: true });
 
@@ -789,10 +811,12 @@ import spec from './phantom-spec.json';
 import dataContract from './phantom-data-contract.json';
 import designWorkflow from './design-workflow.json';
 import { getComponentDataRequest } from './data-adapter';
+import { componentContractsById, type ComponentContract } from './component-contracts';
 import { drillActions } from './drill-actions';
+import { routeDefinitions } from './routes';
 import './styles.css';
 
-const ComponentCard = ({ component }: { component: any }) => (
+const ComponentCard = ({ component }: { component: ComponentContract }) => (
   <section className="component-card">
     <div className="component-header">
       <strong>{component.title}</strong>
@@ -813,17 +837,18 @@ const App = () => (
         <span>{spec.project.designEntryPoint}</span>
         <span>{designWorkflow.designPlane}</span>
         <span>{designWorkflow.status}</span>
-        <span>{spec.views.length} view(s)</span>
+        <span>{routeDefinitions.length} route(s)</span>
         <span>{dataContract.fields.length} field(s)</span>
         <span>{drillActions.length} drill action(s)</span>
       </div>
     </header>
-    {spec.views.map((view: any) => (
-      <div key={view.id}>
-        <h2>{view.name}</h2>
+    {routeDefinitions.map((route) => (
+      <div key={route.viewId}>
+        <h2>{route.name}</h2>
+        <p className="route-meta">{route.path} - {route.componentIds.length} component(s) - {route.drillTargets.length} incoming drill action(s)</p>
         <div className="grid">
-          {view.components.map((component: any) => (
-            <ComponentCard key={component.id} component={component} />
+          {route.componentIds.map((componentId) => (
+            <ComponentCard key={componentId} component={componentContractsById[componentId]} />
           ))}
         </div>
       </div>
@@ -873,6 +898,12 @@ h1 {
   font-size: 12px;
 }
 
+.route-meta {
+  color: #64748b;
+  font-size: 13px;
+  margin: -8px 0 14px;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -916,6 +947,8 @@ It includes:
 - the exported Phantom Spec
 - the exported Phantom data contract
 - a typed data adapter stub
+- route/view definitions
+- typed component prop contracts
 - drill action definitions for routes/detail panels
 - a machine-readable design workflow contract
 - a React/Vite shell
@@ -926,10 +959,11 @@ It includes:
 
 1. Replace placeholder cards with production components.
 2. Wire \`src/data-adapter.ts\` to the client API, warehouse/dbt model, or semantic API.
-3. Implement drill actions from \`spec.interactions.drillActions\`.
-4. Review \`src/design-workflow.json\` before deciding whether to pull from Figma or continue with Phantom defaults.
-5. Confirm sign-off status is approved before treating the starter as an implementation contract.
-6. Apply any Figma/design-source references from \`spec.project.designSources\`.
+3. Implement routes from \`src/routes.ts\` and component props from \`src/component-contracts.ts\`.
+4. Implement drill actions from \`spec.interactions.drillActions\`.
+5. Review \`src/design-workflow.json\` before deciding whether to pull from Figma or continue with Phantom defaults.
+6. Confirm sign-off status is approved before treating the starter as an implementation contract.
+7. Apply any Figma/design-source references from \`spec.project.designSources\`.
 
 ## Project Status
 
@@ -1030,6 +1064,60 @@ export type DrillAction = {
 export const drillActions = ${JSON.stringify(spec.interactions?.drillActions || [], null, 2)} satisfies DrillAction[];
 `;
 
+  const routesTs = `export type PhantomRouteDefinition = {
+  viewId: string;
+  name: string;
+  path: string;
+  componentIds: string[];
+  drillTargets: string[];
+};
+
+export const routeDefinitions = ${JSON.stringify(routeDefinitions, null, 2)} satisfies PhantomRouteDefinition[];
+
+export const routeDefinitionsByViewId = Object.fromEntries(
+  routeDefinitions.map((route) => [route.viewId, route]),
+) as Record<string, PhantomRouteDefinition>;
+`;
+
+  const componentContractsTs = `export type PhantomLayout = {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+};
+
+export type PhantomComponentDataRequirements = {
+  fields: string[];
+  metrics: string[];
+  dimensions: string[];
+};
+
+export type PhantomComponentExportStatus = 'ready' | 'approximate' | 'unsupported';
+
+export type PhantomComponentExportTargets = {
+  react: { status: PhantomComponentExportStatus; notes?: string[] };
+  powerBi: { status: PhantomComponentExportStatus; notes?: string[] };
+};
+
+export type ComponentContract = {
+  id: string;
+  title: string;
+  type: string;
+  viewId: string;
+  layout: PhantomLayout;
+  props: Record<string, unknown>;
+  dataRequirements: PhantomComponentDataRequirements;
+  exportTargets: PhantomComponentExportTargets;
+  designSources: string[];
+};
+
+export const componentContracts = ${JSON.stringify(componentContracts, null, 2)} satisfies ComponentContract[];
+
+export const componentContractsById = Object.fromEntries(
+  componentContracts.map((component) => [component.id, component]),
+) as Record<string, ComponentContract>;
+`;
+
   await writeFile(`${outDir}/package.json`, `${JSON.stringify(packageJson, null, 2)}\n`);
   await writeFile(`${outDir}/index.html`, '<div id="root"></div><script type="module" src="/src/App.tsx"></script>\n');
   await writeFile(`${outDir}/tsconfig.json`, `${JSON.stringify({
@@ -1067,13 +1155,15 @@ export default defineConfig({
   await writeFile(`${outDir}/src/design-workflow.json`, `${JSON.stringify(designWorkflow, null, 2)}\n`);
   await writeFile(`${outDir}/src/data-adapter.ts`, dataAdapterTs);
   await writeFile(`${outDir}/src/drill-actions.ts`, drillActionsTs);
+  await writeFile(`${outDir}/src/routes.ts`, routesTs);
+  await writeFile(`${outDir}/src/component-contracts.ts`, componentContractsTs);
   await writeFile(`${outDir}/react-implementation-backlog.json`, `${JSON.stringify(backlog, null, 2)}\n`);
   await writeFile(`${outDir}/REACT_IMPLEMENTATION_BACKLOG.md`, `# React Implementation Backlog\n\n${reactBacklogMarkdown(backlog)}\n`);
   await writeFile(`${outDir}/README.md`, readme);
 
   return {
     outDir,
-    files: ['package.json', 'index.html', 'tsconfig.json', 'vite.config.ts', 'src/App.tsx', 'src/styles.css', 'src/phantom-spec.json', 'src/phantom-data-contract.json', 'src/design-workflow.json', 'src/data-adapter.ts', 'src/drill-actions.ts', 'react-implementation-backlog.json', 'REACT_IMPLEMENTATION_BACKLOG.md', 'README.md'],
+    files: ['package.json', 'index.html', 'tsconfig.json', 'vite.config.ts', 'src/App.tsx', 'src/styles.css', 'src/phantom-spec.json', 'src/phantom-data-contract.json', 'src/design-workflow.json', 'src/data-adapter.ts', 'src/drill-actions.ts', 'src/routes.ts', 'src/component-contracts.ts', 'react-implementation-backlog.json', 'REACT_IMPLEMENTATION_BACKLOG.md', 'README.md'],
     components: components.length,
     fields: dataContract.fields.length,
     drillActions: dataContract.drillActions.length,
