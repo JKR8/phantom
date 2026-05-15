@@ -246,6 +246,80 @@ describe('phantom spec CLI', () => {
     }
   }, 30000);
 
+  it('exports focused React Product build packs for agent handoff', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'phantom-react-build-pack-'));
+    const specPath = join(tempDir, 'spec.json');
+    const outDir = join(tempDir, 'react-build-pack');
+    const spec = createReadySpec();
+
+    try {
+      await writeFile(specPath, `${JSON.stringify(spec, null, 2)}\n`);
+      const { stdout } = await execFileAsync(
+        process.execPath,
+        ['tools/phantom-spec-cli.mjs', 'export-react-build-pack', specPath, outDir],
+        { cwd: process.cwd() },
+      );
+      const result = JSON.parse(stdout);
+
+      expect(result.files).toEqual([
+        'phantom-spec.json',
+        'phantom-data-contract.json',
+        'design-handoff.json',
+        'implementation-gate.json',
+        'react-implementation-backlog.json',
+        'REACT_IMPLEMENTATION_BACKLOG.md',
+        'REACT_IMPLEMENTATION_NOTES.md',
+        'REACT_BUILD_MANIFEST.json',
+      ]);
+      expect(result).toMatchObject({
+        ready: true,
+        implementationReady: true,
+        components: 2,
+        fields: 3,
+        drillActions: 1,
+        reactImplementationTasks: 2,
+      });
+
+      const manifest = JSON.parse(await readFile(join(outDir, 'REACT_BUILD_MANIFEST.json'), 'utf8'));
+      expect(manifest).toMatchObject({
+        target: 'react-product',
+        implementationGate: {
+          subject: 'implementation-gate',
+          readyForImplementation: true,
+          reactReady: true,
+        },
+        designHandoff: {
+          subject: 'design-handoff',
+          sourceMode: 'figma-imported',
+          missingMappings: [],
+        },
+        summary: {
+          components: 2,
+          drillActions: 1,
+          reactImplementationTasks: 2,
+        },
+      });
+      expect(manifest.artifacts.backlog).toEqual([
+        'react-implementation-backlog.json',
+        'REACT_IMPLEMENTATION_BACKLOG.md',
+      ]);
+
+      const contract = JSON.parse(await readFile(join(outDir, 'phantom-data-contract.json'), 'utf8'));
+      expect(contract.workshopIntent.businessQuestions).toBe('Which regions are growing?');
+      expect(contract.drillActions).toHaveLength(1);
+
+      const backlog = JSON.parse(await readFile(join(outDir, 'react-implementation-backlog.json'), 'utf8'));
+      expect(backlog.map((task: { componentId: string }) => task.componentId)).toEqual(['visual-1', 'visual-2']);
+
+      const notes = await readFile(join(outDir, 'REACT_IMPLEMENTATION_NOTES.md'), 'utf8');
+      expect(notes).toContain('# React Product Build Pack');
+      expect(notes).toContain('Ready for implementation: Yes');
+      expect(notes).toContain('## Component Backlog');
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  }, 30000);
+
   it('inspects mixed Figma and Phantom-default design handoff for agents', async () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'phantom-mixed-design-handoff-'));
     const specPath = join(tempDir, 'spec.json');

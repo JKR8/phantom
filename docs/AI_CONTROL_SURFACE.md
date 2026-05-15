@@ -52,6 +52,7 @@ npm run phantom:spec -- diff before.json after.json
 npm run phantom:spec -- readiness path/to/spec.json react
 npm run phantom:spec -- readiness path/to/spec.json powerBi
 npm run phantom:spec -- export-react path/to/spec.json ./generated-app
+npm run phantom:spec -- export-react-build-pack path/to/spec.json ./react-build-pack
 npm run phantom:spec -- export-data-contract path/to/spec.json ./handoff
 npm run phantom:spec -- export-powerbi-guide path/to/spec.json ./handoff
 npm run phantom:spec -- export-handoff-pack path/to/spec.json ./handoff-pack
@@ -141,6 +142,8 @@ node tools/phantom-spec-cli.mjs import-data-source path/to/spec.json --type dbt 
 
 `export-react` creates a deterministic Vite/React starter with the Phantom Spec, data contract, design workflow contract, design handoff contract, route/view definitions, typed component prop contracts, typed data adapter stub, drill action definitions, placeholder component cards, component-level design-source links, design mapping coverage in the README, and a README that tells engineers what to wire next.
 
+`export-react-build-pack` creates a focused React Product implementation folder with `phantom-spec.json`, `phantom-data-contract.json`, `design-handoff.json`, `implementation-gate.json`, `react-implementation-backlog.json`, `REACT_IMPLEMENTATION_BACKLOG.md`, `REACT_IMPLEMENTATION_NOTES.md`, and `REACT_BUILD_MANIFEST.json`. Use it when an agent or engineer needs the workshop-to-React build contract without generating a runnable starter app.
+
 `export-data-contract` creates `data-contract.json` and `DATA_CONTRACT.md` with fields, metrics, dimensions, component data requirements, filters, drill actions, design workflow, design-source references, and implementation notes. This is the handoff artifact for client APIs, warehouse/dbt models, optional semantic endpoints, and agents that need a stable analytical contract.
 
 `export-powerbi-guide` creates `power-bi-implementation-guide.json` and `POWER_BI_IMPLEMENTATION_GUIDE.md` with the implementation gate, design workflow, Power BI readiness, visual support statuses, field requirements, drill-through notes, blockers, and a build checklist.
@@ -150,7 +153,7 @@ node tools/phantom-spec-cli.mjs import-data-source path/to/spec.json --type dbt 
 The browser export menu also provides workshop-friendly implementation exports:
 
 - `Handoff Pack (.zip)` bundles the canonical spec, handoff summary, implementation gate, design handoff, data contract, Power BI guide, React implementation notes, and a machine-readable manifest.
-- `React Product Build Pack` creates a React-focused zip with `phantom-spec.json`, `phantom-data-contract.json`, `design-handoff.json`, `implementation-gate.json`, `react-implementation-backlog.json`, `REACT_IMPLEMENTATION_BACKLOG.md`, `REACT_IMPLEMENTATION_NOTES.md`, and `REACT_BUILD_MANIFEST.json`.
+- `React Product Build Pack` creates a React-focused zip with `phantom-spec.json`, `phantom-data-contract.json`, `design-handoff.json`, `implementation-gate.json`, `react-implementation-backlog.json`, `REACT_IMPLEMENTATION_BACKLOG.md`, `REACT_IMPLEMENTATION_NOTES.md`, and `REACT_BUILD_MANIFEST.json`. The CLI equivalent is `export-react-build-pack`.
 - `Power BI Build Guide` creates the Power BI implementation guide artifacts for constrained Power BI Mode delivery.
 
 Use the CLI `export-handoff-pack` when a runnable React starter folder is required.
@@ -170,6 +173,7 @@ Future commands should include:
 - `phantom spec add-component <file> --view <view-id> --type <type> --title <title> --dimensions <fields> --metrics <fields> --out <file>` implemented as `npm run phantom:spec -- add-component <file> ...`
 - `phantom spec add-drill-action <file> --source <component-id> --target-type view --target <view-id> --context <source:target> --out <file>` implemented as `npm run phantom:spec -- add-drill-action <file> ...`
 - `phantom export pbi-report <file> --out <dir>`
+- `phantom export react-build-pack <file> --out <dir>` implemented as `npm run phantom:spec -- export-react-build-pack <file> <dir>`
 - `phantom export powerbi-guide <file> --out <dir>`
 - `phantom export handoff-pack <file> --out <dir>`
 - `phantom export data-contract <file> --out <dir>`

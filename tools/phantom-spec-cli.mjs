@@ -13,6 +13,7 @@ Usage:
   npm run phantom:spec -- diff <before.json> <after.json>
   npm run phantom:spec -- readiness <spec.json> react|powerBi
   npm run phantom:spec -- export-react <spec.json> <dir>
+  npm run phantom:spec -- export-react-build-pack <spec.json> <dir>
   npm run phantom:spec -- export-data-contract <spec.json> <dir>
   npm run phantom:spec -- export-powerbi-guide <spec.json> <dir>
   npm run phantom:spec -- export-handoff-pack <spec.json> <dir>
@@ -40,6 +41,7 @@ Commands:
   diff                 Compare two Phantom Spec JSON files.
   readiness            Check React or Power BI handoff readiness.
   export-react         Generate a minimal React starter scaffold from a ready spec.
+  export-react-build-pack Generate a focused React Product implementation handoff pack.
   export-data-contract Generate JSON and Markdown data contract handoff files.
   export-powerbi-guide Generate a Power BI implementation guide.
   export-handoff-pack  Generate a bundled React and Power BI handoff pack.
@@ -2290,6 +2292,127 @@ const writePowerBiGuide = async (spec, outDir) => {
   };
 };
 
+const writeReactBuildPack = async (spec, outDir) => {
+  await rm(outDir, { recursive: true, force: true });
+  await mkdir(outDir, { recursive: true });
+
+  const contract = createDataContract(spec);
+  const reactBacklog = createReactBacklog(spec);
+  const handoffSummary = inspectSpec(spec, 'handoff-summary');
+  const designHandoff = createDesignHandoff(spec);
+  const manifest = {
+    manifestVersion: '0.1.0',
+    sourceSpecVersion: spec.specVersion,
+    generatedAt: new Date().toISOString(),
+    project: {
+      scenario: spec.project?.scenario,
+      mode: spec.mode,
+      signOffStatus: spec.project?.specification?.signOffStatus || 'draft',
+      designEntryPoint: spec.project?.designEntryPoint,
+      designSources: spec.project?.designSources || [],
+    },
+    target: 'react-product',
+    implementationGate: handoffSummary.implementationGate,
+    dataPath: handoffSummary.dataPath,
+    designWorkflow: handoffSummary.designWorkflow,
+    designHandoff,
+    workshopIntent: handoffSummary.workshopIntent,
+    workshopCompleteness: handoffSummary.workshopCompleteness,
+    artifacts: {
+      spec: 'phantom-spec.json',
+      dataContract: 'phantom-data-contract.json',
+      designHandoff: 'design-handoff.json',
+      implementationGate: 'implementation-gate.json',
+      backlog: ['react-implementation-backlog.json', 'REACT_IMPLEMENTATION_BACKLOG.md'],
+      notes: 'REACT_IMPLEMENTATION_NOTES.md',
+    },
+    summary: {
+      components: (spec.views || []).flatMap((view) => view.components || []).length,
+      views: spec.views?.length || 0,
+      drillActions: spec.interactions?.drillActions?.length || 0,
+      fields: contract.fields.length,
+      reactImplementationTasks: reactBacklog.length,
+    },
+  };
+  const notes = `# React Product Build Pack
+
+Use this pack when Phantom is the workshop/spec source for a custom analytical React app.
+
+## Implementation Gate
+
+- Ready for implementation: ${handoffSummary.implementationGate.readyForImplementation ? 'Yes' : 'No'}
+- Approved for implementation: ${handoffSummary.implementationGate.approvedForImplementation ? 'Yes' : 'No'}
+- Design ready: ${handoffSummary.implementationGate.designReady ? 'Yes' : 'No'}
+- Data path ready: ${handoffSummary.implementationGate.dataPathReady ? 'Yes' : 'No'}
+- Workshop intent complete: ${handoffSummary.implementationGate.workshopIntentComplete ? 'Yes' : 'No'}
+- React ready: ${handoffSummary.implementationGate.reactReady ? 'Yes' : 'No'}
+
+### Implementation Gate Next Steps
+
+${markdownList(handoffSummary.implementationGate.requiredNextSteps)}
+
+## Build Inputs
+
+- \`phantom-spec.json\`: canonical workshop/spec artifact.
+- \`phantom-data-contract.json\`: fields, metrics, dimensions, filters, data sources, and drill actions.
+- \`design-handoff.json\`: component-level Figma/default provenance.
+- \`implementation-gate.json\`: go/no-go state for agents and engineers.
+- \`react-implementation-backlog.json\`: machine-readable component backlog.
+
+## Workshop Intent
+
+- Business questions: ${contract.workshopIntent.businessQuestions || 'Not specified'}
+- Audience: ${contract.workshopIntent.audience || 'Not specified'}
+- Decisions/actions: ${contract.workshopIntent.decisions || 'Not specified'}
+- Acceptance criteria: ${contract.workshopIntent.acceptanceCriteria || 'Not specified'}
+- Build notes: ${contract.workshopIntent.buildNotes || 'Not specified'}
+
+## Design Workflow
+
+- Design plane: ${handoffSummary.designWorkflow.designPlane}
+- Phantom role: ${handoffSummary.designWorkflow.phantomRole}
+- Status: ${handoffSummary.designWorkflow.status}
+- Handoff modes: ${handoffSummary.designWorkflow.handoffModes.join(', ')}
+
+## Design Sources
+
+${designSourcesMarkdown(spec.project?.designSources || [])}
+
+## Component Backlog
+
+${reactBacklogMarkdown(reactBacklog)}
+`;
+
+  await writeFile(`${outDir}/phantom-spec.json`, `${JSON.stringify(spec, null, 2)}\n`);
+  await writeFile(`${outDir}/phantom-data-contract.json`, `${JSON.stringify(contract, null, 2)}\n`);
+  await writeFile(`${outDir}/design-handoff.json`, `${JSON.stringify(designHandoff, null, 2)}\n`);
+  await writeFile(`${outDir}/implementation-gate.json`, `${JSON.stringify(handoffSummary.implementationGate, null, 2)}\n`);
+  await writeFile(`${outDir}/react-implementation-backlog.json`, `${JSON.stringify(reactBacklog, null, 2)}\n`);
+  await writeFile(`${outDir}/REACT_IMPLEMENTATION_BACKLOG.md`, reactBacklogMarkdown(reactBacklog));
+  await writeFile(`${outDir}/REACT_IMPLEMENTATION_NOTES.md`, notes);
+  await writeFile(`${outDir}/REACT_BUILD_MANIFEST.json`, `${JSON.stringify(manifest, null, 2)}\n`);
+
+  return {
+    outDir,
+    files: [
+      'phantom-spec.json',
+      'phantom-data-contract.json',
+      'design-handoff.json',
+      'implementation-gate.json',
+      'react-implementation-backlog.json',
+      'REACT_IMPLEMENTATION_BACKLOG.md',
+      'REACT_IMPLEMENTATION_NOTES.md',
+      'REACT_BUILD_MANIFEST.json',
+    ],
+    ready: handoffSummary.implementationGate.reactReady,
+    implementationReady: handoffSummary.implementationGate.readyForImplementation,
+    components: manifest.summary.components,
+    fields: manifest.summary.fields,
+    drillActions: manifest.summary.drillActions,
+    reactImplementationTasks: manifest.summary.reactImplementationTasks,
+  };
+};
+
 const writeHandoffPack = async (spec, outDir) => {
   await rm(outDir, { recursive: true, force: true });
   await mkdir(outDir, { recursive: true });
@@ -2485,7 +2608,7 @@ try {
     process.exit(0);
   }
 
-  if (!['validate', 'summary', 'diff', 'readiness', 'export-react', 'export-data-contract', 'export-powerbi-guide', 'export-handoff-pack', 'inspect', 'set-mode', 'set-approval', 'set-workshop-intent', 'add-view', 'add-component', 'add-drill-action', 'import-design-source', 'import-data-source'].includes(command)) {
+  if (!['validate', 'summary', 'diff', 'readiness', 'export-react', 'export-react-build-pack', 'export-data-contract', 'export-powerbi-guide', 'export-handoff-pack', 'inspect', 'set-mode', 'set-approval', 'set-workshop-intent', 'add-view', 'add-component', 'add-drill-action', 'import-design-source', 'import-data-source'].includes(command)) {
     throw new Error(`Unknown command: ${command}`);
   }
 
@@ -2680,6 +2803,14 @@ try {
       process.exit(1);
     }
     console.log(JSON.stringify(await writeReactStarter(spec, getOutDir(command)), null, 2));
+  }
+
+  if (command === 'export-react-build-pack') {
+    if (errors.length > 0) {
+      console.error(JSON.stringify({ valid: false, errors }, null, 2));
+      process.exit(1);
+    }
+    console.log(JSON.stringify(await writeReactBuildPack(spec, getOutDir(command)), null, 2));
   }
 
   if (command === 'export-data-contract') {
