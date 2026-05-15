@@ -203,20 +203,25 @@ export const ExportButton: React.FC = () => {
     );
   };
 
-  const handleDataContractExport = () => {
-    const spec = createCurrentSpec();
-    const contract = createPhantomDataContract(spec);
-    const date = new Date().toISOString().split('T')[0];
-    downloadTextFile(
-      JSON.stringify(contract, null, 2),
-      `${scenario}_Data_Contract_${date}.json`,
-      'application/json',
-    );
-    downloadTextFile(
-      createPhantomDataContractMarkdown(contract),
-      `${scenario}_Data_Contract_${date}.md`,
-      'text/markdown',
-    );
+  const handleDataContractExport = async () => {
+    setIsExporting(true);
+    try {
+      const spec = createCurrentSpec();
+      const contract = createPhantomDataContract(spec);
+      const date = new Date().toISOString().split('T')[0];
+      const zip = new JSZip();
+
+      zip.file('data-contract.json', JSON.stringify(contract, null, 2));
+      zip.file('DATA_CONTRACT.md', createPhantomDataContractMarkdown(contract));
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      downloadBlob(blob, `${scenario}_Data_Contract_${date}.zip`);
+    } catch (error) {
+      console.error('Data contract export failed:', error);
+      alert('Data contract export failed. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handlePowerBiGuideExport = async () => {
