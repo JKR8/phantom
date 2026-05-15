@@ -1075,6 +1075,12 @@ const createImplementationGate = (spec) => {
   const approval = createApprovalStatus(spec);
   const designWorkflow = createDesignWorkflow(spec);
   const dataPath = createDataPath(spec);
+  const requirements = createRequirementSummary(spec);
+  const blockingRequirements = [
+    ...requirements.clientQuestions.filter((item) => item.status !== 'resolved'),
+    ...requirements.consultantTasks.filter((item) => item.status !== 'resolved'),
+    ...requirements.exportBlockers.filter((item) => item.status !== 'resolved'),
+  ];
   const workshopIntent = createWorkshopIntent(spec.project?.specification);
   const workshopCompleteness = createWorkshopIntentCompleteness(workshopIntent);
   const reactReadiness = checkReadiness(spec, 'react');
@@ -1099,6 +1105,9 @@ const createImplementationGate = (spec) => {
     ...(!approval.approvedForImplementation ? [approval.guidance] : []),
     ...designGateSteps,
     ...dataPath.requiredNextSteps,
+    ...(blockingRequirements.length > 0
+      ? [`Unresolved workflow items block handoff: ${blockingRequirements.map((item) => item.title).join(', ')}.`]
+      : []),
     ...(!workshopCompleteness.complete
       ? [`Workshop intent is missing: ${workshopCompleteness.missing.join(', ')}.`]
       : []),
@@ -1117,6 +1126,7 @@ const createImplementationGate = (spec) => {
     readyForImplementation: approval.approvedForImplementation
       && designWorkflow.status === 'ready'
       && dataPath.requiredNextSteps.length === 0
+      && blockingRequirements.length === 0
       && workshopCompleteness.complete
       && targetReady,
     approvedForImplementation: approval.approvedForImplementation,
@@ -1131,6 +1141,9 @@ const createImplementationGate = (spec) => {
       ...approval.requiredNextSteps,
       ...designGateSteps,
       ...dataPath.requiredNextSteps,
+      ...(blockingRequirements.length > 0
+        ? [`Resolve or reclassify workflow blockers: ${blockingRequirements.map((item) => item.title).join(', ')}.`]
+        : []),
       ...(!workshopCompleteness.complete
         ? [`Capture missing workshop intent: ${workshopCompleteness.missing.join(', ')}.`]
         : []),

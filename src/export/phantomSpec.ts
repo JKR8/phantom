@@ -1242,6 +1242,12 @@ export const createPhantomImplementationGate = (spec: PhantomSpec): PhantomImple
   const approval = createPhantomApprovalStatus(spec);
   const designWorkflow = createPhantomDesignWorkflow(spec);
   const dataPath = createPhantomDataPath(spec);
+  const requirements = createPhantomRequirementSummary(spec);
+  const blockingRequirements = [
+    ...requirements.clientQuestions.filter((item) => item.status !== 'resolved'),
+    ...requirements.consultantTasks.filter((item) => item.status !== 'resolved'),
+    ...requirements.exportBlockers.filter((item) => item.status !== 'resolved'),
+  ];
   const workshopIntent = createWorkshopIntent(spec.project.specification);
   const workshopCompleteness = createWorkshopIntentCompleteness(workshopIntent);
   const reactReadiness = checkPhantomReadiness(spec, 'react');
@@ -1266,6 +1272,9 @@ export const createPhantomImplementationGate = (spec: PhantomSpec): PhantomImple
     ...(!approval.approvedForImplementation ? [approval.guidance] : []),
     ...designGateSteps,
     ...dataPath.requiredNextSteps,
+    ...(blockingRequirements.length > 0
+      ? [`Unresolved workflow items block handoff: ${blockingRequirements.map((item) => item.title).join(', ')}.`]
+      : []),
     ...(!workshopCompleteness.complete
       ? [`Workshop intent is missing: ${workshopCompleteness.missing.join(', ')}.`]
       : []),
@@ -1284,6 +1293,7 @@ export const createPhantomImplementationGate = (spec: PhantomSpec): PhantomImple
     readyForImplementation: approval.approvedForImplementation
       && designWorkflow.status === 'ready'
       && dataPath.requiredNextSteps.length === 0
+      && blockingRequirements.length === 0
       && workshopCompleteness.complete
       && targetReady,
     approvedForImplementation: approval.approvedForImplementation,
@@ -1298,6 +1308,9 @@ export const createPhantomImplementationGate = (spec: PhantomSpec): PhantomImple
       ...approval.requiredNextSteps,
       ...designGateSteps,
       ...dataPath.requiredNextSteps,
+      ...(blockingRequirements.length > 0
+        ? [`Resolve or reclassify workflow blockers: ${blockingRequirements.map((item) => item.title).join(', ')}.`]
+        : []),
       ...(!workshopCompleteness.complete
         ? [`Capture missing workshop intent: ${workshopCompleteness.missing.join(', ')}.`]
         : []),

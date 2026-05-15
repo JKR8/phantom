@@ -40,8 +40,9 @@ const createReadySpec = () => ({
           title: 'Confirm regional segmentation',
           detail: 'Client must confirm whether APAC should be split out.',
           disposition: 'client_decision',
-          status: 'open',
+          status: 'resolved',
           ownerRole: 'client_stakeholder',
+          resolution: 'Use existing regional segmentation for v1.',
         },
         {
           id: 'req-default-sort',
@@ -139,6 +140,8 @@ describe('phantom spec CLI', () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'phantom-requirements-inspect-'));
     const specPath = join(tempDir, 'spec.json');
     const spec = createReadySpec();
+    spec.project.specification.requirementItems[0].status = 'open';
+    (spec.project.specification.requirementItems[0] as { resolution?: string }).resolution = undefined;
 
     try {
       await writeFile(specPath, `${JSON.stringify(spec, null, 2)}\n`);
@@ -162,6 +165,31 @@ describe('phantom spec CLI', () => {
       expect(result.openItems).toHaveLength(1);
       expect(result.clientQuestions[0].id).toBe('req-client-segment');
       expect(result.assumptions[0].resolution).toContain('descending revenue');
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  }, 30000);
+
+  it('blocks implementation gate when workflow decisions are unresolved', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'phantom-requirement-gate-'));
+    const specPath = join(tempDir, 'spec.json');
+    const spec = createReadySpec();
+    spec.project.specification.requirementItems[0].status = 'open';
+    (spec.project.specification.requirementItems[0] as { resolution?: string }).resolution = undefined;
+
+    try {
+      await writeFile(specPath, `${JSON.stringify(spec, null, 2)}\n`);
+      const { stdout } = await execFileAsync(
+        process.execPath,
+        ['tools/phantom-spec-cli.mjs', 'inspect', specPath, 'implementation-gate'],
+        { cwd: process.cwd() },
+      );
+      const result = JSON.parse(stdout);
+
+      expect(result.readyForImplementation).toBe(false);
+      expect(result.requiredNextSteps).toContain(
+        'Resolve or reclassify workflow blockers: Confirm regional segmentation.',
+      );
     } finally {
       await rm(tempDir, { recursive: true, force: true });
     }

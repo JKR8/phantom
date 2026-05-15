@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createPhantomHandoffSummary, createPhantomSpec } from '../export';
+import { createPhantomHandoffSummary, createPhantomImplementationGate, createPhantomSpec } from '../export';
 import type { DashboardItem } from '../types';
 import {
   createConsultantWorkflowModel,
@@ -77,6 +77,10 @@ describe('consultantWorkflow', () => {
     const handoffSummary = createPhantomHandoffSummary(spec);
     expect(handoffSummary.requirements.counts.client_decision).toBe(1);
     expect(handoffSummary.requirements.clientQuestions[0].title).toBe('Confirm executive audience');
+
+    const gate = createPhantomImplementationGate(spec);
+    expect(gate.readyForImplementation).toBe(false);
+    expect(gate.requiredNextSteps).toContain('Resolve or reclassify workflow blockers: Confirm executive audience.');
   });
 
   it('creates requirement items from generated suggestions', () => {
