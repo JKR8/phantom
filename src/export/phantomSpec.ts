@@ -108,6 +108,7 @@ export interface PhantomDataContractComponent {
   componentId: string;
   title: string;
   type: string;
+  designSources: string[];
   fields: string[];
   metrics: string[];
   dimensions: string[];
@@ -695,19 +696,26 @@ export const createPhantomDataContract = (
   generatedAt = new Date().toISOString(),
 ): PhantomDataContract => {
   const components = spec.views.flatMap((view) =>
-    view.components.map((component) => ({
-      viewId: view.id,
-      viewName: view.name,
-      componentId: component.id,
-      title: component.title,
-      type: component.type,
-      fields: component.dataRequirements.fields,
-      metrics: component.dataRequirements.metrics,
-      dimensions: component.dataRequirements.dimensions,
-      filters: (component.props as Record<string, unknown>).filters || [],
-      expectedGrain: (component.props as Record<string, unknown>).grain || null,
-      exportTargets: component.exportTargets,
-    })),
+    view.components.map((component) => {
+      const designSources = spec.project.designSources
+        .filter((source) => (source.linkedComponentIds || []).includes(component.id))
+        .map((source) => source.id);
+
+      return {
+        viewId: view.id,
+        viewName: view.name,
+        componentId: component.id,
+        title: component.title,
+        type: component.type,
+        designSources,
+        fields: component.dataRequirements.fields,
+        metrics: component.dataRequirements.metrics,
+        dimensions: component.dataRequirements.dimensions,
+        filters: (component.props as Record<string, unknown>).filters || [],
+        expectedGrain: (component.props as Record<string, unknown>).grain || null,
+        exportTargets: component.exportTargets,
+      };
+    }),
   );
   const fields = uniq([
     ...spec.dataContract.fields,
@@ -751,7 +759,7 @@ export const createPhantomDataContractMarkdown = (contract: PhantomDataContract)
     .map((field) => `| ${field.name} | ${field.kind} | ${field.requiredBy.join(', ') || 'None'} |`)
     .join('\n');
   const componentRows = contract.components
-    .map((component) => `| ${component.componentId} | ${component.title} | ${component.type} | ${component.fields.join(', ') || 'None'} |`)
+    .map((component) => `| ${component.componentId} | ${component.title} | ${component.type} | ${component.designSources.join(', ') || 'None'} | ${component.fields.join(', ') || 'None'} |`)
     .join('\n');
   const drillRows = contract.drillActions
     .map((action) => `| ${action.id} | ${action.label} | ${action.sourceComponentId} | ${action.targetType}:${action.targetId} | ${action.context.map((context) => `${context.source}->${context.target}`).join(', ') || 'None'} |`)
@@ -795,9 +803,9 @@ ${fieldRows || '| None | field | None |'}
 
 ## Components
 
-| Component ID | Title | Type | Required Fields |
-| --- | --- | --- | --- |
-${componentRows || '| None | None | None | None |'}
+| Component ID | Title | Type | Design Sources | Required Fields |
+| --- | --- | --- | --- | --- |
+${componentRows || '| None | None | None | None | None |'}
 
 ## Drill Actions
 

@@ -882,19 +882,26 @@ const fieldKind = (field, spec) => {
 
 const createDataContract = (spec) => {
   const components = (spec.views || []).flatMap((view) =>
-    (view.components || []).map((component) => ({
-      viewId: view.id,
-      viewName: view.name,
-      componentId: component.id,
-      title: component.title,
-      type: component.type,
-      fields: component.dataRequirements?.fields || [],
-      metrics: component.dataRequirements?.metrics || [],
-      dimensions: component.dataRequirements?.dimensions || [],
-      filters: component.props?.filters || [],
-      expectedGrain: component.props?.grain || null,
-      exportTargets: component.exportTargets,
-    })),
+    (view.components || []).map((component) => {
+      const designSources = (spec.project?.designSources || [])
+        .filter((source) => (source.linkedComponentIds || []).includes(component.id))
+        .map((source) => source.id);
+
+      return {
+        viewId: view.id,
+        viewName: view.name,
+        componentId: component.id,
+        title: component.title,
+        type: component.type,
+        designSources,
+        fields: component.dataRequirements?.fields || [],
+        metrics: component.dataRequirements?.metrics || [],
+        dimensions: component.dataRequirements?.dimensions || [],
+        filters: component.props?.filters || [],
+        expectedGrain: component.props?.grain || null,
+        exportTargets: component.exportTargets,
+      };
+    }),
   );
   const allFields = [...new Set([
     ...(spec.dataContract?.fields || []),
@@ -1074,7 +1081,7 @@ const writeDataContract = async (spec, outDir) => {
   await mkdir(outDir, { recursive: true });
   const contract = createDataContract(spec);
   const componentRows = contract.components
-    .map((component) => `| ${component.componentId} | ${component.title} | ${component.type} | ${component.fields.join(', ') || 'None'} |`)
+    .map((component) => `| ${component.componentId} | ${component.title} | ${component.type} | ${(component.designSources || []).join(', ') || 'None'} | ${component.fields.join(', ') || 'None'} |`)
     .join('\n');
   const drillRows = contract.drillActions
     .map((action) => `| ${action.id} | ${action.label} | ${action.sourceComponentId} | ${action.targetType}:${action.targetId} | ${formatDrillContext(action.context)} |`)
@@ -1121,9 +1128,9 @@ ${fieldRows || '| None | field | None |'}
 
 ## Components
 
-| Component ID | Title | Type | Required Fields |
-| --- | --- | --- | --- |
-${componentRows || '| None | None | None | None |'}
+| Component ID | Title | Type | Design Sources | Required Fields |
+| --- | --- | --- | --- | --- |
+${componentRows || '| None | None | None | None | None |'}
 
 ## Drill Actions
 

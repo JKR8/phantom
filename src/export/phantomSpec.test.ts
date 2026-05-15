@@ -529,7 +529,12 @@ describe('phantomSpec', () => {
         acceptanceCriteria: 'Every visual has approved fields and drill behavior.',
         buildNotes: 'Use the client sales mart.',
         designEntryPoint: 'figma-led',
-        designSources: [{ id: 'figma-1', type: 'figmaFrame', name: 'Executive concept' }],
+        designSources: [{
+          id: 'figma-1',
+          type: 'figmaFrame',
+          name: 'Executive concept',
+          linkedComponentIds: ['visual-1'],
+        }],
       },
     });
 
@@ -549,11 +554,12 @@ describe('phantomSpec', () => {
       { name: 'revenue', kind: 'metric', requiredBy: ['visual-1'] },
     ]);
     expect(contract.components[0].fields).toEqual(['Region', 'revenue']);
+    expect(contract.components[0].designSources).toEqual(['figma-1']);
     expect(contract.drillActions[0].targetId).toBe('region-detail');
-    expect(markdown).toContain('| visual-1 | Revenue by Region | bar | Region, revenue |');
+    expect(markdown).toContain('| visual-1 | Revenue by Region | bar | figma-1 | Region, revenue |');
     expect(markdown).toContain('| drill-1 | Open region detail | visual-1 | detailPanel:region-detail | Region->region |');
     expect(markdown).toContain('## Design Sources');
-    expect(markdown).toContain('- Executive concept (type: figmaFrame)');
+    expect(markdown).toContain('- Executive concept (type: figmaFrame; components: visual-1)');
     expect(markdown).toContain('## Workshop Intent');
     expect(markdown).toContain('- Decisions/actions: Choose regions for follow-up.');
     expect(markdown).toContain('- Acceptance criteria: Every visual has approved fields and drill behavior.');
