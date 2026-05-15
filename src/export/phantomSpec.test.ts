@@ -604,6 +604,7 @@ describe('phantomSpec', () => {
           name: 'Power BI concept',
           url: 'https://www.figma.com/design/power-bi',
           frameId: '3:4',
+          linkedComponentIds: ['visual-2'],
         }],
       },
     });
@@ -623,10 +624,11 @@ describe('phantomSpec', () => {
       buildNotes: 'Keep the first page Power BI native.',
     });
     expect(guide.components.map((component) => component.powerBiStatus)).toEqual(['ready', 'approximate', 'unsupported']);
-    expect(markdown).toContain('| visual-2 | Ranked variance | lollipop | approximate | Region, profit |');
+    expect(guide.components[1].designSources).toEqual(['figma-1']);
+    expect(markdown).toContain('| visual-2 | Ranked variance | lollipop | approximate | figma-1 | Region, profit |');
     expect(markdown).toContain('ERROR POWER_BI_UNSUPPORTED_VISUAL');
     expect(markdown).toContain('| drill-1 | Open region detail | visual-1 | view:region-detail | Region->region | Yes |');
-    expect(markdown).toContain('- Power BI concept (type: figmaFrame; url: https://www.figma.com/design/power-bi; frame: 3:4)');
+    expect(markdown).toContain('- Power BI concept (type: figmaFrame; url: https://www.figma.com/design/power-bi; frame: 3:4; components: visual-2)');
     expect(markdown).toContain('## Workshop Intent');
     expect(markdown).toContain('- Business questions: Which regional variances need action?');
     expect(markdown).toContain('- Acceptance criteria: All unsupported visuals have documented alternatives.');

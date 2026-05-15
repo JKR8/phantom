@@ -163,6 +163,7 @@ export interface PhantomPowerBiImplementationGuide {
     title: string;
     type: string;
     powerBiStatus: PhantomExportStatus;
+    designSources: string[];
     fields: string[];
     metrics: string[];
     dimensions: string[];
@@ -853,6 +854,9 @@ export const createPowerBiImplementationGuide = (
       title: component.title,
       type: component.type,
       powerBiStatus: component.exportTargets.powerBi.status,
+      designSources: spec.project.designSources
+        .filter((source) => (source.linkedComponentIds || []).includes(component.id))
+        .map((source) => source.id),
       fields: component.dataRequirements.fields,
       metrics: component.dataRequirements.metrics,
       dimensions: component.dataRequirements.dimensions,
@@ -872,7 +876,7 @@ export const createPowerBiImplementationGuide = (
 
 export const createPowerBiImplementationGuideMarkdown = (guide: PhantomPowerBiImplementationGuide) => {
   const componentRows = guide.components
-    .map((component) => `| ${component.id} | ${component.title} | ${component.type} | ${component.powerBiStatus} | ${component.fields.join(', ') || 'None'} | ${component.notes.join(' ') || 'None'} |`)
+    .map((component) => `| ${component.id} | ${component.title} | ${component.type} | ${component.powerBiStatus} | ${component.designSources.join(', ') || 'None'} | ${component.fields.join(', ') || 'None'} | ${component.notes.join(' ') || 'None'} |`)
     .join('\n');
   const drillRows = guide.drillActions
     .map((action) => `| ${action.id} | ${action.label} | ${action.sourceComponentId} | ${action.targetType}:${action.targetId} | ${action.context.map((context) => `${context.source}->${context.target}`).join(', ') || 'None'} | ${action.preserveFilters ? 'Yes' : 'No'} |`)
@@ -916,9 +920,9 @@ ${blockerList.length ? blockerList.join('\n') : '- None'}
 
 ## Visual Build Matrix
 
-| Component ID | Title | Type | Power BI Status | Required Fields | Notes |
-| --- | --- | --- | --- | --- | --- |
-${componentRows || '| None | None | None | ready | None | None |'}
+| Component ID | Title | Type | Power BI Status | Design Sources | Required Fields | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+${componentRows || '| None | None | None | ready | None | None | None |'}
 
 ## Drill-Through And Navigation
 

@@ -1185,6 +1185,9 @@ const createPowerBiGuide = (spec) => {
       title: component.title,
       type: component.type,
       powerBiStatus: component.exportTargets?.powerBi?.status || 'unknown',
+      designSources: (spec.project?.designSources || [])
+        .filter((source) => (source.linkedComponentIds || []).includes(component.id))
+        .map((source) => source.id),
       fields: component.dataRequirements?.fields || [],
       metrics: component.dataRequirements?.metrics || [],
       dimensions: component.dataRequirements?.dimensions || [],
@@ -1204,7 +1207,7 @@ const createPowerBiGuide = (spec) => {
 
 const powerBiGuideMarkdown = (guide) => {
   const componentRows = guide.components
-    .map((component) => `| ${component.id} | ${component.title} | ${component.type} | ${component.powerBiStatus} | ${component.fields.join(', ') || 'None'} | ${component.notes.join(' ') || 'None'} |`)
+    .map((component) => `| ${component.id} | ${component.title} | ${component.type} | ${component.powerBiStatus} | ${(component.designSources || []).join(', ') || 'None'} | ${component.fields.join(', ') || 'None'} | ${component.notes.join(' ') || 'None'} |`)
     .join('\n');
   const drillRows = guide.drillActions
     .map((action) => `| ${action.id} | ${action.label} | ${action.sourceComponentId} | ${action.targetType}:${action.targetId} | ${formatDrillContext(action.context)} | ${action.preserveFilters ? 'Yes' : 'No'} |`)
@@ -1248,9 +1251,9 @@ ${issues.length ? issues.join('\n') : '- None'}
 
 ## Visual Build Matrix
 
-| Component ID | Title | Type | Power BI Status | Required Fields | Notes |
-| --- | --- | --- | --- | --- | --- |
-${componentRows || '| None | None | None | ready | None | None |'}
+| Component ID | Title | Type | Power BI Status | Design Sources | Required Fields | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+${componentRows || '| None | None | None | ready | None | None | None |'}
 
 ## Drill-Through And Navigation
 
