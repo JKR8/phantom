@@ -6,6 +6,7 @@ import {
   createPhantomSpec,
   createPowerBiImplementationGuide,
   createPowerBiImplementationGuideMarkdown,
+  mergeDesignSourceIntoSpec,
   getComponentDataRequirements,
   getPowerBiExportStatus,
   summarizePhantomSpec,
@@ -112,6 +113,70 @@ describe('phantomSpec', () => {
         approximate: 1,
       },
     });
+  });
+
+  it('merges Figma design sources into specs for API consumers', () => {
+    const spec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [item({})],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+    });
+
+    const nextSpec = mergeDesignSourceIntoSpec(spec, {
+      type: 'figmaFrame',
+      name: 'Client workshop frame',
+      url: 'https://www.figma.com/design/example',
+      frameId: '1:2',
+      notes: 'Approved visual direction',
+    });
+
+    expect(nextSpec).not.toBe(spec);
+    expect(nextSpec.project.designEntryPoint).toBe('figma-led');
+    expect(nextSpec.project.specification.designEntryPoint).toBe('figma-led');
+    expect(nextSpec.project.designSources).toEqual([
+      {
+        id: 'figmaFrame-1-2',
+        type: 'figmaFrame',
+        name: 'Client workshop frame',
+        url: 'https://www.figma.com/design/example',
+        frameId: '1:2',
+        notes: 'Approved visual direction',
+      },
+    ]);
+    expect(nextSpec.project.specification.designSources).toEqual(nextSpec.project.designSources);
+    expect(checkPhantomReadiness(nextSpec, 'react').warnings.map((issue) => issue.code)).not.toContain('FIGMA_LED_WITHOUT_SOURCE');
+  });
+
+  it('replaces design sources by id instead of duplicating them', () => {
+    const spec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [item({})],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      specification: {
+        signOffStatus: 'draft',
+        designEntryPoint: 'figma-led',
+        designSources: [{ id: 'figma-1', type: 'figmaFrame', name: 'Old frame' }],
+      },
+    });
+
+    const nextSpec = mergeDesignSourceIntoSpec(spec, {
+      id: 'figma-1',
+      type: 'figmaFrame',
+      name: 'Updated frame',
+      url: 'https://www.figma.com/design/updated',
+    });
+
+    expect(nextSpec.project.designSources).toHaveLength(1);
+    expect(nextSpec.project.designSources[0].name).toBe('Updated frame');
+    expect(nextSpec.project.designSources[0].url).toBe('https://www.figma.com/design/updated');
   });
 
   it('reports validation errors for malformed Phantom specs', () => {

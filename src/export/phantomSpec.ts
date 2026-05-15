@@ -169,6 +169,16 @@ export interface PhantomPowerBiImplementationGuide {
   buildChecklist: string[];
 }
 
+export interface PhantomDesignSourceInput {
+  id?: string;
+  type: DesignSource['type'];
+  name?: string;
+  url?: string;
+  frameId?: string;
+  componentId?: string;
+  notes?: string;
+}
+
 const PBI_DESIGN_ONLY_VISUALS = new Set(['histogram', 'boxplot', 'violin', 'regressionScatter', 'barbell', 'slope']);
 const PBI_APPROXIMATE_VISUALS = new Set(['lollipop', 'diverging', 'bullet', 'lineForecast']);
 
@@ -180,6 +190,54 @@ const asStringArray = (value: unknown): string[] => {
 };
 
 const uniq = (values: string[]) => [...new Set(values.filter(Boolean))].sort();
+
+const slug = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'design-source';
+
+export const createDesignSource = (input: PhantomDesignSourceInput): DesignSource => {
+  const name = input.name || input.frameId || input.componentId || input.url || 'Design source';
+  const id = input.id || `${input.type}-${slug(input.frameId || input.componentId || name)}`;
+
+  return {
+    id,
+    type: input.type,
+    name,
+    ...(input.url ? { url: input.url } : {}),
+    ...(input.frameId ? { frameId: input.frameId } : {}),
+    ...(input.componentId ? { componentId: input.componentId } : {}),
+    ...(input.notes ? { notes: input.notes } : {}),
+  };
+};
+
+export const mergeDesignSourceIntoSpec = (
+  spec: PhantomSpec,
+  input: PhantomDesignSourceInput,
+): PhantomSpec => {
+  const designSource = createDesignSource(input);
+  const designSources = [
+    ...spec.project.designSources.filter((source) => source.id !== designSource.id),
+    designSource,
+  ];
+  const designEntryPoint = designSource.type === 'phantomDefault' ? spec.project.designEntryPoint : 'figma-led';
+  const specification = {
+    ...spec.project.specification,
+    designEntryPoint,
+    designSources,
+  };
+
+  return {
+    ...spec,
+    project: {
+      ...spec.project,
+      specification,
+      designEntryPoint,
+      designSources,
+    },
+  };
+};
 
 export const getPowerBiExportStatus = (visualType: string): PhantomSpecComponent['exportTargets']['powerBi'] => {
   if (PBI_DESIGN_ONLY_VISUALS.has(visualType)) {
