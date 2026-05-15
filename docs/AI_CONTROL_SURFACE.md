@@ -58,6 +58,8 @@ npm run phantom:spec -- export-handoff-pack path/to/spec.json ./handoff-pack
 npm run phantom:spec -- inspect path/to/spec.json components
 npm run phantom:spec -- inspect path/to/spec.json drill-actions
 npm run phantom:spec -- inspect path/to/spec.json data-requirements
+npm run phantom:spec -- inspect path/to/spec.json design-sources
+npm run phantom:spec -- import-design-source path/to/spec.json figmaFrame "Client concept" https://www.figma.com/design/... "1:2" "Workshop-approved direction" path/to/spec.with-design.json
 ```
 
 `validate` returns:
@@ -74,6 +76,10 @@ npm run phantom:spec -- inspect path/to/spec.json data-requirements
 `diff` returns project, mode, component, drill action, and data requirement changes between two Phantom specs. Use it after workshops or AI edits before regenerating implementation artifacts.
 
 `inspect` returns focused JSON for `components`, `drill-actions`, or `data-requirements`, so agents can query the spec before deciding what to generate or validate.
+
+`inspect design-sources` returns the current design entry point and linked design sources. Use it to decide whether the project is Figma-led or Phantom-led before generating implementation tasks.
+
+`import-design-source` adds or updates a Figma frame, Figma component, screenshot, Phantom default, or external reference in a Phantom Spec. Use the npm-friendly positional form `type name url frame-id notes out-spec`; direct `node tools/phantom-spec-cli.mjs ...` usage can also pass named flags such as `--type`, `--name`, `--url`, and `--out`. It writes a new spec to the positional output path or `--out`, marks non-Phantom sources as `figma-led`, and mirrors the source into `project.specification` so browser exports, CLI exports, readiness checks, and agents see the same design context.
 
 `readiness` returns a machine-readable report with `ready`, `errors`, and `warnings`. It exits non-zero when blockers exist, which lets agents and CI stop before generating misleading implementation output.
 
@@ -103,6 +109,8 @@ Future commands should include:
 - `phantom inspect components <file>` implemented as `npm run phantom:spec -- inspect <file> components`
 - `phantom inspect drill-actions <file>` implemented as `npm run phantom:spec -- inspect <file> drill-actions`
 - `phantom inspect data-requirements <file>` implemented as `npm run phantom:spec -- inspect <file> data-requirements`
+- `phantom inspect design-sources <file>` implemented as `npm run phantom:spec -- inspect <file> design-sources`
+- `phantom import design-source <file> --type figmaFrame --name <name> --url <url> --out <file>` implemented as `npm run phantom:spec -- import-design-source <file> ...`
 
 ## Intended API Roadmap
 

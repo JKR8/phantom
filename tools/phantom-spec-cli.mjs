@@ -16,7 +16,8 @@ Usage:
   npm run phantom:spec -- export-data-contract <spec.json> <dir>
   npm run phantom:spec -- export-powerbi-guide <spec.json> <dir>
   npm run phantom:spec -- export-handoff-pack <spec.json> <dir>
-  npm run phantom:spec -- inspect <spec.json> components|drill-actions|data-requirements
+  npm run phantom:spec -- inspect <spec.json> components|drill-actions|data-requirements|design-sources
+  npm run phantom:spec -- import-design-source <spec.json> figmaFrame "Client frame" <url> <frame-id> "notes" <out-spec.json>
 
 Commands:
   validate             Validate a Phantom Spec JSON file for agent/build handoff.
@@ -28,6 +29,7 @@ Commands:
   export-powerbi-guide Generate a Power BI implementation guide.
   export-handoff-pack  Generate a bundled React and Power BI handoff pack.
   inspect              Print a focused machine-readable view of a spec section.
+  import-design-source Add or update a Figma/screenshot/reference design source in a spec.
 `);
 };
 
@@ -213,7 +215,91 @@ const inspectSpec = (spec, subject) => {
     };
   }
 
-  throw new Error('Inspect subject must be components, drill-actions, or data-requirements.');
+  if (subject === 'design-sources') {
+    return {
+      subject,
+      designEntryPoint: spec.project?.designEntryPoint || 'phantom-led',
+      count: spec.project?.designSources?.length || 0,
+      designSources: spec.project?.designSources || [],
+    };
+  }
+
+  throw new Error('Inspect subject must be components, drill-actions, data-requirements, or design-sources.');
+};
+
+const optionValue = (name) => {
+  const index = args.indexOf(name);
+  if (index >= 0) return args[index + 1];
+  const npmConfigName = `npm_config_${name.replace(/^--/, '').replace(/-/g, '_')}`;
+  const value = process.env[npmConfigName];
+  return value && value !== 'true' ? value : undefined;
+};
+
+const positionalOptions = () =>
+  args.filter((arg, index) => !arg.startsWith('--') && !args[index - 1]?.startsWith('--'));
+
+const slug = (value) =>
+  String(value || 'design-source')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'design-source';
+
+const mergeDesignSource = (spec) => {
+  const positional = positionalOptions();
+  const type = optionValue('--type') || positional[0] || 'figmaFrame';
+  const allowedTypes = new Set(['phantomDefault', 'figmaFrame', 'figmaComponent', 'screenshot', 'externalReference']);
+  if (!allowedTypes.has(type)) {
+    throw new Error('Design source type must be phantomDefault, figmaFrame, figmaComponent, screenshot, or externalReference.');
+  }
+
+  const name = optionValue('--name') || positional[1];
+  const url = optionValue('--url') || positional[2];
+  const frameId = optionValue('--frame-id') || (positional.length >= 6 ? positional[3] : undefined);
+  const componentId = optionValue('--component-id');
+  const notes = optionValue('--notes') || (positional.length >= 6 ? positional[4] : positional.length === 5 ? positional[3] : undefined);
+  const id = optionValue('--id') || `${type}-${slug(frameId || componentId || name || url)}`;
+  const outPath = optionValue('--out') || (positional.length >= 4 ? positional[positional.length - 1] : undefined);
+  if (!outPath) {
+    throw new Error('Missing --out path for import-design-source.');
+  }
+  if (!name && !url && !frameId && !componentId) {
+    throw new Error('Provide at least one of --name, --url, --frame-id, or --component-id.');
+  }
+
+  const designSource = {
+    id,
+    type,
+    name: name || frameId || componentId || url || 'Design source',
+    ...(url ? { url } : {}),
+    ...(frameId ? { frameId } : {}),
+    ...(componentId ? { componentId } : {}),
+    ...(notes ? { notes } : {}),
+  };
+  const existingSources = spec.project?.designSources || [];
+  const nextSources = [
+    ...existingSources.filter((source) => source.id !== id),
+    designSource,
+  ];
+  const designEntryPoint = type === 'phantomDefault' ? (spec.project?.designEntryPoint || 'phantom-led') : 'figma-led';
+  const specification = {
+    ...(spec.project?.specification || {}),
+    designEntryPoint,
+    designSources: nextSources,
+  };
+
+  return {
+    nextSpec: {
+      ...spec,
+      project: {
+        ...spec.project,
+        specification,
+        designEntryPoint,
+        designSources: nextSources,
+      },
+    },
+    outPath: resolve(outPath),
+    designSource,
+  };
 };
 
 const getTarget = (spec) => {
@@ -933,7 +1019,7 @@ try {
     process.exit(0);
   }
 
-  if (!['validate', 'summary', 'diff', 'readiness', 'export-react', 'export-data-contract', 'export-powerbi-guide', 'export-handoff-pack', 'inspect'].includes(command)) {
+  if (!['validate', 'summary', 'diff', 'readiness', 'export-react', 'export-data-contract', 'export-powerbi-guide', 'export-handoff-pack', 'inspect', 'import-design-source'].includes(command)) {
     throw new Error(`Unknown command: ${command}`);
   }
 
@@ -975,6 +1061,21 @@ try {
       process.exit(1);
     }
     console.log(JSON.stringify(inspectSpec(spec, args[0]), null, 2));
+  }
+
+  if (command === 'import-design-source') {
+    if (errors.length > 0) {
+      console.error(JSON.stringify({ valid: false, errors }, null, 2));
+      process.exit(1);
+    }
+    const { nextSpec, outPath, designSource } = mergeDesignSource(spec);
+    await writeFile(outPath, `${JSON.stringify(nextSpec, null, 2)}\n`);
+    console.log(JSON.stringify({
+      outPath,
+      designEntryPoint: nextSpec.project.designEntryPoint,
+      designSources: nextSpec.project.designSources.length,
+      imported: designSource,
+    }, null, 2));
   }
 
   if (command === 'readiness') {
