@@ -14,6 +14,11 @@ import { useThemeStore } from '../store/useThemeStore';
 import { checkPhantomReadiness, createPhantomSpec } from '../export';
 import type { DashboardSpecification, DesignSource, DesignSourceType } from '../types';
 
+const parseIdList = (value: string) =>
+  value.split(',').map((item) => item.trim()).filter(Boolean);
+
+const formatIdList = (values?: string[]) => values?.join(', ') || '';
+
 const useStyles = makeStyles({
   panel: {
     display: 'flex',
@@ -161,6 +166,23 @@ export const SpecificationPanel: React.FC = () => {
     const nextSource = {
       ...currentSource,
       [field]: value,
+    };
+    updateSpecification({ designSources: [nextSource] });
+  };
+
+  const handleDesignSourceListChange = (
+    field: 'linkedViewIds' | 'linkedComponentIds',
+    value: string,
+  ) => {
+    const currentSource: DesignSource = primaryDesignSource || {
+      id: 'design-source-primary',
+      type: 'figmaFrame',
+      name: '',
+    };
+    const nextValues = parseIdList(value);
+    const nextSource = {
+      ...currentSource,
+      ...(nextValues.length ? { [field]: nextValues } : { [field]: undefined }),
     };
     updateSpecification({ designSources: [nextSource] });
   };
@@ -347,6 +369,28 @@ export const SpecificationPanel: React.FC = () => {
               placeholder="Optional"
               value={primaryDesignSource?.componentId || ''}
               onChange={(_, d) => handleDesignSourceChange('componentId', d.value)}
+            />
+          </div>
+        </div>
+
+        <div className={styles.selectRow}>
+          <div className={`${styles.fieldRow} ${styles.selectField}`}>
+            <Label className={styles.fieldLabel}>Linked Views</Label>
+            <Input
+              size="small"
+              placeholder="main"
+              value={formatIdList(primaryDesignSource?.linkedViewIds)}
+              onChange={(_, d) => handleDesignSourceListChange('linkedViewIds', d.value)}
+            />
+          </div>
+
+          <div className={`${styles.fieldRow} ${styles.selectField}`}>
+            <Label className={styles.fieldLabel}>Linked Components</Label>
+            <Input
+              size="small"
+              placeholder={items.slice(0, 2).map((item) => item.id).join(', ') || 'visual-1'}
+              value={formatIdList(primaryDesignSource?.linkedComponentIds)}
+              onChange={(_, d) => handleDesignSourceListChange('linkedComponentIds', d.value)}
             />
           </div>
         </div>

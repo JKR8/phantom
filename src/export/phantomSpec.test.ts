@@ -139,6 +139,8 @@ describe('phantomSpec', () => {
       name: 'Client workshop frame',
       url: 'https://www.figma.com/design/example',
       frameId: '1:2',
+      linkedViewIds: ['main'],
+      linkedComponentIds: ['visual-1'],
       notes: 'Approved visual direction',
     });
 
@@ -152,6 +154,8 @@ describe('phantomSpec', () => {
         name: 'Client workshop frame',
         url: 'https://www.figma.com/design/example',
         frameId: '1:2',
+        linkedViewIds: ['main'],
+        linkedComponentIds: ['visual-1'],
         notes: 'Approved visual direction',
       },
     ]);
@@ -167,9 +171,11 @@ describe('phantomSpec', () => {
         name: 'Client workshop frame',
         url: 'https://www.figma.com/design/example',
         frameId: '1:2',
+        linkedViewIds: ['main'],
+        linkedComponentIds: ['visual-1', 'kpi-1'],
         notes: 'Approved visual direction',
       },
-    ])).toBe('- Client workshop frame (type: figmaFrame; url: https://www.figma.com/design/example; frame: 1:2; notes: Approved visual direction)');
+    ])).toBe('- Client workshop frame (type: figmaFrame; url: https://www.figma.com/design/example; frame: 1:2; views: main; components: visual-1, kpi-1; notes: Approved visual direction)');
     expect(createDesignSourcesMarkdown([])).toBe('- None specified');
   });
 

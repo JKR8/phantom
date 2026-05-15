@@ -247,6 +247,8 @@ export interface PhantomDesignSourceInput {
   url?: string;
   frameId?: string;
   componentId?: string;
+  linkedViewIds?: string[];
+  linkedComponentIds?: string[];
   notes?: string;
 }
 
@@ -279,6 +281,8 @@ export const createDesignSource = (input: PhantomDesignSourceInput): DesignSourc
     ...(input.url ? { url: input.url } : {}),
     ...(input.frameId ? { frameId: input.frameId } : {}),
     ...(input.componentId ? { componentId: input.componentId } : {}),
+    ...(input.linkedViewIds?.length ? { linkedViewIds: input.linkedViewIds } : {}),
+    ...(input.linkedComponentIds?.length ? { linkedComponentIds: input.linkedComponentIds } : {}),
     ...(input.notes ? { notes: input.notes } : {}),
   };
 };
@@ -551,6 +555,8 @@ export const createDesignSourcesMarkdown = (designSources: DesignSource[]) => {
         source.url ? `url: ${source.url}` : null,
         source.frameId ? `frame: ${source.frameId}` : null,
         source.componentId ? `component: ${source.componentId}` : null,
+        source.linkedViewIds?.length ? `views: ${source.linkedViewIds.join(', ')}` : null,
+        source.linkedComponentIds?.length ? `components: ${source.linkedComponentIds.join(', ')}` : null,
         source.notes ? `notes: ${source.notes}` : null,
       ].filter(Boolean);
       return `- ${source.name} (${details.join('; ')})`;

@@ -18,6 +18,7 @@ Usage:
   npm run phantom:spec -- export-handoff-pack <spec.json> <dir>
   npm run phantom:spec -- inspect <spec.json> components|drill-actions|data-requirements|design-sources|workshop-intent|react-backlog|powerbi-build-matrix|handoff-summary
   npm run phantom:spec -- import-design-source <spec.json> figmaFrame "Client frame" <url> <frame-id> "notes" <out-spec.json>
+  node tools/phantom-spec-cli.mjs import-design-source <spec.json> --type figmaFrame --name "Client frame" --url <url> --frame-id <frame-id> --views main --components kpi-1,chart-1 --out <out-spec.json>
 
 Commands:
   validate             Validate a Phantom Spec JSON file for agent/build handoff.
@@ -313,6 +314,13 @@ const slug = (value) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '') || 'design-source';
 
+const csvOption = (...names) => {
+  const value = names.map((name) => optionValue(name)).find(Boolean);
+  return value
+    ? value.split(',').map((item) => item.trim()).filter(Boolean)
+    : [];
+};
+
 const mergeDesignSource = (spec) => {
   const positional = positionalOptions();
   const type = optionValue('--type') || positional[0] || 'figmaFrame';
@@ -325,6 +333,8 @@ const mergeDesignSource = (spec) => {
   const url = optionValue('--url') || positional[2];
   const frameId = optionValue('--frame-id') || (positional.length >= 6 ? positional[3] : undefined);
   const componentId = optionValue('--component-id');
+  const linkedViewIds = csvOption('--views', '--view-ids', '--linked-view-ids');
+  const linkedComponentIds = csvOption('--components', '--component-ids', '--linked-component-ids');
   const notes = optionValue('--notes') || (positional.length >= 6 ? positional[4] : positional.length === 5 ? positional[3] : undefined);
   const id = optionValue('--id') || `${type}-${slug(frameId || componentId || name || url)}`;
   const outPath = optionValue('--out') || (positional.length >= 4 ? positional[positional.length - 1] : undefined);
@@ -342,6 +352,8 @@ const mergeDesignSource = (spec) => {
     ...(url ? { url } : {}),
     ...(frameId ? { frameId } : {}),
     ...(componentId ? { componentId } : {}),
+    ...(linkedViewIds.length ? { linkedViewIds } : {}),
+    ...(linkedComponentIds.length ? { linkedComponentIds } : {}),
     ...(notes ? { notes } : {}),
   };
   const existingSources = spec.project?.designSources || [];
@@ -936,11 +948,13 @@ const designSourcesMarkdown = (designSources = []) => {
     .map((source) => {
       const details = [
         `type: ${source.type}`,
-        source.url ? `url: ${source.url}` : null,
-        source.frameId ? `frame: ${source.frameId}` : null,
-        source.componentId ? `component: ${source.componentId}` : null,
-        source.notes ? `notes: ${source.notes}` : null,
-      ].filter(Boolean);
+      source.url ? `url: ${source.url}` : null,
+      source.frameId ? `frame: ${source.frameId}` : null,
+      source.componentId ? `component: ${source.componentId}` : null,
+      source.linkedViewIds?.length ? `views: ${source.linkedViewIds.join(', ')}` : null,
+      source.linkedComponentIds?.length ? `components: ${source.linkedComponentIds.join(', ')}` : null,
+      source.notes ? `notes: ${source.notes}` : null,
+    ].filter(Boolean);
       return `- ${source.name} (${details.join('; ')})`;
     })
     .join('\n');

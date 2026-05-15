@@ -58,6 +58,7 @@ Acceptance criteria:
 
 - A project can record whether it is Figma-led or Phantom-led.
 - A Phantom view can reference a Figma frame/screenshot/design source.
+- A Figma frame/screenshot/design source can name the Phantom views and components it maps to.
 - Analytics metadata remains editable in Phantom regardless of where the visual design started.
 - React/PBI handoff can include both the design reference and the Phantom analytical spec.
 

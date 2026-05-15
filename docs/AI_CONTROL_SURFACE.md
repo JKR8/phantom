@@ -64,6 +64,7 @@ npm run phantom:spec -- inspect path/to/spec.json react-backlog
 npm run phantom:spec -- inspect path/to/spec.json powerbi-build-matrix
 npm run phantom:spec -- inspect path/to/spec.json handoff-summary
 npm run phantom:spec -- import-design-source path/to/spec.json figmaFrame "Client concept" https://www.figma.com/design/... "1:2" "Workshop-approved direction" path/to/spec.with-design.json
+node tools/phantom-spec-cli.mjs import-design-source path/to/spec.json --type figmaFrame --name "Client concept" --url https://www.figma.com/design/... --frame-id "1:2" --views main --components kpi-1,chart-1 --out path/to/spec.with-design.json
 ```
 
 `validate` returns:
@@ -81,7 +82,7 @@ npm run phantom:spec -- import-design-source path/to/spec.json figmaFrame "Clien
 
 `inspect` returns focused JSON for `components`, `drill-actions`, `data-requirements`, `design-sources`, `workshop-intent`, `react-backlog`, `powerbi-build-matrix`, or `handoff-summary`, so agents can query the spec before deciding what to generate or validate.
 
-`inspect design-sources` returns the current design entry point and linked design sources. Use it to decide whether the project is Figma-led or Phantom-led before generating implementation tasks.
+`inspect design-sources` returns the current design entry point and linked design sources, including any mapped Phantom view IDs or component IDs. Use it to decide whether the project is Figma-led or Phantom-led before generating implementation tasks.
 
 `inspect workshop-intent` returns the business questions, audience, decisions/actions, acceptance criteria, build notes, and a completeness object with present/missing workshop fields. Use it before generating React or Power BI implementation work so agents preserve the client workshop intent and can pause when the brief is too thin.
 
@@ -91,7 +92,7 @@ npm run phantom:spec -- import-design-source path/to/spec.json figmaFrame "Clien
 
 `inspect handoff-summary` returns project metadata, workshop intent, workshop completeness, React and Power BI readiness, a recommended handoff target, field/component/task counts, Power BI visual support counts, and next actions in one JSON payload. Use it as the first agent check after a workshop.
 
-`import-design-source` adds or updates a Figma frame, Figma component, screenshot, Phantom default, or external reference in a Phantom Spec. Use the npm-friendly positional form `type name url frame-id notes out-spec`; direct `node tools/phantom-spec-cli.mjs ...` usage can also pass named flags such as `--type`, `--name`, `--url`, and `--out`. It writes a new spec to the positional output path or `--out`, marks non-Phantom sources as `figma-led`, and mirrors the source into `project.specification` so browser exports, CLI exports, readiness checks, and agents see the same design context.
+`import-design-source` adds or updates a Figma frame, Figma component, screenshot, Phantom default, or external reference in a Phantom Spec. Use the npm-friendly positional form `type name url frame-id notes out-spec`; direct `node tools/phantom-spec-cli.mjs ...` usage can also pass named flags such as `--type`, `--name`, `--url`, `--views`, `--components`, and `--out`. It writes a new spec to the positional output path or `--out`, marks non-Phantom sources as `figma-led`, and mirrors the source into `project.specification` so browser exports, CLI exports, readiness checks, and agents see the same design context.
 
 `readiness` returns a machine-readable report with `ready`, `errors`, and `warnings`. It exits non-zero when blockers exist, which lets agents and CI stop before generating misleading implementation output.
 

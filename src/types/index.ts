@@ -343,6 +343,8 @@ export interface DesignSource {
   url?: string;
   frameId?: string;
   componentId?: string;
+  linkedViewIds?: string[];
+  linkedComponentIds?: string[];
   notes?: string;
 }
 
