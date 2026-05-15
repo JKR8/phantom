@@ -1,0 +1,80 @@
+import { execFile } from 'node:child_process';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { promisify } from 'node:util';
+import { describe, expect, it } from 'vitest';
+
+const execFileAsync = promisify(execFile);
+const specPath = join(process.cwd(), 'phantom_product_spec_v0.2.md');
+
+describe('phantom v0.2 spec CLI', () => {
+  it('validates and summarizes Markdown phantom_block specs', async () => {
+    const validate = await execFileAsync(
+      process.execPath,
+      ['tools/phantom-spec-v2-cli.mjs', 'validate', specPath],
+      { cwd: process.cwd() },
+    );
+    expect(JSON.parse(validate.stdout)).toEqual({
+      valid: true,
+      errors: [],
+      warnings: [],
+    });
+
+    const summary = await execFileAsync(
+      process.execPath,
+      ['tools/phantom-spec-v2-cli.mjs', 'summary', specPath],
+      { cwd: process.cwd() },
+    );
+    expect(JSON.parse(summary.stdout)).toMatchObject({
+      schemaId: 'phantom.spec.v0.2',
+      counts: {
+        pages: 7,
+        components: 3,
+        metrics: 3,
+        fields: 4,
+        interactions: 4,
+        acceptedGaps: 1,
+      },
+      readiness: {
+        target: 'react',
+        buildReady: false,
+      },
+    });
+  });
+
+  it('exports an approval pack for agent handoff', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'phantom-v2-approval-pack-'));
+    const outPath = join(tempDir, 'approval-pack.json');
+
+    try {
+      const { stdout } = await execFileAsync(
+        process.execPath,
+        ['tools/phantom-spec-v2-cli.mjs', 'export-approval-pack', specPath, outPath],
+        { cwd: process.cwd() },
+      );
+      expect(JSON.parse(stdout)).toMatchObject({
+        outPath,
+        approved: false,
+        reactBuildReady: false,
+        powerBiBuildReady: false,
+      });
+
+      const pack = JSON.parse(await readFile(outPath, 'utf8'));
+      expect(pack.metrics).toHaveLength(3);
+      expect(pack.acceptedGaps).toEqual([
+        expect.objectContaining({
+          fieldId: 'pbi_fallback_behavior',
+          complete: true,
+        }),
+      ]);
+      expect(pack.readiness.powerBi.blockingIssues).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          code: 'READINESS_BELOW_THRESHOLD',
+        }),
+      ]));
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
+});

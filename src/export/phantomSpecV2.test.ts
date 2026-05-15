@@ -2,6 +2,11 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  createPhantomSpecV2AcceptedGaps,
+  createPhantomSpecV2ApprovalPack,
+  createPhantomSpecV2ApprovalStatus,
+  createPhantomSpecV2MetricRegistry,
+  createPhantomSpecV2Summary,
   PHANTOM_V2_SCHEMA_ID,
   parseAndValidatePhantomSpecV2Markdown,
   parsePhantomSpecV2Markdown,
@@ -144,6 +149,66 @@ describe('phantomSpecV2', () => {
       expect.objectContaining({
         code: 'READINESS_BELOW_THRESHOLD',
       }),
+    ]));
+  });
+
+  it('exposes v0.2 spec inspection surfaces for agents and approval packs', async () => {
+    const markdown = await readV2Spec();
+    const document = parsePhantomSpecV2Markdown(markdown);
+
+    const metrics = createPhantomSpecV2MetricRegistry(document);
+    expect(metrics).toHaveLength(3);
+    expect(metrics).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: 'build_readiness_score',
+        grain: 'spec_version',
+        nullBehavior: 'Missing category scores count as zero.',
+        ownerRole: 'analytics_owner',
+        complete: true,
+        missingFields: [],
+      }),
+    ]));
+
+    const acceptedGaps = createPhantomSpecV2AcceptedGaps(document);
+    expect(acceptedGaps).toEqual([
+      expect.objectContaining({
+        fieldId: 'pbi_fallback_behavior',
+        ownerRole: 'dashboard_builder',
+        reason: 'Power BI export is limited to build notes in v1.',
+        resolutionTarget: 'post_v1',
+        complete: true,
+      }),
+    ]);
+
+    const approval = createPhantomSpecV2ApprovalStatus(document);
+    expect(approval).toMatchObject({
+      state: 'pending',
+      currentVersion: '0.2.0-draft',
+      documentVersion: '0.2.0',
+      approved: false,
+      stale: true,
+      requiredApprovals: ['approver', 'analytics_owner'],
+      missingApprovalRoles: ['approver', 'analytics_owner'],
+    });
+
+    const summary = createPhantomSpecV2Summary(document);
+    expect(summary.counts).toEqual({
+      pages: 7,
+      components: 3,
+      metrics: 3,
+      fields: 4,
+      interactions: 4,
+      acceptedGaps: 1,
+    });
+    expect(summary.blocks.map((block) => block.id)).toContain('export_targets');
+
+    const approvalPack = createPhantomSpecV2ApprovalPack(document, '2026-05-15T00:00:00.000Z');
+    expect(approvalPack.generatedAt).toBe('2026-05-15T00:00:00.000Z');
+    expect(approvalPack.readiness.react.score).toBeCloseTo(0.8667, 4);
+    expect(approvalPack.readiness.powerBi.score).toBeCloseTo(0.8167, 4);
+    expect(approvalPack.exportTargets).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'react_app' }),
+      expect.objectContaining({ id: 'approval_pack' }),
     ]));
   });
 

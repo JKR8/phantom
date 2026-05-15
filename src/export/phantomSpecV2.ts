@@ -66,6 +66,79 @@ export interface PhantomSpecV2ReadinessScore {
   blockingIssues: PhantomSpecV2ValidationIssue[];
 }
 
+export interface PhantomSpecV2MetricRegistryEntry {
+  id: string;
+  displayName?: string;
+  definition?: string;
+  formula?: string;
+  grain?: string;
+  nullBehavior?: string;
+  ownerRole?: string;
+  sourceBinding?: unknown;
+  comparisonRules?: unknown;
+  complete: boolean;
+  missingFields: string[];
+}
+
+export interface PhantomSpecV2AcceptedGap {
+  fieldId?: string;
+  fieldLabel?: string;
+  fieldType?: string;
+  ownerRole?: string;
+  reason?: string;
+  resolutionTarget?: string;
+  readinessImpact?: string;
+  complete: boolean;
+  missingFields: string[];
+}
+
+export interface PhantomSpecV2ApprovalStatus {
+  state?: string;
+  currentVersion?: string;
+  documentVersion?: string;
+  requiredApprovals: string[];
+  approved: boolean;
+  stale: boolean;
+  missingApprovalRoles: string[];
+  currentVersionEvent?: Record<string, unknown>;
+  history: Record<string, unknown>[];
+}
+
+export interface PhantomSpecV2Summary {
+  schemaId?: unknown;
+  id?: unknown;
+  name?: unknown;
+  version?: unknown;
+  status?: unknown;
+  roles: string[];
+  exportTargets: unknown[];
+  blocks: Array<PhantomSpecV2BlockHeader & { startLine: number }>;
+  counts: {
+    pages: number;
+    components: number;
+    metrics: number;
+    fields: number;
+    interactions: number;
+    acceptedGaps: number;
+  };
+  readiness: PhantomSpecV2ReadinessScore;
+  approval: PhantomSpecV2ApprovalStatus;
+}
+
+export interface PhantomSpecV2ApprovalPack {
+  generatedAt: string;
+  summary: PhantomSpecV2Summary;
+  approval: PhantomSpecV2ApprovalStatus;
+  readiness: {
+    react: PhantomSpecV2ReadinessScore;
+    powerBi: PhantomSpecV2ReadinessScore;
+  };
+  metrics: PhantomSpecV2MetricRegistryEntry[];
+  acceptedGaps: PhantomSpecV2AcceptedGap[];
+  interactions: Record<string, unknown>[];
+  exportTargets: Record<string, unknown>[];
+}
+
 const requiredBlockIds = [
   'pages',
   'component_library',
@@ -85,7 +158,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const asRecords = (value: unknown): Record<string, unknown>[] =>
   Array.isArray(value) ? value.filter(isRecord) : [];
 
-const hasText = (value: unknown) =>
+const hasText = (value: unknown): value is string =>
   typeof value === 'string' && value.trim().length > 0;
 
 const hasValue = (value: unknown) => {
@@ -96,6 +169,16 @@ const hasValue = (value: unknown) => {
 
 const getBlock = (document: PhantomSpecV2Document, id: string) =>
   document.blocks.find((block) => block.header.id === id);
+
+const stringIds = (value: unknown): string[] =>
+  Array.isArray(value)
+    ? value
+      .map((item) => (isRecord(item) ? item.id : item))
+      .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+    : [];
+
+const missingKeys = (record: Record<string, unknown>, keys: string[]) =>
+  keys.filter((key) => !hasValue(record[key]));
 
 const parseYaml = (raw: string, label: string): Record<string, unknown> => {
   const document = parseDocument(raw);
@@ -483,6 +566,153 @@ export const scorePhantomSpecV2Readiness = (
     blockingIssues,
   };
 };
+
+export const createPhantomSpecV2MetricRegistry = (
+  document: PhantomSpecV2Document,
+): PhantomSpecV2MetricRegistryEntry[] =>
+  asRecords(getBlock(document, 'metrics')?.body.metrics)
+    .map((metric) => {
+      const requiredKeys = [
+        'display_name',
+        'definition',
+        'formula',
+        'grain',
+        'null_behavior',
+        'owner_role',
+        'source_binding',
+      ];
+      const missingFields = missingKeys(metric, requiredKeys);
+      return {
+        id: String(metric.id || ''),
+        displayName: hasText(metric.display_name) ? metric.display_name : undefined,
+        definition: hasText(metric.definition) ? metric.definition : undefined,
+        formula: hasText(metric.formula) ? metric.formula : undefined,
+        grain: hasText(metric.grain) ? metric.grain : undefined,
+        nullBehavior: hasText(metric.null_behavior) ? metric.null_behavior : undefined,
+        ownerRole: hasText(metric.owner_role) ? metric.owner_role : undefined,
+        sourceBinding: metric.source_binding,
+        comparisonRules: metric.comparison_rules,
+        complete: missingFields.length === 0,
+        missingFields,
+      };
+    });
+
+export const createPhantomSpecV2AcceptedGaps = (
+  document: PhantomSpecV2Document,
+): PhantomSpecV2AcceptedGap[] => {
+  const dataContract = getBlock(document, 'data_contract_preview')?.body.data_contract;
+  const fields = asRecords(isRecord(dataContract) ? dataContract.fields : undefined);
+  return fields
+    .filter((field) => isRecord(field.accepted_gap) || field.status === 'accepted_gap')
+    .map((field) => {
+      const acceptedGap = isRecord(field.accepted_gap) ? field.accepted_gap : {};
+      const missingFields = missingKeys(acceptedGap, ['owner_role', 'reason', 'resolution_target']);
+      return {
+        fieldId: hasText(field.id) ? field.id : undefined,
+        fieldLabel: hasText(field.display_name)
+          ? field.display_name
+          : hasText(field.label) ? field.label : undefined,
+        fieldType: hasText(field.type) ? field.type : undefined,
+        ownerRole: hasText(acceptedGap.owner_role) ? acceptedGap.owner_role : undefined,
+        reason: hasText(acceptedGap.reason) ? acceptedGap.reason : undefined,
+        resolutionTarget: hasText(acceptedGap.resolution_target) ? acceptedGap.resolution_target : undefined,
+        readinessImpact: hasText(acceptedGap.readiness_impact) ? acceptedGap.readiness_impact : undefined,
+        complete: missingFields.length === 0,
+        missingFields,
+      };
+    });
+};
+
+export const createPhantomSpecV2ApprovalStatus = (
+  document: PhantomSpecV2Document,
+): PhantomSpecV2ApprovalStatus => {
+  const approval = isRecord(document.frontmatter.approval) ? document.frontmatter.approval : {};
+  const currentVersion = hasText(approval.current_version) ? approval.current_version : undefined;
+  const documentVersion = hasText(document.frontmatter.version) ? document.frontmatter.version : undefined;
+  const history = asRecords(approval.history);
+  const currentVersionEvent = history.find((event) => event.version === currentVersion);
+  const requiredApprovals = stringIds(approval.required_approvals);
+  const approvedRoles = new Set(
+    history
+      .filter((event) => event.version === currentVersion && event.state === 'approved')
+      .map((event) => event.role)
+      .filter((role): role is string => typeof role === 'string' && role.trim().length > 0),
+  );
+  const currentApprover = currentVersionEvent?.approver;
+  const missingApprovalRoles = requiredApprovals.filter((role) => !approvedRoles.has(role));
+  const approved = approval.state === 'approved'
+    && currentVersionEvent?.state === 'approved'
+    && hasText(currentApprover)
+    && missingApprovalRoles.length === 0;
+
+  return {
+    state: hasText(approval.state) ? approval.state : undefined,
+    currentVersion,
+    documentVersion,
+    requiredApprovals,
+    approved,
+    stale: Boolean(currentVersion && documentVersion && currentVersion !== documentVersion)
+      || !currentVersionEvent
+      || currentVersionEvent.state !== approval.state,
+    missingApprovalRoles,
+    currentVersionEvent,
+    history,
+  };
+};
+
+export const createPhantomSpecV2Summary = (
+  document: PhantomSpecV2Document,
+  target: PhantomSpecV2ReadinessTarget = 'react',
+): PhantomSpecV2Summary => {
+  const pages = asRecords(getBlock(document, 'pages')?.body.pages);
+  const components = asRecords(getBlock(document, 'component_instances')?.body.components);
+  const metrics = createPhantomSpecV2MetricRegistry(document);
+  const dataContract = getBlock(document, 'data_contract_preview')?.body.data_contract;
+  const fields = asRecords(isRecord(dataContract) ? dataContract.fields : undefined);
+  const interactions = asRecords(getBlock(document, 'interactions')?.body.interactions);
+  const acceptedGaps = createPhantomSpecV2AcceptedGaps(document);
+
+  return {
+    schemaId: document.frontmatter.schema_id,
+    id: document.frontmatter.id,
+    name: document.frontmatter.name,
+    version: document.frontmatter.version,
+    status: document.frontmatter.status,
+    roles: stringIds(document.frontmatter.roles),
+    exportTargets: Array.isArray(document.frontmatter.export_targets) ? document.frontmatter.export_targets : [],
+    blocks: document.blocks.map((block) => ({
+      ...block.header,
+      startLine: block.startLine,
+    })),
+    counts: {
+      pages: pages.length,
+      components: components.length,
+      metrics: metrics.length,
+      fields: fields.length,
+      interactions: interactions.length,
+      acceptedGaps: acceptedGaps.length,
+    },
+    readiness: scorePhantomSpecV2Readiness(document, target),
+    approval: createPhantomSpecV2ApprovalStatus(document),
+  };
+};
+
+export const createPhantomSpecV2ApprovalPack = (
+  document: PhantomSpecV2Document,
+  generatedAt = new Date().toISOString(),
+): PhantomSpecV2ApprovalPack => ({
+  generatedAt,
+  summary: createPhantomSpecV2Summary(document),
+  approval: createPhantomSpecV2ApprovalStatus(document),
+  readiness: {
+    react: scorePhantomSpecV2Readiness(document, 'react'),
+    powerBi: scorePhantomSpecV2Readiness(document, 'power_bi'),
+  },
+  metrics: createPhantomSpecV2MetricRegistry(document),
+  acceptedGaps: createPhantomSpecV2AcceptedGaps(document),
+  interactions: asRecords(getBlock(document, 'interactions')?.body.interactions),
+  exportTargets: asRecords(getBlock(document, 'export_targets')?.body.exports),
+});
 
 export const parseAndValidatePhantomSpecV2Markdown = (markdown: string) => {
   const document = parsePhantomSpecV2Markdown(markdown);
