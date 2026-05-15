@@ -577,6 +577,10 @@ It includes:
 2. Wire \`src/data-adapter.ts\` to the client API, warehouse/dbt model, or semantic API.
 3. Implement drill actions from \`spec.interactions.drillActions\`.
 4. Apply any Figma/design-source references from \`spec.project.designSources\`.
+
+## Design Sources
+
+${designSourcesMarkdown(spec.project?.designSources || [])}
 `;
 
   const dataAdapterTs = `import dataContract from './phantom-data-contract.json';
@@ -745,6 +749,22 @@ const createDataContract = (spec) => {
 
 const markdownList = (items) => (items.length ? items.map((item) => `- ${item}`).join('\n') : '- None specified');
 
+const designSourcesMarkdown = (designSources = []) => {
+  if (!designSources.length) return '- None specified';
+  return designSources
+    .map((source) => {
+      const details = [
+        `type: ${source.type}`,
+        source.url ? `url: ${source.url}` : null,
+        source.frameId ? `frame: ${source.frameId}` : null,
+        source.componentId ? `component: ${source.componentId}` : null,
+        source.notes ? `notes: ${source.notes}` : null,
+      ].filter(Boolean);
+      return `- ${source.name} (${details.join('; ')})`;
+    })
+    .join('\n');
+};
+
 const formatDrillContext = (context = []) =>
   context.map((item) => {
     if (typeof item === 'string') return item;
@@ -774,6 +794,10 @@ Generated from Phantom Spec ${contract.sourceSpecVersion}.
 - Mode: ${contract.project.mode}
 - Entry point: ${contract.project.designEntryPoint}
 - Design sources: ${contract.project.designSources.length}
+
+## Design Sources
+
+${designSourcesMarkdown(contract.project.designSources)}
 
 ## Metrics
 
@@ -892,6 +916,10 @@ Generated from Phantom Spec ${guide.sourceSpecVersion}.
 - Unsupported visuals: ${guide.summary.unsupportedVisuals}
 - Drill actions: ${guide.summary.drillActions}
 
+## Design Sources
+
+${designSourcesMarkdown(guide.project.designSources)}
+
 ## Issues
 
 ${issues.length ? issues.join('\n') : '- None'}
@@ -970,9 +998,19 @@ const writeHandoffPack = async (spec, outDir) => {
       powerBiUnsupportedVisuals: powerBiGuide.unsupportedVisuals,
     },
   };
-  const readme = `# ${spec.project?.scenario || 'Phantom'} Handoff Pack
+const readme = `# ${spec.project?.scenario || 'Phantom'} Handoff Pack
 
 Generated from Phantom Spec ${spec.specVersion}.
+
+## Project
+
+- Mode: ${spec.mode}
+- Entry point: ${spec.project?.designEntryPoint || 'phantom-led'}
+- Design sources: ${(spec.project?.designSources || []).length}
+
+## Design Sources
+
+${designSourcesMarkdown(spec.project?.designSources || [])}
 
 ## Contents
 

@@ -424,6 +424,23 @@ const getDataContractFieldKind = (spec: PhantomSpec, field: string): PhantomData
 
 const markdownList = (items: string[]) => (items.length ? items.map((item) => `- ${item}`).join('\n') : '- None specified');
 
+export const createDesignSourcesMarkdown = (designSources: DesignSource[]) => {
+  if (!designSources.length) return '- None specified';
+
+  return designSources
+    .map((source) => {
+      const details = [
+        `type: ${source.type}`,
+        source.url ? `url: ${source.url}` : null,
+        source.frameId ? `frame: ${source.frameId}` : null,
+        source.componentId ? `component: ${source.componentId}` : null,
+        source.notes ? `notes: ${source.notes}` : null,
+      ].filter(Boolean);
+      return `- ${source.name} (${details.join('; ')})`;
+    })
+    .join('\n');
+};
+
 export const createPhantomDataContract = (
   spec: PhantomSpec,
   generatedAt = new Date().toISOString(),
@@ -499,6 +516,10 @@ Generated from Phantom Spec ${contract.sourceSpecVersion}.
 - Mode: ${contract.project.mode}
 - Entry point: ${contract.project.designEntryPoint}
 - Design sources: ${contract.project.designSources.length}
+
+## Design Sources
+
+${createDesignSourcesMarkdown(contract.project.designSources)}
 
 ## Metrics
 
@@ -609,6 +630,10 @@ Generated from Phantom Spec ${guide.sourceSpecVersion}.
 - Approximate visuals: ${guide.summary.approximateVisuals}
 - Unsupported visuals: ${guide.summary.unsupportedVisuals}
 - Drill actions: ${guide.summary.drillActions}
+
+## Design Sources
+
+${createDesignSourcesMarkdown(guide.project.designSources)}
 
 ## Issues
 

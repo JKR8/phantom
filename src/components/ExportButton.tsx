@@ -36,6 +36,7 @@ import { useThemeStore } from '../store/useThemeStore';
 import {
   createPhantomDataContract,
   createPhantomDataContractMarkdown,
+  createDesignSourcesMarkdown,
   createPhantomSpec,
   createPowerBiImplementationGuide,
   createPowerBiImplementationGuideMarkdown,
@@ -262,6 +263,16 @@ export const ExportButton: React.FC = () => {
 
 Generated from Phantom Spec ${spec.specVersion}.
 
+## Project
+
+- Mode: ${spec.mode}
+- Entry point: ${spec.project.designEntryPoint}
+- Design sources: ${spec.project.designSources.length}
+
+## Design Sources
+
+${createDesignSourcesMarkdown(spec.project.designSources)}
+
 ## Contents
 
 - \`phantom-spec.json\`: canonical workshop/spec artifact.
@@ -280,6 +291,10 @@ Use \`phantom-spec.json\` and \`phantom-data-contract.json\` as the implementati
 - Wire data requirements to client-owned APIs, warehouse/dbt models, or optional semantic endpoints.
 - Implement drill actions from \`phantom-spec.json > interactions.drillActions\`.
 - Apply Figma/design-source references from \`phantom-spec.json > project.designSources\` when present.
+
+## Design Sources
+
+${createDesignSourcesMarkdown(spec.project.designSources)}
 
 For a runnable starter app, use:
 

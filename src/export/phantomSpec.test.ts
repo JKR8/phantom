@@ -3,6 +3,7 @@ import {
   checkPhantomReadiness,
   createPhantomDataContract,
   createPhantomDataContractMarkdown,
+  createDesignSourcesMarkdown,
   createPhantomSpec,
   createPowerBiImplementationGuide,
   createPowerBiImplementationGuideMarkdown,
@@ -151,6 +152,20 @@ describe('phantomSpec', () => {
     expect(checkPhantomReadiness(nextSpec, 'react').warnings.map((issue) => issue.code)).not.toContain('FIGMA_LED_WITHOUT_SOURCE');
   });
 
+  it('formats design sources for handoff markdown', () => {
+    expect(createDesignSourcesMarkdown([
+      {
+        id: 'figma-1',
+        type: 'figmaFrame',
+        name: 'Client workshop frame',
+        url: 'https://www.figma.com/design/example',
+        frameId: '1:2',
+        notes: 'Approved visual direction',
+      },
+    ])).toBe('- Client workshop frame (type: figmaFrame; url: https://www.figma.com/design/example; frame: 1:2; notes: Approved visual direction)');
+    expect(createDesignSourcesMarkdown([])).toBe('- None specified');
+  });
+
   it('replaces design sources by id instead of duplicating them', () => {
     const spec = createPhantomSpec({
       scenario: 'Retail',
@@ -270,6 +285,8 @@ describe('phantomSpec', () => {
     expect(contract.drillActions[0].targetId).toBe('region-detail');
     expect(markdown).toContain('| visual-1 | Revenue by Region | bar | Region, revenue |');
     expect(markdown).toContain('| drill-1 | Open region detail | visual-1 | detailPanel:region-detail | Region->region |');
+    expect(markdown).toContain('## Design Sources');
+    expect(markdown).toContain('- Executive concept (type: figmaFrame)');
   });
 
   it('creates a Power BI implementation guide with readiness and visual statuses', () => {
@@ -297,6 +314,17 @@ describe('phantomSpec', () => {
         },
       ],
       generatedAt: '2026-05-15T00:00:00.000Z',
+      specification: {
+        signOffStatus: 'draft',
+        designEntryPoint: 'figma-led',
+        designSources: [{
+          id: 'figma-1',
+          type: 'figmaFrame',
+          name: 'Power BI concept',
+          url: 'https://www.figma.com/design/power-bi',
+          frameId: '3:4',
+        }],
+      },
     });
 
     const guide = createPowerBiImplementationGuide(spec, '2026-05-15T01:00:00.000Z');
@@ -310,5 +338,6 @@ describe('phantomSpec', () => {
     expect(markdown).toContain('| visual-2 | Ranked variance | lollipop | approximate | Region, profit |');
     expect(markdown).toContain('ERROR POWER_BI_UNSUPPORTED_VISUAL');
     expect(markdown).toContain('| drill-1 | Open region detail | visual-1 | view:region-detail | Region->region | Yes |');
+    expect(markdown).toContain('- Power BI concept (type: figmaFrame; url: https://www.figma.com/design/power-bi; frame: 3:4)');
   });
 });
