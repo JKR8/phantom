@@ -300,6 +300,14 @@ Use \`phantom-spec.json\` and \`phantom-data-contract.json\` as the implementati
 - Implement drill actions from \`phantom-spec.json > interactions.drillActions\`.
 - Apply Figma/design-source references from \`phantom-spec.json > project.designSources\` when present.
 
+## Workshop Intent
+
+- Business questions: ${contract.workshopIntent.businessQuestions || 'Not specified'}
+- Audience: ${contract.workshopIntent.audience || 'Not specified'}
+- Decisions/actions: ${contract.workshopIntent.decisions || 'Not specified'}
+- Acceptance criteria: ${contract.workshopIntent.acceptanceCriteria || 'Not specified'}
+- Build notes: ${contract.workshopIntent.buildNotes || 'Not specified'}
+
 ## Design Sources
 
 ${createDesignSourcesMarkdown(spec.project.designSources)}

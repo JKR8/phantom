@@ -692,6 +692,14 @@ It includes:
 3. Implement drill actions from \`spec.interactions.drillActions\`.
 4. Apply any Figma/design-source references from \`spec.project.designSources\`.
 
+## Workshop Intent
+
+- Business questions: ${dataContract.workshopIntent.businessQuestions || 'Not specified'}
+- Audience: ${dataContract.workshopIntent.audience || 'Not specified'}
+- Decisions/actions: ${dataContract.workshopIntent.decisions || 'Not specified'}
+- Acceptance criteria: ${dataContract.workshopIntent.acceptanceCriteria || 'Not specified'}
+- Build notes: ${dataContract.workshopIntent.buildNotes || 'Not specified'}
+
 ## Design Sources
 
 ${designSourcesMarkdown(spec.project?.designSources || [])}
