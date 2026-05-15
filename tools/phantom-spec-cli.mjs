@@ -1903,6 +1903,7 @@ const writeHandoffPack = async (spec, outDir) => {
     artifacts: {
       spec: 'phantom-spec.json',
       handoffSummary: 'handoff-summary.json',
+      implementationGate: 'implementation-gate.json',
       designHandoff: 'design-handoff.json',
       dataContract: dataContract.files.map((file) => `data-contract/${file}`),
       powerBiGuide: powerBiGuide.files.map((file) => `power-bi/${file}`),
@@ -2005,6 +2006,7 @@ ${markdownList(handoffSummary.designWorkflow.requiredNextSteps)}
 - \`power-bi/\`: Power BI implementation guide with readiness, visual statuses, fields, drill-through notes, and blockers.
 - \`react-starter/\`: Vite/React starter app with the spec, data contract, and typed drill actions embedded.
 - \`handoff-summary.json\`: first-pass implementation gate, readiness, recommendation, counts, and next actions for agents.
+- \`implementation-gate.json\`: standalone go/no-go decision for approval, design, data, workshop intent, and target-mode readiness.
 - \`design-handoff.json\`: component-level Figma/default provenance and missing design mappings for agents and engineers.
 - \`HANDOFF_MANIFEST.json\`: machine-readable index for agents and implementation pipelines.
 
@@ -2031,13 +2033,14 @@ ${markdownList(nextActions)}
 
   await writeFile(`${outDir}/phantom-spec.json`, `${JSON.stringify(spec, null, 2)}\n`);
   await writeFile(`${outDir}/handoff-summary.json`, `${JSON.stringify(handoffSummary, null, 2)}\n`);
+  await writeFile(`${outDir}/implementation-gate.json`, `${JSON.stringify(handoffSummary.implementationGate, null, 2)}\n`);
   await writeFile(`${outDir}/design-handoff.json`, `${JSON.stringify(designHandoff, null, 2)}\n`);
   await writeFile(`${outDir}/HANDOFF_MANIFEST.json`, `${JSON.stringify(manifest, null, 2)}\n`);
   await writeFile(`${outDir}/README.md`, readme);
 
   return {
     outDir,
-    files: ['phantom-spec.json', 'handoff-summary.json', 'design-handoff.json', 'HANDOFF_MANIFEST.json', 'README.md'],
+    files: ['phantom-spec.json', 'handoff-summary.json', 'implementation-gate.json', 'design-handoff.json', 'HANDOFF_MANIFEST.json', 'README.md'],
     directories: ['data-contract', 'power-bi', 'react-starter'],
     readiness: {
       react: readiness.react.ready,

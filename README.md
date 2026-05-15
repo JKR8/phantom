@@ -144,7 +144,7 @@ npm run phantom:spec -- export-powerbi-guide path/to/spec.json ./handoff
 npm run phantom:spec -- export-handoff-pack path/to/spec.json ./handoff-pack
 ```
 
-The handoff pack includes `handoff-summary.json`, `design-handoff.json`, `HANDOFF_MANIFEST.json`, `data-contract/`, `power-bi/`, and `react-starter/`. These artifacts carry workshop intent, design workflow, component-level Figma/default provenance, design-source mappings, data requirements, drill actions, readiness checks, and next actions.
+The handoff pack includes `handoff-summary.json`, `implementation-gate.json`, `design-handoff.json`, `HANDOFF_MANIFEST.json`, `data-contract/`, `power-bi/`, and `react-starter/`. These artifacts carry workshop intent, design workflow, component-level Figma/default provenance, design-source mappings, data requirements, drill actions, readiness checks, and next actions.
 
 ## Project Structure
 

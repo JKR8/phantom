@@ -186,6 +186,7 @@ describe('phantom spec CLI', () => {
       const result = JSON.parse(stdout);
 
       expect(result.files).toContain('handoff-summary.json');
+      expect(result.files).toContain('implementation-gate.json');
       expect(result.files).toContain('design-handoff.json');
       expect(result.files).toContain('HANDOFF_MANIFEST.json');
       expect(result.directories).toEqual(['data-contract', 'power-bi', 'react-starter']);
@@ -204,6 +205,7 @@ describe('phantom spec CLI', () => {
         unmappedComponents: [],
         unmappedFields: [],
       });
+      expect(manifest.artifacts.implementationGate).toBe('implementation-gate.json');
       expect(manifest.designHandoff).toMatchObject({
         subject: 'design-handoff',
         sourceMode: 'figma-imported',
@@ -217,6 +219,9 @@ describe('phantom spec CLI', () => {
       expect(handoffSummary.implementationGate).toEqual(manifest.implementationGate);
       expect(handoffSummary.dataPath).toEqual(manifest.dataPath);
       expect(handoffSummary.designHandoff).toEqual(manifest.designHandoff);
+
+      const implementationGate = JSON.parse(await readFile(join(outDir, 'implementation-gate.json'), 'utf8'));
+      expect(implementationGate).toEqual(manifest.implementationGate);
 
       const designHandoff = JSON.parse(await readFile(join(outDir, 'design-handoff.json'), 'utf8'));
       expect(designHandoff).toEqual(manifest.designHandoff);

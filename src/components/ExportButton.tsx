@@ -264,6 +264,7 @@ export const ExportButton: React.FC = () => {
         artifacts: {
           spec: 'phantom-spec.json',
           handoffSummary: 'handoff-summary.json',
+          implementationGate: 'implementation-gate.json',
           designHandoff: 'design-handoff.json',
           dataContract: ['data-contract/data-contract.json', 'data-contract/DATA_CONTRACT.md'],
           powerBi: ['power-bi/power-bi-implementation-guide.json', 'power-bi/POWER_BI_IMPLEMENTATION_GUIDE.md'],
@@ -366,6 +367,7 @@ ${handoffSummary.designWorkflow.requiredNextSteps.map((step) => `- ${step}`).joi
 - \`power-bi/\`: Power BI build guide with readiness, visual support status, fields, and drill-through notes.
 - \`react-product/\`: React implementation starting notes plus the same spec and data contract.
 - \`handoff-summary.json\`: first-pass implementation gate, design workflow, design mapping, readiness, recommendation, counts, and next actions for agents.
+- \`implementation-gate.json\`: standalone go/no-go decision for approval, design, data, workshop intent, and target-mode readiness.
 - \`design-handoff.json\`: component-level Figma/default provenance and missing design mappings for agents and engineers.
 - \`HANDOFF_MANIFEST.json\`: machine-readable index for agents and engineering automation.
 `;
@@ -434,6 +436,7 @@ npm run phantom:spec -- export-react phantom-spec.json ./generated-app
 
       zip.file('phantom-spec.json', JSON.stringify(spec, null, 2));
       zip.file('handoff-summary.json', JSON.stringify(handoffSummary, null, 2));
+      zip.file('implementation-gate.json', JSON.stringify(handoffSummary.implementationGate, null, 2));
       zip.file('design-handoff.json', JSON.stringify(designHandoff, null, 2));
       zip.file('HANDOFF_MANIFEST.json', JSON.stringify(manifest, null, 2));
       zip.file('README.md', readme);
