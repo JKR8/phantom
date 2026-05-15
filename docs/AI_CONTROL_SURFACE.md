@@ -60,6 +60,7 @@ node tools/phantom-spec-cli.mjs set-mode path/to/spec.json --mode react-product 
 node tools/phantom-spec-cli.mjs set-approval path/to/spec.json --status approved --out path/to/spec.approved.json
 node tools/phantom-spec-cli.mjs set-workshop-intent path/to/spec.json --business-questions "Which customers need attention?" --audience "Sales leadership" --decisions "Prioritise account follow-up" --acceptance-criteria "Leaders can identify and drill into priority accounts" --out path/to/spec.with-intent.json
 node tools/phantom-spec-cli.mjs add-view path/to/spec.json --id detail --name "Account Detail" --out path/to/spec.with-view.json
+node tools/phantom-spec-cli.mjs add-component path/to/spec.with-view.json --view detail --type table --title "Account Detail" --dimensions Region,Account --metrics revenue --out path/to/spec.with-detail-table.json
 node tools/phantom-spec-cli.mjs add-drill-action path/to/spec.json --source visual-1 --target-type view --target detail --label "Open detail" --context Region:Region --out path/to/spec.with-drill.json
 npm run phantom:spec -- inspect path/to/spec.json components
 npm run phantom:spec -- inspect path/to/spec.json drill-actions
@@ -100,6 +101,8 @@ node tools/phantom-spec-cli.mjs import-data-source path/to/spec.json --type dbt 
 `set-workshop-intent` writes a new spec with updated workshop intent fields: business questions, audience, decisions/actions, acceptance criteria, and optional build notes. Use it to repair `inspect workshop-intent` or `inspect implementation-gate` blockers from meeting notes before generating React or Power BI handoff artifacts.
 
 `add-view` adds or updates a dashboard/detail view in the spec. Use it before `add-drill-action` when a workshop defines a drill-through target page that does not exist yet; React starter exports turn these views into routes.
+
+`add-component` adds or updates a component inside a target view with layout, metrics, dimensions, fields, and React/Power BI export metadata. Use it after `add-view` when an agent needs a concrete table, KPI, or chart on a drill-through target before exporting a React starter or Power BI build guide.
 
 `add-drill-action` adds or updates an analytical journey action with a source component, trigger, target type, target id, context mapping, and preserve-filters flag. Use it to turn a workshop statement like "click this KPI/bar/row to open that detail view" into a spec-level interaction that React exports and Power BI build guides can carry forward.
 
@@ -155,6 +158,7 @@ Future commands should include:
 - `phantom spec set-workshop-intent <file> --business-questions <text> --audience <text> --decisions <text> --acceptance-criteria <text> --out <file>` implemented as `npm run phantom:spec -- set-workshop-intent <file> ...`
 - `phantom spec readiness <file> react|powerBi`
 - `phantom spec add-view <file> --id <view-id> --name <name> --out <file>` implemented as `npm run phantom:spec -- add-view <file> ...`
+- `phantom spec add-component <file> --view <view-id> --type <type> --title <title> --dimensions <fields> --metrics <fields> --out <file>` implemented as `npm run phantom:spec -- add-component <file> ...`
 - `phantom spec add-drill-action <file> --source <component-id> --target-type view --target <view-id> --context <source:target> --out <file>` implemented as `npm run phantom:spec -- add-drill-action <file> ...`
 - `phantom export pbi-report <file> --out <dir>`
 - `phantom export powerbi-guide <file> --out <dir>`

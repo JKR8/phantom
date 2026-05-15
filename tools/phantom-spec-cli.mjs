@@ -21,6 +21,7 @@ Usage:
   npm run phantom:spec -- set-approval <spec.json> approved <out-spec.json>
   npm run phantom:spec -- set-workshop-intent <spec.json> --business-questions "..." --audience "..." --decisions "..." --acceptance-criteria "..." --out <out-spec.json>
   npm run phantom:spec -- add-view <spec.json> --id detail --name "Region Detail" --out <out-spec.json>
+  npm run phantom:spec -- add-component <spec.json> --view detail --type table --title "Account Detail" --dimensions Region,Account --metrics revenue --out <out-spec.json>
   npm run phantom:spec -- add-drill-action <spec.json> --source visual-1 --target-type view --target detail --context Region:Region --out <out-spec.json>
   npm run phantom:spec -- import-design-source <spec.json> figmaFrame "Client frame" <url> <frame-id> "notes" <out-spec.json>
   npm run phantom:spec -- import-data-source <spec.json> dbt "Orders mart" mart_orders Region,revenue visual-1 <out-spec.json>
@@ -28,6 +29,7 @@ Usage:
   node tools/phantom-spec-cli.mjs set-approval <spec.json> --status approved --out <out-spec.json>
   node tools/phantom-spec-cli.mjs set-workshop-intent <spec.json> --business-questions "..." --audience "..." --decisions "..." --acceptance-criteria "..." --build-notes "..." --out <out-spec.json>
   node tools/phantom-spec-cli.mjs add-view <spec.json> --id detail --name "Region Detail" --out <out-spec.json>
+  node tools/phantom-spec-cli.mjs add-component <spec.json> --view detail --type table --title "Account Detail" --dimensions Region,Account --metrics revenue --out <out-spec.json>
   node tools/phantom-spec-cli.mjs add-drill-action <spec.json> --id drill-1 --source visual-1 --trigger click --target-type view --target detail --label "Open detail" --context Region:Region --out <out-spec.json>
   node tools/phantom-spec-cli.mjs import-design-source <spec.json> --type figmaFrame --name "Client frame" --url <url> --frame-id <frame-id> --views main --components kpi-1,chart-1 --out <out-spec.json>
   node tools/phantom-spec-cli.mjs import-data-source <spec.json> --type dbt --name "Orders mart" --model mart_orders --fields Region,revenue --components visual-1 --out <out-spec.json>
@@ -46,6 +48,7 @@ Commands:
   set-approval         Write a spec copy with updated sign-off status.
   set-workshop-intent  Write a spec copy with updated client workshop intent fields.
   add-view             Add or update a dashboard/detail view in a spec.
+  add-component        Add or update a component in a target view.
   add-drill-action     Add or update an analytical drill-through/navigation action.
   import-design-source Add or update a Figma/screenshot/reference design source in a spec.
   import-data-source   Add or update an API/warehouse/dbt/semantic/file data source in a spec.
@@ -404,6 +407,16 @@ const parseDrillContext = (value) => (value || '')
     return source ? { source, target: target || source } : null;
   })
   .filter(Boolean);
+
+const componentPowerBiStatus = (type) => {
+  if (['boxplot', 'histogram', 'violin', 'regressionScatter', 'mapBubble', 'mapChoropleth'].includes(type)) {
+    return { status: 'unsupported', notes: ['Design-only visual; use React Product Mode or document a Power BI custom visual.'] };
+  }
+  if (['lollipop', 'barbell', 'diverging', 'slope', 'lineForecast', 'lineStepped', 'bullet', 'ribbon'].includes(type)) {
+    return { status: 'approximate', notes: ['Approximate in native Power BI; validate implementation approach.'] };
+  }
+  return { status: 'ready', notes: [] };
+};
 
 const createApprovalStatus = (spec) => {
   const signOffStatus = spec.project?.specification?.signOffStatus || 'draft';
@@ -828,6 +841,85 @@ const addView = (spec) => {
     nextSpec,
     outPath: resolve(outPath),
     view,
+    summary: summarizeSpec(nextSpec),
+    implementationGate: createImplementationGate(nextSpec),
+  };
+};
+
+const addComponent = (spec) => {
+  const positional = positionalOptions();
+  const viewId = optionValue('--view') || optionValue('--view-id') || positional[0] || 'main';
+  const type = optionValue('--type') || positional[1] || 'table';
+  const title = optionValue('--title') || positional[2] || componentName(type).replace(/Component$/, '');
+  const id = optionValue('--id') || `${slug(viewId)}-${slug(title || type)}`;
+  const dimensions = csvOption('--dimensions', '--dimension');
+  const metrics = csvOption('--metrics', '--metric', '--measures', '--measure');
+  const explicitFields = csvOption('--fields');
+  const fields = uniqueSorted([...dimensions, ...metrics, ...explicitFields]);
+  const outPath = optionValue('--out') || positional[positional.length - 1];
+  if (!viewId) {
+    throw new Error('Missing --view id for add-component.');
+  }
+  if (!outPath) {
+    throw new Error('Missing --out path for add-component.');
+  }
+
+  const views = spec.views || [];
+  if (!views.some((view) => view.id === viewId)) {
+    throw new Error(`Target view does not exist in spec: ${viewId}.`);
+  }
+
+  const props = {
+    ...(dimensions[0] ? { dimension: dimensions[0] } : {}),
+    ...(dimensions.length ? { dimensions } : {}),
+    ...(metrics[0] ? { metric: metrics[0] } : {}),
+    ...(metrics.length ? { metrics } : {}),
+  };
+  const component = {
+    id,
+    type,
+    title,
+    layout: {
+      x: Number(optionValue('--x') || 0),
+      y: Number(optionValue('--y') || 0),
+      w: Number(optionValue('--w') || 12),
+      h: Number(optionValue('--h') || 8),
+    },
+    props,
+    dataRequirements: {
+      metrics,
+      dimensions,
+      fields,
+    },
+    exportTargets: {
+      react: { status: 'ready' },
+      powerBi: componentPowerBiStatus(type),
+    },
+  };
+  const nextViews = views.map((view) => view.id === viewId
+    ? {
+      ...view,
+      components: [
+        ...(view.components || []).filter((existingComponent) => existingComponent.id !== id),
+        component,
+      ],
+    }
+    : view);
+  const nextSpec = {
+    ...spec,
+    views: nextViews,
+    dataContract: {
+      ...(spec.dataContract || {}),
+      metrics: uniqueSorted([...(spec.dataContract?.metrics || []), ...metrics]),
+      dimensions: uniqueSorted([...(spec.dataContract?.dimensions || []), ...dimensions]),
+      fields: uniqueSorted([...(spec.dataContract?.fields || []), ...fields]),
+    },
+  };
+
+  return {
+    nextSpec,
+    outPath: resolve(outPath),
+    component,
     summary: summarizeSpec(nextSpec),
     implementationGate: createImplementationGate(nextSpec),
   };
@@ -2373,7 +2465,7 @@ try {
     process.exit(0);
   }
 
-  if (!['validate', 'summary', 'diff', 'readiness', 'export-react', 'export-data-contract', 'export-powerbi-guide', 'export-handoff-pack', 'inspect', 'set-mode', 'set-approval', 'set-workshop-intent', 'add-view', 'add-drill-action', 'import-design-source', 'import-data-source'].includes(command)) {
+  if (!['validate', 'summary', 'diff', 'readiness', 'export-react', 'export-data-contract', 'export-powerbi-guide', 'export-handoff-pack', 'inspect', 'set-mode', 'set-approval', 'set-workshop-intent', 'add-view', 'add-component', 'add-drill-action', 'import-design-source', 'import-data-source'].includes(command)) {
     throw new Error(`Unknown command: ${command}`);
   }
 
@@ -2489,6 +2581,21 @@ try {
     console.log(JSON.stringify({
       outPath,
       view,
+      summary,
+      implementationGate,
+    }, null, 2));
+  }
+
+  if (command === 'add-component') {
+    if (errors.length > 0) {
+      console.error(JSON.stringify({ valid: false, errors }, null, 2));
+      process.exit(1);
+    }
+    const { nextSpec, outPath, component, summary, implementationGate } = addComponent(spec);
+    await writeFile(outPath, `${JSON.stringify(nextSpec, null, 2)}\n`);
+    console.log(JSON.stringify({
+      outPath,
+      component,
       summary,
       implementationGate,
     }, null, 2));
