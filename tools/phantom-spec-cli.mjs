@@ -14,6 +14,7 @@ Usage:
   npm run phantom:spec -- export-react <spec.json> <dir>
   npm run phantom:spec -- export-data-contract <spec.json> <dir>
   npm run phantom:spec -- export-powerbi-guide <spec.json> <dir>
+  npm run phantom:spec -- export-handoff-pack <spec.json> <dir>
   npm run phantom:spec -- inspect <spec.json> components|drill-actions|data-requirements
 
 Commands:
@@ -23,6 +24,7 @@ Commands:
   export-react         Generate a minimal React starter scaffold from a ready spec.
   export-data-contract Generate JSON and Markdown data contract handoff files.
   export-powerbi-guide Generate a Power BI implementation guide.
+  export-handoff-pack  Generate a bundled React and Power BI handoff pack.
   inspect              Print a focused machine-readable view of a spec section.
 `);
 };
@@ -732,13 +734,95 @@ const writePowerBiGuide = async (spec, outDir) => {
   };
 };
 
+const writeHandoffPack = async (spec, outDir) => {
+  await rm(outDir, { recursive: true, force: true });
+  await mkdir(outDir, { recursive: true });
+
+  const dataContractDir = `${outDir}/data-contract`;
+  const powerBiDir = `${outDir}/power-bi`;
+  const reactDir = `${outDir}/react-starter`;
+  const dataContract = await writeDataContract(spec, dataContractDir);
+  const powerBiGuide = await writePowerBiGuide(spec, powerBiDir);
+  const reactStarter = await writeReactStarter(spec, reactDir);
+  const readiness = {
+    react: checkReadiness(spec, 'react'),
+    powerBi: checkReadiness(spec, 'powerBi'),
+  };
+  const manifest = {
+    manifestVersion: '0.1.0',
+    sourceSpecVersion: spec.specVersion,
+    generatedAt: new Date().toISOString(),
+    project: {
+      scenario: spec.project?.scenario,
+      mode: spec.mode,
+      designEntryPoint: spec.project?.designEntryPoint,
+      designSources: spec.project?.designSources || [],
+    },
+    readiness,
+    artifacts: {
+      spec: 'phantom-spec.json',
+      dataContract: dataContract.files.map((file) => `data-contract/${file}`),
+      powerBiGuide: powerBiGuide.files.map((file) => `power-bi/${file}`),
+      reactStarter: reactStarter.files.map((file) => `react-starter/${file}`),
+    },
+    summary: {
+      components: reactStarter.components,
+      fields: reactStarter.fields,
+      drillActions: reactStarter.drillActions,
+      powerBiApproximateVisuals: powerBiGuide.approximateVisuals,
+      powerBiUnsupportedVisuals: powerBiGuide.unsupportedVisuals,
+    },
+  };
+  const readme = `# ${spec.project?.scenario || 'Phantom'} Handoff Pack
+
+Generated from Phantom Spec ${spec.specVersion}.
+
+## Contents
+
+- \`phantom-spec.json\`: canonical workshop/spec artifact.
+- \`data-contract/\`: JSON and Markdown data contract for APIs, warehouse/dbt models, or semantic endpoints.
+- \`power-bi/\`: Power BI implementation guide with readiness, visual statuses, fields, drill-through notes, and blockers.
+- \`react-starter/\`: Vite/React starter app with the spec, data contract, and typed drill actions embedded.
+- \`HANDOFF_MANIFEST.json\`: machine-readable index for agents and implementation pipelines.
+
+## Readiness
+
+- React ready: ${readiness.react.ready ? 'Yes' : 'No'}
+- Power BI ready: ${readiness.powerBi.ready ? 'Yes' : 'No'}
+- Power BI warnings: ${readiness.powerBi.warnings.length}
+- Power BI errors: ${readiness.powerBi.errors.length}
+
+## Suggested Flow
+
+1. Review \`HANDOFF_MANIFEST.json\`.
+2. Use \`data-contract/\` to confirm fields and API/warehouse/dbt mappings.
+3. For React Product Mode, start from \`react-starter/\`.
+4. For Power BI Mode, use \`power-bi/POWER_BI_IMPLEMENTATION_GUIDE.md\` before building visuals.
+`;
+
+  await writeFile(`${outDir}/phantom-spec.json`, `${JSON.stringify(spec, null, 2)}\n`);
+  await writeFile(`${outDir}/HANDOFF_MANIFEST.json`, `${JSON.stringify(manifest, null, 2)}\n`);
+  await writeFile(`${outDir}/README.md`, readme);
+
+  return {
+    outDir,
+    files: ['phantom-spec.json', 'HANDOFF_MANIFEST.json', 'README.md'],
+    directories: ['data-contract', 'power-bi', 'react-starter'],
+    readiness: {
+      react: readiness.react.ready,
+      powerBi: readiness.powerBi.ready,
+    },
+    summary: manifest.summary,
+  };
+};
+
 try {
   if (!command || command === 'help' || command === '--help' || command === '-h') {
     usage();
     process.exit(0);
   }
 
-  if (!['validate', 'summary', 'readiness', 'export-react', 'export-data-contract', 'export-powerbi-guide', 'inspect'].includes(command)) {
+  if (!['validate', 'summary', 'readiness', 'export-react', 'export-data-contract', 'export-powerbi-guide', 'export-handoff-pack', 'inspect'].includes(command)) {
     throw new Error(`Unknown command: ${command}`);
   }
 
@@ -811,6 +895,14 @@ try {
       process.exit(1);
     }
     console.log(JSON.stringify(await writePowerBiGuide(spec, getOutDir(command)), null, 2));
+  }
+
+  if (command === 'export-handoff-pack') {
+    if (errors.length > 0) {
+      console.error(JSON.stringify({ valid: false, errors }, null, 2));
+      process.exit(1);
+    }
+    console.log(JSON.stringify(await writeHandoffPack(spec, getOutDir(command)), null, 2));
   }
 } catch (error) {
   console.error(JSON.stringify({ error: error.message }, null, 2));

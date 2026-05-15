@@ -53,6 +53,7 @@ npm run phantom:spec -- readiness path/to/spec.json powerBi
 npm run phantom:spec -- export-react path/to/spec.json ./generated-app
 npm run phantom:spec -- export-data-contract path/to/spec.json ./handoff
 npm run phantom:spec -- export-powerbi-guide path/to/spec.json ./handoff
+npm run phantom:spec -- export-handoff-pack path/to/spec.json ./handoff-pack
 npm run phantom:spec -- inspect path/to/spec.json components
 npm run phantom:spec -- inspect path/to/spec.json drill-actions
 npm run phantom:spec -- inspect path/to/spec.json data-requirements
@@ -79,6 +80,8 @@ npm run phantom:spec -- inspect path/to/spec.json data-requirements
 
 `export-powerbi-guide` creates `power-bi-implementation-guide.json` and `POWER_BI_IMPLEMENTATION_GUIDE.md` with Power BI readiness, visual support statuses, field requirements, drill-through notes, blockers, and a build checklist.
 
+`export-handoff-pack` creates a bundled folder with `phantom-spec.json`, `HANDOFF_MANIFEST.json`, `README.md`, `data-contract/`, `power-bi/`, and `react-starter/`. This is the preferred consultant-to-engineering handoff when both React Product Mode and Power BI Mode artifacts should travel together.
+
 ## Intended CLI Roadmap
 
 Future commands should include:
@@ -89,6 +92,7 @@ Future commands should include:
 - `phantom spec readiness <file> react|powerBi`
 - `phantom export pbi-report <file> --out <dir>`
 - `phantom export powerbi-guide <file> --out <dir>`
+- `phantom export handoff-pack <file> --out <dir>`
 - `phantom export data-contract <file> --out <dir>`
 - `phantom export react <file> --out <dir>`
 - `phantom inspect components <file>` implemented as `npm run phantom:spec -- inspect <file> components`
