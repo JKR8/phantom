@@ -16,7 +16,7 @@ Usage:
   npm run phantom:spec -- export-data-contract <spec.json> <dir>
   npm run phantom:spec -- export-powerbi-guide <spec.json> <dir>
   npm run phantom:spec -- export-handoff-pack <spec.json> <dir>
-  npm run phantom:spec -- inspect <spec.json> components|drill-actions|data-requirements|design-sources|react-backlog|powerbi-build-matrix
+  npm run phantom:spec -- inspect <spec.json> components|drill-actions|data-requirements|design-sources|react-backlog|powerbi-build-matrix|handoff-summary
   npm run phantom:spec -- import-design-source <spec.json> figmaFrame "Client frame" <url> <frame-id> "notes" <out-spec.json>
 
 Commands:
@@ -245,7 +245,44 @@ const inspectSpec = (spec, subject) => {
     };
   }
 
-  throw new Error('Inspect subject must be components, drill-actions, data-requirements, design-sources, react-backlog, or powerbi-build-matrix.');
+  if (subject === 'handoff-summary') {
+    const contract = createDataContract(spec);
+    const reactBacklog = createReactBacklog(spec);
+    const powerBiGuide = createPowerBiGuide(spec);
+    const reactReadiness = checkReadiness(spec, 'react');
+    return {
+      subject,
+      project: {
+        scenario: spec.project?.scenario,
+        mode: spec.mode,
+        designEntryPoint: spec.project?.designEntryPoint || 'phantom-led',
+        designSources: spec.project?.designSources || [],
+      },
+      readiness: {
+        react: reactReadiness,
+        powerBi: powerBiGuide.readiness,
+      },
+      counts: {
+        views: spec.views?.length || 0,
+        components: (spec.views || []).flatMap((view) => view.components || []).length,
+        fields: contract.fields.length,
+        metrics: contract.metrics.length,
+        dimensions: contract.dimensions.length,
+        drillActions: spec.interactions?.drillActions?.length || 0,
+        reactImplementationTasks: reactBacklog.length,
+        powerBiReadyVisuals: powerBiGuide.summary.readyVisuals,
+        powerBiApproximateVisuals: powerBiGuide.summary.approximateVisuals,
+        powerBiUnsupportedVisuals: powerBiGuide.summary.unsupportedVisuals,
+      },
+      nextActions: [
+        ...reactReadiness.errors.map((issue) => `React blocker: ${issue.message}`),
+        ...powerBiGuide.readiness.errors.map((issue) => `Power BI blocker: ${issue.message}`),
+        ...powerBiGuide.readiness.warnings.map((issue) => `Power BI warning: ${issue.message}`),
+      ],
+    };
+  }
+
+  throw new Error('Inspect subject must be components, drill-actions, data-requirements, design-sources, react-backlog, powerbi-build-matrix, or handoff-summary.');
 };
 
 const optionValue = (name) => {
