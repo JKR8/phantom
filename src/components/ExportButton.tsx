@@ -36,6 +36,8 @@ import {
   createPhantomDataContract,
   createPhantomDataContractMarkdown,
   createPhantomSpec,
+  createPowerBiImplementationGuide,
+  createPowerBiImplementationGuideMarkdown,
   downloadPBIPPackage,
   generateAllMeasures,
   getSchemaForScenario,
@@ -199,6 +201,16 @@ export const ExportButton: React.FC = () => {
     );
   };
 
+  const handlePowerBiGuideExport = () => {
+    const spec = createCurrentSpec();
+    const guide = createPowerBiImplementationGuide(spec);
+    downloadTextFile(
+      createPowerBiImplementationGuideMarkdown(guide),
+      `${scenario}_Power_BI_Implementation_Guide_${new Date().toISOString().split('T')[0]}.md`,
+      'text/markdown',
+    );
+  };
+
   return (
     <>
       <Menu>
@@ -217,6 +229,9 @@ export const ExportButton: React.FC = () => {
           <MenuList>
             <MenuItem icon={<DocumentDataRegular />} onClick={handlePBIExport}>
               Power BI Project (PBIP)
+            </MenuItem>
+            <MenuItem icon={<DocumentDataRegular />} onClick={handlePowerBiGuideExport}>
+              Power BI Build Guide
             </MenuItem>
             <MenuItem icon={<ImageRegular />} onClick={handlePNGExport}>
               Image (PNG)

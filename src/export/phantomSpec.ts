@@ -120,6 +120,39 @@ export interface PhantomDataContract {
   implementationNotes: string[];
 }
 
+export interface PhantomPowerBiImplementationGuide {
+  guideVersion: '0.1.0';
+  sourceSpecVersion: typeof PHANTOM_SPEC_VERSION;
+  generatedAt: string;
+  project: {
+    scenario: Scenario;
+    sourceMode: ExportMode;
+    designEntryPoint: 'figma-led' | 'phantom-led';
+    designSources: DesignSource[];
+  };
+  readiness: PhantomReadinessReport;
+  summary: {
+    views: number;
+    components: number;
+    readyVisuals: number;
+    approximateVisuals: number;
+    unsupportedVisuals: number;
+    drillActions: number;
+  };
+  components: Array<{
+    id: string;
+    title: string;
+    type: string;
+    powerBiStatus: PhantomExportStatus;
+    fields: string[];
+    metrics: string[];
+    dimensions: string[];
+    notes: string[];
+  }>;
+  drillActions: DrillAction[];
+  buildChecklist: string[];
+}
+
 const PBI_DESIGN_ONLY_VISUALS = new Set(['histogram', 'boxplot', 'violin', 'regressionScatter', 'barbell', 'slope']);
 const PBI_APPROXIMATE_VISUALS = new Set(['lollipop', 'diverging', 'bullet', 'lineForecast']);
 
@@ -360,6 +393,106 @@ ${drillRows || '| None | None | None | None | None |'}
 ## Implementation Notes
 
 ${markdownList(contract.implementationNotes)}
+`;
+};
+
+export const createPowerBiImplementationGuide = (
+  spec: PhantomSpec,
+  generatedAt = new Date().toISOString(),
+): PhantomPowerBiImplementationGuide => {
+  const components = getSpecComponents(spec);
+  const readyVisuals = components.filter((component) => component.exportTargets.powerBi.status === 'ready').length;
+  const approximateVisuals = components.filter((component) => component.exportTargets.powerBi.status === 'approximate').length;
+  const unsupportedVisuals = components.filter((component) => component.exportTargets.powerBi.status === 'unsupported').length;
+
+  return {
+    guideVersion: '0.1.0',
+    sourceSpecVersion: spec.specVersion,
+    generatedAt,
+    project: {
+      scenario: spec.project.scenario,
+      sourceMode: spec.mode,
+      designEntryPoint: spec.project.designEntryPoint,
+      designSources: spec.project.designSources,
+    },
+    readiness: checkPhantomReadiness(spec, 'powerBi'),
+    summary: {
+      views: spec.views.length,
+      components: components.length,
+      readyVisuals,
+      approximateVisuals,
+      unsupportedVisuals,
+      drillActions: spec.interactions.drillActions.length,
+    },
+    components: components.map((component) => ({
+      id: component.id,
+      title: component.title,
+      type: component.type,
+      powerBiStatus: component.exportTargets.powerBi.status,
+      fields: component.dataRequirements.fields,
+      metrics: component.dataRequirements.metrics,
+      dimensions: component.dataRequirements.dimensions,
+      notes: component.exportTargets.powerBi.notes,
+    })),
+    drillActions: spec.interactions.drillActions,
+    buildChecklist: [
+      'Confirm every unsupported visual has been replaced with a Power BI-safe alternative or moved to React Product Mode.',
+      'Review approximate visuals and choose the nearest native Power BI visual or document a custom visual requirement.',
+      'Create field wells from each component data requirement before styling visuals.',
+      'Implement drill-through pages or buttons for supported drill actions and document any behavior that requires bookmarks or custom navigation.',
+      'Apply theme palette, typography, spacing, and design-source references after data bindings are correct.',
+      'Run a final Power BI readiness check before client handoff.',
+    ],
+  };
+};
+
+export const createPowerBiImplementationGuideMarkdown = (guide: PhantomPowerBiImplementationGuide) => {
+  const componentRows = guide.components
+    .map((component) => `| ${component.id} | ${component.title} | ${component.type} | ${component.powerBiStatus} | ${component.fields.join(', ') || 'None'} | ${component.notes.join(' ') || 'None'} |`)
+    .join('\n');
+  const drillRows = guide.drillActions
+    .map((action) => `| ${action.id} | ${action.label} | ${action.sourceComponentId} | ${action.targetType}:${action.targetId} | ${action.context.map((context) => `${context.source}->${context.target}`).join(', ') || 'None'} | ${action.preserveFilters ? 'Yes' : 'No'} |`)
+    .join('\n');
+  const blockerList = [
+    ...guide.readiness.errors.map((issue) => `- ERROR ${issue.code}: ${issue.message}`),
+    ...guide.readiness.warnings.map((issue) => `- WARNING ${issue.code}: ${issue.message}`),
+  ];
+
+  return `# ${guide.project.scenario} Power BI Implementation Guide
+
+Generated from Phantom Spec ${guide.sourceSpecVersion}.
+
+## Readiness
+
+- Ready for Power BI handoff: ${guide.readiness.ready ? 'Yes' : 'No'}
+- Source mode: ${guide.project.sourceMode}
+- Entry point: ${guide.project.designEntryPoint}
+- Design sources: ${guide.project.designSources.length}
+- Components: ${guide.summary.components}
+- Ready visuals: ${guide.summary.readyVisuals}
+- Approximate visuals: ${guide.summary.approximateVisuals}
+- Unsupported visuals: ${guide.summary.unsupportedVisuals}
+- Drill actions: ${guide.summary.drillActions}
+
+## Issues
+
+${blockerList.length ? blockerList.join('\n') : '- None'}
+
+## Visual Build Matrix
+
+| Component ID | Title | Type | Power BI Status | Required Fields | Notes |
+| --- | --- | --- | --- | --- | --- |
+${componentRows || '| None | None | None | ready | None | None |'}
+
+## Drill-Through And Navigation
+
+| Action ID | Label | Source | Target | Context | Preserve Filters |
+| --- | --- | --- | --- | --- | --- |
+${drillRows || '| None | None | None | None | None | No |'}
+
+## Build Checklist
+
+${markdownList(guide.buildChecklist)}
 `;
 };
 

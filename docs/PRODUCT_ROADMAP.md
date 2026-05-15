@@ -208,6 +208,7 @@ Acceptance criteria:
 - A consultant can tell what is safe, approximate, or impossible before handoff.
 - The export pack gives a Power BI developer enough information to build without guessing.
 - Power BI Mode stays constrained even as React Product Mode grows.
+- The browser export menu and CLI can produce a Power BI implementation guide from the Phantom spec.
 
 ## Phase 7: Workshop And Approval Flow
 

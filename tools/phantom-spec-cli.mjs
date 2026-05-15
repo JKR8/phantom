@@ -13,6 +13,7 @@ Usage:
   npm run phantom:spec -- readiness <spec.json> react|powerBi
   npm run phantom:spec -- export-react <spec.json> <dir>
   npm run phantom:spec -- export-data-contract <spec.json> <dir>
+  npm run phantom:spec -- export-powerbi-guide <spec.json> <dir>
 
 Commands:
   validate             Validate a Phantom Spec JSON file for agent/build handoff.
@@ -20,6 +21,7 @@ Commands:
   readiness            Check React or Power BI handoff readiness.
   export-react         Generate a minimal React starter scaffold from a ready spec.
   export-data-contract Generate JSON and Markdown data contract handoff files.
+  export-powerbi-guide Generate a Power BI implementation guide.
 `);
 };
 
@@ -458,6 +460,13 @@ const createDataContract = (spec) => {
 
 const markdownList = (items) => (items.length ? items.map((item) => `- ${item}`).join('\n') : '- None specified');
 
+const formatDrillContext = (context = []) =>
+  context.map((item) => {
+    if (typeof item === 'string') return item;
+    if (item && typeof item === 'object') return `${item.source || ''}->${item.target || ''}`;
+    return String(item);
+  }).filter(Boolean).join(', ') || 'None';
+
 const writeDataContract = async (spec, outDir) => {
   await mkdir(outDir, { recursive: true });
   const contract = createDataContract(spec);
@@ -465,7 +474,7 @@ const writeDataContract = async (spec, outDir) => {
     .map((component) => `| ${component.componentId} | ${component.title} | ${component.type} | ${component.fields.join(', ') || 'None'} |`)
     .join('\n');
   const drillRows = contract.drillActions
-    .map((action) => `| ${action.id} | ${action.label} | ${action.sourceComponentId} | ${action.targetType}:${action.targetId} | ${(action.context || []).join(', ') || 'None'} |`)
+    .map((action) => `| ${action.id} | ${action.label} | ${action.sourceComponentId} | ${action.targetType}:${action.targetId} | ${formatDrillContext(action.context)} |`)
     .join('\n');
   const fieldRows = contract.fields
     .map((field) => `| ${field.name} | ${field.kind} | ${field.requiredBy.join(', ') || 'None'} |`)
@@ -524,13 +533,126 @@ ${markdownList(contract.implementationNotes)}
   };
 };
 
+const createPowerBiGuide = (spec) => {
+  const components = (spec.views || []).flatMap((view) => view.components || []);
+  const readiness = checkReadiness(spec, 'powerBi');
+  const countStatus = (status) => components.filter((component) => component.exportTargets?.powerBi?.status === status).length;
+
+  return {
+    guideVersion: '0.1.0',
+    sourceSpecVersion: spec.specVersion,
+    generatedAt: new Date().toISOString(),
+    project: {
+      scenario: spec.project?.scenario,
+      sourceMode: spec.mode,
+      designEntryPoint: spec.project?.designEntryPoint,
+      designSources: spec.project?.designSources || [],
+    },
+    readiness,
+    summary: {
+      views: spec.views?.length || 0,
+      components: components.length,
+      readyVisuals: countStatus('ready'),
+      approximateVisuals: countStatus('approximate'),
+      unsupportedVisuals: countStatus('unsupported'),
+      drillActions: spec.interactions?.drillActions?.length || 0,
+    },
+    components: components.map((component) => ({
+      id: component.id,
+      title: component.title,
+      type: component.type,
+      powerBiStatus: component.exportTargets?.powerBi?.status || 'unknown',
+      fields: component.dataRequirements?.fields || [],
+      metrics: component.dataRequirements?.metrics || [],
+      dimensions: component.dataRequirements?.dimensions || [],
+      notes: component.exportTargets?.powerBi?.notes || [],
+    })),
+    drillActions: spec.interactions?.drillActions || [],
+    buildChecklist: [
+      'Confirm every unsupported visual has been replaced with a Power BI-safe alternative or moved to React Product Mode.',
+      'Review approximate visuals and choose the nearest native Power BI visual or document a custom visual requirement.',
+      'Create field wells from each component data requirement before styling visuals.',
+      'Implement drill-through pages or buttons for supported drill actions and document any behavior that requires bookmarks or custom navigation.',
+      'Apply theme palette, typography, spacing, and design-source references after data bindings are correct.',
+      'Run a final Power BI readiness check before client handoff.',
+    ],
+  };
+};
+
+const powerBiGuideMarkdown = (guide) => {
+  const componentRows = guide.components
+    .map((component) => `| ${component.id} | ${component.title} | ${component.type} | ${component.powerBiStatus} | ${component.fields.join(', ') || 'None'} | ${component.notes.join(' ') || 'None'} |`)
+    .join('\n');
+  const drillRows = guide.drillActions
+    .map((action) => `| ${action.id} | ${action.label} | ${action.sourceComponentId} | ${action.targetType}:${action.targetId} | ${formatDrillContext(action.context)} | ${action.preserveFilters ? 'Yes' : 'No'} |`)
+    .join('\n');
+  const issues = [
+    ...guide.readiness.errors.map((issue) => `- ERROR ${issue.code}: ${issue.message}`),
+    ...guide.readiness.warnings.map((issue) => `- WARNING ${issue.code}: ${issue.message}`),
+  ];
+
+  return `# ${guide.project.scenario} Power BI Implementation Guide
+
+Generated from Phantom Spec ${guide.sourceSpecVersion}.
+
+## Readiness
+
+- Ready for Power BI handoff: ${guide.readiness.ready ? 'Yes' : 'No'}
+- Source mode: ${guide.project.sourceMode}
+- Entry point: ${guide.project.designEntryPoint}
+- Design sources: ${guide.project.designSources.length}
+- Components: ${guide.summary.components}
+- Ready visuals: ${guide.summary.readyVisuals}
+- Approximate visuals: ${guide.summary.approximateVisuals}
+- Unsupported visuals: ${guide.summary.unsupportedVisuals}
+- Drill actions: ${guide.summary.drillActions}
+
+## Issues
+
+${issues.length ? issues.join('\n') : '- None'}
+
+## Visual Build Matrix
+
+| Component ID | Title | Type | Power BI Status | Required Fields | Notes |
+| --- | --- | --- | --- | --- | --- |
+${componentRows || '| None | None | None | ready | None | None |'}
+
+## Drill-Through And Navigation
+
+| Action ID | Label | Source | Target | Context | Preserve Filters |
+| --- | --- | --- | --- | --- | --- |
+${drillRows || '| None | None | None | None | None | No |'}
+
+## Build Checklist
+
+${markdownList(guide.buildChecklist)}
+`;
+};
+
+const writePowerBiGuide = async (spec, outDir) => {
+  await mkdir(outDir, { recursive: true });
+  const guide = createPowerBiGuide(spec);
+  await writeFile(`${outDir}/power-bi-implementation-guide.json`, `${JSON.stringify(guide, null, 2)}\n`);
+  await writeFile(`${outDir}/POWER_BI_IMPLEMENTATION_GUIDE.md`, powerBiGuideMarkdown(guide));
+
+  return {
+    outDir,
+    files: ['power-bi-implementation-guide.json', 'POWER_BI_IMPLEMENTATION_GUIDE.md'],
+    ready: guide.readiness.ready,
+    components: guide.summary.components,
+    approximateVisuals: guide.summary.approximateVisuals,
+    unsupportedVisuals: guide.summary.unsupportedVisuals,
+    drillActions: guide.summary.drillActions,
+  };
+};
+
 try {
   if (!command || command === 'help' || command === '--help' || command === '-h') {
     usage();
     process.exit(0);
   }
 
-  if (!['validate', 'summary', 'readiness', 'export-react', 'export-data-contract'].includes(command)) {
+  if (!['validate', 'summary', 'readiness', 'export-react', 'export-data-contract', 'export-powerbi-guide'].includes(command)) {
     throw new Error(`Unknown command: ${command}`);
   }
 
@@ -587,6 +709,14 @@ try {
       process.exit(1);
     }
     console.log(JSON.stringify(await writeDataContract(spec, getOutDir(command)), null, 2));
+  }
+
+  if (command === 'export-powerbi-guide') {
+    if (errors.length > 0) {
+      console.error(JSON.stringify({ valid: false, errors }, null, 2));
+      process.exit(1);
+    }
+    console.log(JSON.stringify(await writePowerBiGuide(spec, getOutDir(command)), null, 2));
   }
 } catch (error) {
   console.error(JSON.stringify({ error: error.message }, null, 2));

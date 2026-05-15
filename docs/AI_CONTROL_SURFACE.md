@@ -52,6 +52,7 @@ npm run phantom:spec -- readiness path/to/spec.json react
 npm run phantom:spec -- readiness path/to/spec.json powerBi
 npm run phantom:spec -- export-react path/to/spec.json ./generated-app
 npm run phantom:spec -- export-data-contract path/to/spec.json ./handoff
+npm run phantom:spec -- export-powerbi-guide path/to/spec.json ./handoff
 ```
 
 `validate` returns:
@@ -71,6 +72,8 @@ npm run phantom:spec -- export-data-contract path/to/spec.json ./handoff
 
 `export-data-contract` creates `data-contract.json` and `DATA_CONTRACT.md` with fields, metrics, dimensions, component data requirements, filters, drill actions, design-source references, and implementation notes. This is the handoff artifact for client APIs, warehouse/dbt models, optional semantic endpoints, and agents that need a stable analytical contract.
 
+`export-powerbi-guide` creates `power-bi-implementation-guide.json` and `POWER_BI_IMPLEMENTATION_GUIDE.md` with Power BI readiness, visual support statuses, field requirements, drill-through notes, blockers, and a build checklist.
+
 ## Intended CLI Roadmap
 
 Future commands should include:
@@ -80,6 +83,7 @@ Future commands should include:
 - `phantom spec diff <before> <after>`
 - `phantom spec readiness <file> react|powerBi`
 - `phantom export pbi-report <file> --out <dir>`
+- `phantom export powerbi-guide <file> --out <dir>`
 - `phantom export data-contract <file> --out <dir>`
 - `phantom export react <file> --out <dir>`
 - `phantom inspect components <file>`

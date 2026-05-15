@@ -4,6 +4,8 @@ import {
   createPhantomDataContract,
   createPhantomDataContractMarkdown,
   createPhantomSpec,
+  createPowerBiImplementationGuide,
+  createPowerBiImplementationGuideMarkdown,
   getComponentDataRequirements,
   getPowerBiExportStatus,
 } from './phantomSpec';
@@ -155,5 +157,45 @@ describe('phantomSpec', () => {
     expect(contract.drillActions[0].targetId).toBe('region-detail');
     expect(markdown).toContain('| visual-1 | Revenue by Region | bar | Region, revenue |');
     expect(markdown).toContain('| drill-1 | Open region detail | visual-1 | detailPanel:region-detail | Region->region |');
+  });
+
+  it('creates a Power BI implementation guide with readiness and visual statuses', () => {
+    const spec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [
+        item({}),
+        item({ id: 'visual-2', type: 'lollipop', title: 'Ranked variance', props: { dimension: 'Region', metric: 'profit' } }),
+        item({ id: 'visual-3', type: 'boxplot', title: 'Profit distribution', props: { metric: 'profit' } }),
+      ],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'powerBi',
+      themePalette: 'Default',
+      drillActions: [
+        {
+          id: 'drill-1',
+          sourceComponentId: 'visual-1',
+          trigger: 'click',
+          targetType: 'view',
+          targetId: 'region-detail',
+          label: 'Open region detail',
+          context: [{ source: 'Region', target: 'region' }],
+          preserveFilters: true,
+        },
+      ],
+      generatedAt: '2026-05-15T00:00:00.000Z',
+    });
+
+    const guide = createPowerBiImplementationGuide(spec, '2026-05-15T01:00:00.000Z');
+    const markdown = createPowerBiImplementationGuideMarkdown(guide);
+
+    expect(guide.readiness.ready).toBe(false);
+    expect(guide.summary.readyVisuals).toBe(1);
+    expect(guide.summary.approximateVisuals).toBe(1);
+    expect(guide.summary.unsupportedVisuals).toBe(1);
+    expect(guide.components.map((component) => component.powerBiStatus)).toEqual(['ready', 'approximate', 'unsupported']);
+    expect(markdown).toContain('| visual-2 | Ranked variance | lollipop | approximate | Region, profit |');
+    expect(markdown).toContain('ERROR POWER_BI_UNSUPPORTED_VISUAL');
+    expect(markdown).toContain('| drill-1 | Open region detail | visual-1 | view:region-detail | Region->region | Yes |');
   });
 });
