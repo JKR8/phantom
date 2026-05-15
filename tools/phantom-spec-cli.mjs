@@ -10,6 +10,7 @@ const usage = () => {
 Usage:
   npm run phantom:spec -- validate <spec.json>
   npm run phantom:spec -- summary <spec.json>
+  npm run phantom:spec -- diff <before.json> <after.json>
   npm run phantom:spec -- readiness <spec.json> react|powerBi
   npm run phantom:spec -- export-react <spec.json> <dir>
   npm run phantom:spec -- export-data-contract <spec.json> <dir>
@@ -20,6 +21,7 @@ Usage:
 Commands:
   validate             Validate a Phantom Spec JSON file for agent/build handoff.
   summary              Print a compact machine-readable summary.
+  diff                 Compare two Phantom Spec JSON files.
   readiness            Check React or Power BI handoff readiness.
   export-react         Generate a minimal React starter scaffold from a ready spec.
   export-data-contract Generate JSON and Markdown data contract handoff files.
@@ -91,6 +93,73 @@ const summarizeSpec = (spec) => {
     metrics: spec.dataContract?.metrics || [],
     dimensions: spec.dataContract?.dimensions || [],
     powerBi: byPowerBiStatus,
+  };
+};
+
+const byId = (items) => new Map(items.map((item) => [item.id, item]));
+
+const arrayDiff = (before = [], after = []) => ({
+  added: after.filter((item) => !before.includes(item)),
+  removed: before.filter((item) => !after.includes(item)),
+});
+
+const changedKeys = (before, after, keys) =>
+  keys.filter((key) => JSON.stringify(before?.[key]) !== JSON.stringify(after?.[key]));
+
+const diffSpecs = (before, after) => {
+  const beforeComponents = (before.views || []).flatMap((view) => view.components || []);
+  const afterComponents = (after.views || []).flatMap((view) => view.components || []);
+  const beforeById = byId(beforeComponents);
+  const afterById = byId(afterComponents);
+  const beforeDrills = before.interactions?.drillActions || [];
+  const afterDrills = after.interactions?.drillActions || [];
+  const beforeDrillById = byId(beforeDrills);
+  const afterDrillById = byId(afterDrills);
+  const addedComponents = afterComponents.filter((component) => !beforeById.has(component.id));
+  const removedComponents = beforeComponents.filter((component) => !afterById.has(component.id));
+  const changedComponents = afterComponents
+    .filter((component) => beforeById.has(component.id))
+    .map((component) => {
+      const previous = beforeById.get(component.id);
+      const changes = changedKeys(previous, component, ['title', 'type', 'layout', 'props', 'dataRequirements', 'exportTargets']);
+      return changes.length > 0 ? {
+        id: component.id,
+        title: component.title,
+        changes,
+        beforePowerBiStatus: previous.exportTargets?.powerBi?.status || 'unknown',
+        afterPowerBiStatus: component.exportTargets?.powerBi?.status || 'unknown',
+      } : null;
+    })
+    .filter(Boolean);
+  const changedDrillActions = afterDrills
+    .filter((action) => beforeDrillById.has(action.id))
+    .map((action) => {
+      const previous = beforeDrillById.get(action.id);
+      const changes = changedKeys(previous, action, ['label', 'sourceComponentId', 'trigger', 'targetType', 'targetId', 'context', 'preserveFilters', 'notes']);
+      return changes.length > 0 ? { id: action.id, label: action.label, changes } : null;
+    })
+    .filter(Boolean);
+
+  return {
+    before: summarizeSpec(before),
+    after: summarizeSpec(after),
+    projectChanges: changedKeys(before.project, after.project, ['scenario', 'themePalette', 'designEntryPoint', 'designSources']),
+    modeChanged: before.mode !== after.mode,
+    dataRequirements: {
+      metrics: arrayDiff(before.dataContract?.metrics || [], after.dataContract?.metrics || []),
+      dimensions: arrayDiff(before.dataContract?.dimensions || [], after.dataContract?.dimensions || []),
+      fields: arrayDiff(before.dataContract?.fields || [], after.dataContract?.fields || []),
+    },
+    components: {
+      added: addedComponents.map((component) => ({ id: component.id, title: component.title, type: component.type })),
+      removed: removedComponents.map((component) => ({ id: component.id, title: component.title, type: component.type })),
+      changed: changedComponents,
+    },
+    drillActions: {
+      added: afterDrills.filter((action) => !beforeDrillById.has(action.id)),
+      removed: beforeDrills.filter((action) => !afterDrillById.has(action.id)),
+      changed: changedDrillActions,
+    },
   };
 };
 
@@ -822,8 +891,21 @@ try {
     process.exit(0);
   }
 
-  if (!['validate', 'summary', 'readiness', 'export-react', 'export-data-contract', 'export-powerbi-guide', 'export-handoff-pack', 'inspect'].includes(command)) {
+  if (!['validate', 'summary', 'diff', 'readiness', 'export-react', 'export-data-contract', 'export-powerbi-guide', 'export-handoff-pack', 'inspect'].includes(command)) {
     throw new Error(`Unknown command: ${command}`);
+  }
+
+  if (command === 'diff') {
+    const beforeSpec = await readSpec(specPath);
+    const afterSpec = await readSpec(args[0]);
+    const beforeErrors = validateSpec(beforeSpec);
+    const afterErrors = validateSpec(afterSpec);
+    if (beforeErrors.length > 0 || afterErrors.length > 0) {
+      console.error(JSON.stringify({ valid: false, beforeErrors, afterErrors }, null, 2));
+      process.exit(1);
+    }
+    console.log(JSON.stringify(diffSpecs(beforeSpec, afterSpec), null, 2));
+    process.exit(0);
   }
 
   const spec = await readSpec(specPath);

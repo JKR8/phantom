@@ -48,6 +48,7 @@ The current CLI starts with spec validation and summary:
 ```bash
 npm run phantom:spec -- validate path/to/spec.json
 npm run phantom:spec -- summary path/to/spec.json
+npm run phantom:spec -- diff before.json after.json
 npm run phantom:spec -- readiness path/to/spec.json react
 npm run phantom:spec -- readiness path/to/spec.json powerBi
 npm run phantom:spec -- export-react path/to/spec.json ./generated-app
@@ -70,6 +71,8 @@ npm run phantom:spec -- inspect path/to/spec.json data-requirements
 
 `summary` returns a compact JSON payload with scenario, mode, component count, data requirements, and Power BI support counts.
 
+`diff` returns project, mode, component, drill action, and data requirement changes between two Phantom specs. Use it after workshops or AI edits before regenerating implementation artifacts.
+
 `inspect` returns focused JSON for `components`, `drill-actions`, or `data-requirements`, so agents can query the spec before deciding what to generate or validate.
 
 `readiness` returns a machine-readable report with `ready`, `errors`, and `warnings`. It exits non-zero when blockers exist, which lets agents and CI stop before generating misleading implementation output.
@@ -90,7 +93,7 @@ Future commands should include:
 
 - `phantom spec validate <file>`
 - `phantom spec summary <file>`
-- `phantom spec diff <before> <after>`
+- `phantom spec diff <before> <after>` implemented as `npm run phantom:spec -- diff <before> <after>`
 - `phantom spec readiness <file> react|powerBi`
 - `phantom export pbi-report <file> --out <dir>`
 - `phantom export powerbi-guide <file> --out <dir>`
