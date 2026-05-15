@@ -32,6 +32,7 @@ import {
   TIME_GRAIN_OPTIONS,
   COMPARISON_OPTIONS,
 } from './property-inputs';
+import type { DrillAction, DrillActionTargetType } from '../types';
 
 const useStyles = makeStyles({
   panel: {
@@ -140,6 +141,11 @@ const useStyles = makeStyles({
     marginTop: '4px',
     lineHeight: '1.4',
   },
+  buttonRow: {
+    display: 'flex',
+    gap: '8px',
+    flexWrap: 'wrap',
+  },
 });
 
 // OPERATION_OPTIONS imported from property-inputs
@@ -233,6 +239,10 @@ export const PropertiesPanel: React.FC = () => {
   const updateItemProps = useStore((s) => s.updateItemProps);
   const updateItemTitle = useStore((s) => s.updateItemTitle);
   const updateItemNotes = useStore((s) => s.updateItemNotes);
+  const drillActions = useStore((s) => s.drillActions);
+  const addDrillAction = useStore((s) => s.addDrillAction);
+  const updateDrillAction = useStore((s) => s.updateDrillAction);
+  const removeDrillAction = useStore((s) => s.removeDrillAction);
   const scenario = useStore((s) => s.scenario) as ScenarioType;
 
   const item = items.find((i) => i.id === selectedItemId);
@@ -275,6 +285,8 @@ export const PropertiesPanel: React.FC = () => {
   const validation = item._validation;
   const manualData: Array<{ label: string; value: number }> = (props.manualData as Array<{ label: string; value: number }>) || [];
   const dataSource = props.manualData ? 'manual' : 'auto';
+  const drillAction = drillActions.find((action) => action.sourceComponentId === item.id);
+  const drillContext = drillAction?.context[0];
 
   const setDataSource = (source: string) => {
     if (source === 'manual') {
@@ -301,6 +313,37 @@ export const PropertiesPanel: React.FC = () => {
   const removeManualRow = (index: number) => {
     const updated = manualData.filter((_, i) => i !== index);
     onPropChange('manualData', updated.length > 0 ? updated : undefined);
+  };
+
+  const defaultContextField = String(props.dimension || props.metric || props.category || props.geoDimension || '');
+
+  const createDrillAction = () => {
+    const nextAction: DrillAction = {
+      id: `drill-${item.id}-${Date.now()}`,
+      sourceComponentId: item.id,
+      trigger: item.type === 'table' || item.type === 'matrix' ? 'rowClick' : 'click',
+      targetType: 'detailPanel',
+      targetId: `${item.id}-detail`,
+      label: `Open ${item.title} detail`,
+      context: defaultContextField ? [{ source: defaultContextField, target: defaultContextField }] : [],
+      preserveFilters: true,
+    };
+    addDrillAction(nextAction);
+  };
+
+  const updateSelectedDrillAction = (updates: Partial<DrillAction>) => {
+    if (drillAction) updateDrillAction(drillAction.id, updates);
+  };
+
+  const updateDrillContext = (field: 'source' | 'target', value: string) => {
+    const currentContext = drillContext || { source: defaultContextField, target: defaultContextField };
+    const nextContext = {
+      ...currentContext,
+      [field]: value,
+    };
+    updateSelectedDrillAction({
+      context: nextContext.source || nextContext.target ? [nextContext] : [],
+    });
   };
 
   // Determine which fields to show based on visual type
@@ -1145,6 +1188,126 @@ export const PropertiesPanel: React.FC = () => {
       </div>
 
       {/* Four Questions Notes */}
+      <Divider />
+      <div className={styles.section}>
+        <Text className={styles.sectionHeader}>Drill Action</Text>
+        {!drillAction ? (
+          <>
+            <Text className={styles.notesHint}>
+              Define what happens when a user clicks this visual in the finished analytical app or Power BI report.
+            </Text>
+            <Button
+              appearance="secondary"
+              icon={<AddRegular />}
+              size="small"
+              className={styles.addButton}
+              onClick={createDrillAction}
+            >
+              Add Drill Action
+            </Button>
+          </>
+        ) : (
+          <>
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Label</Label>
+              <Input
+                size="small"
+                value={drillAction.label}
+                onChange={(_, d) => updateSelectedDrillAction({ label: d.value })}
+              />
+            </div>
+
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Trigger</Label>
+              <Select
+                size="small"
+                value={drillAction.trigger}
+                onChange={(_, d) => updateSelectedDrillAction({ trigger: d.value as DrillAction['trigger'] })}
+              >
+                <option value="click">Click</option>
+                <option value="rowClick">Row Click</option>
+                <option value="pointClick">Point Click</option>
+                <option value="markClick">Mark Click</option>
+              </Select>
+            </div>
+
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Target Type</Label>
+              <Select
+                size="small"
+                value={drillAction.targetType}
+                onChange={(_, d) => updateSelectedDrillAction({ targetType: d.value as DrillActionTargetType })}
+              >
+                <option value="view">View</option>
+                <option value="detailPanel">Detail Panel</option>
+                <option value="modal">Modal</option>
+                <option value="entityProfile">Entity Profile</option>
+                <option value="externalUrl">External URL</option>
+              </Select>
+            </div>
+
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Target ID or URL</Label>
+              <Input
+                size="small"
+                placeholder="region-detail"
+                value={drillAction.targetId}
+                onChange={(_, d) => updateSelectedDrillAction({ targetId: d.value })}
+              />
+            </div>
+
+            <div className={styles.dataRow}>
+              <div className={`${styles.fieldRow} ${styles.dataInput}`}>
+                <Label className={styles.fieldLabel}>Context Field</Label>
+                <Input
+                  size="small"
+                  placeholder="Region"
+                  value={drillContext?.source || ''}
+                  onChange={(_, d) => updateDrillContext('source', d.value)}
+                />
+              </div>
+              <div className={`${styles.fieldRow} ${styles.dataInput}`}>
+                <Label className={styles.fieldLabel}>Target Param</Label>
+                <Input
+                  size="small"
+                  placeholder="region"
+                  value={drillContext?.target || ''}
+                  onChange={(_, d) => updateDrillContext('target', d.value)}
+                />
+              </div>
+            </div>
+
+            <Checkbox
+              checked={drillAction.preserveFilters}
+              onChange={(_, d) => updateSelectedDrillAction({ preserveFilters: !!d.checked })}
+              label="Preserve active filters"
+            />
+
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Notes</Label>
+              <Textarea
+                className={styles.notesTextarea}
+                placeholder="Describe the target view, expected detail, or implementation caveat..."
+                value={drillAction.notes || ''}
+                onChange={(_, d) => updateSelectedDrillAction({ notes: d.value })}
+                resize="vertical"
+              />
+            </div>
+
+            <div className={styles.buttonRow}>
+              <Button
+                appearance="subtle"
+                icon={<DeleteRegular />}
+                size="small"
+                onClick={() => removeDrillAction(drillAction.id)}
+              >
+                Remove Drill Action
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+
       <Divider />
       <div className={styles.section}>
         <Text className={styles.sectionHeader}>Four Questions</Text>
