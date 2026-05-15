@@ -5,6 +5,7 @@ import {
   PHANTOM_V2_SCHEMA_ID,
   parseAndValidatePhantomSpecV2Markdown,
   parsePhantomSpecV2Markdown,
+  scorePhantomSpecV2Readiness,
   validatePhantomSpecV2Document,
 } from './phantomSpecV2';
 
@@ -44,13 +45,14 @@ describe('phantomSpecV2', () => {
 
   it('validates the Phantom v0.2 spec as the executable target document', async () => {
     const markdown = await readV2Spec();
-    const { document, validation } = parseAndValidatePhantomSpecV2Markdown(markdown);
+    const { document, validation, readiness } = parseAndValidatePhantomSpecV2Markdown(markdown);
 
     expect(validation).toEqual({
       valid: true,
       errors: [],
       warnings: [],
     });
+    expect(readiness.target).toBe('react');
 
     const pagesBlock = document.blocks.find((block) => block.header.id === 'pages');
     const metricsBlock = document.blocks.find((block) => block.header.id === 'metrics');
@@ -79,6 +81,69 @@ describe('phantomSpecV2', () => {
       expect.objectContaining({ id: 'react_app' }),
       expect.objectContaining({ id: 'power_bi_build_notes' }),
       expect.objectContaining({ id: 'approval_pack' }),
+    ]));
+  });
+
+  it('scores v0.2 readiness from weighted model categories and gates', async () => {
+    const markdown = await readV2Spec();
+    const document = parsePhantomSpecV2Markdown(markdown);
+    const reactReadiness = scorePhantomSpecV2Readiness(document, 'react');
+    const powerBiReadiness = scorePhantomSpecV2Readiness(document, 'power_bi');
+
+    expect(reactReadiness.threshold).toBe(0.85);
+    expect(reactReadiness.categories).toMatchObject({
+      requiredFieldsCompleteness: {
+        weight: 0.4,
+        numerator: 2,
+        denominator: 3,
+      },
+      metricCompleteness: {
+        weight: 0.25,
+        numerator: 3,
+        denominator: 3,
+      },
+      interactionCompleteness: {
+        weight: 0.2,
+        numerator: 4,
+        denominator: 4,
+      },
+      targetRenderCompatibility: {
+        weight: 0.15,
+        numerator: 3,
+        denominator: 3,
+      },
+    });
+    expect(reactReadiness.score).toBeCloseTo(0.8667, 4);
+    expect(reactReadiness.gates).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: 'current_version_approval',
+        passed: false,
+      }),
+      expect.objectContaining({
+        id: 'no_unowned_data_gaps',
+        passed: true,
+      }),
+      expect.objectContaining({
+        id: 'all_drill_targets_defined',
+        passed: true,
+      }),
+    ]));
+    expect(reactReadiness.buildReady).toBe(false);
+    expect(reactReadiness.blockingIssues).toEqual([
+      expect.objectContaining({
+        code: 'GATE_CURRENT_VERSION_APPROVAL_FAILED',
+      }),
+    ]);
+
+    expect(powerBiReadiness.categories.targetRenderCompatibility).toMatchObject({
+      numerator: 2,
+      denominator: 3,
+    });
+    expect(powerBiReadiness.score).toBeCloseTo(0.8167, 4);
+    expect(powerBiReadiness.blockingIssues).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        code: 'READINESS_BELOW_THRESHOLD',
+      }),
     ]));
   });
 
