@@ -198,6 +198,7 @@ const getOutDir = (commandName) => {
 
 const writeReactStarter = async (spec, outDir) => {
   const components = (spec.views || []).flatMap((view) => view.components || []);
+  const dataContract = createDataContract(spec);
   await rm(outDir, { recursive: true, force: true });
   await mkdir(`${outDir}/src`, { recursive: true });
 
@@ -227,6 +228,8 @@ const writeReactStarter = async (spec, outDir) => {
   const appTsx = `import React from 'react';
 import { createRoot } from 'react-dom/client';
 import spec from './phantom-spec.json';
+import dataContract from './phantom-data-contract.json';
+import { drillActions } from './drill-actions';
 import './styles.css';
 
 const ComponentCard = ({ component }: { component: any }) => (
@@ -248,6 +251,8 @@ const App = () => (
         <span>{spec.mode}</span>
         <span>{spec.project.designEntryPoint}</span>
         <span>{spec.views.length} view(s)</span>
+        <span>{dataContract.fields.length} field(s)</span>
+        <span>{drillActions.length} drill action(s)</span>
       </div>
     </header>
     {spec.views.map((view: any) => (
@@ -346,6 +351,8 @@ This is a minimal implementation starting point, not a finished analytics app.
 It includes:
 
 - the exported Phantom Spec
+- the exported Phantom data contract
+- drill action definitions for routes/detail panels
 - a React/Vite shell
 - one placeholder card per Phantom component
 - data requirements visible in the UI
@@ -356,6 +363,26 @@ It includes:
 2. Wire data requirements to the client API, warehouse/dbt model, or semantic API.
 3. Implement drill actions from \`spec.interactions.drillActions\`.
 4. Apply any Figma/design-source references from \`spec.project.designSources\`.
+`;
+
+  const drillActionsTs = `export type DrillActionContextMap = {
+  source: string;
+  target: string;
+};
+
+export type DrillAction = {
+  id: string;
+  sourceComponentId: string;
+  trigger: 'click' | 'rowClick' | 'pointClick' | 'markClick';
+  targetType: 'view' | 'detailPanel' | 'modal' | 'entityProfile' | 'externalUrl';
+  targetId: string;
+  label: string;
+  context: DrillActionContextMap[];
+  preserveFilters: boolean;
+  notes?: string;
+};
+
+export const drillActions = ${JSON.stringify(spec.interactions?.drillActions || [], null, 2)} satisfies DrillAction[];
 `;
 
   await writeFile(`${outDir}/package.json`, `${JSON.stringify(packageJson, null, 2)}\n`);
@@ -391,12 +418,16 @@ export default defineConfig({
   await writeFile(`${outDir}/src/App.tsx`, appTsx);
   await writeFile(`${outDir}/src/styles.css`, styles);
   await writeFile(`${outDir}/src/phantom-spec.json`, `${JSON.stringify(spec, null, 2)}\n`);
+  await writeFile(`${outDir}/src/phantom-data-contract.json`, `${JSON.stringify(dataContract, null, 2)}\n`);
+  await writeFile(`${outDir}/src/drill-actions.ts`, drillActionsTs);
   await writeFile(`${outDir}/README.md`, readme);
 
   return {
     outDir,
-    files: ['package.json', 'index.html', 'tsconfig.json', 'vite.config.ts', 'src/App.tsx', 'src/styles.css', 'src/phantom-spec.json', 'README.md'],
+    files: ['package.json', 'index.html', 'tsconfig.json', 'vite.config.ts', 'src/App.tsx', 'src/styles.css', 'src/phantom-spec.json', 'src/phantom-data-contract.json', 'src/drill-actions.ts', 'README.md'],
     components: components.length,
+    fields: dataContract.fields.length,
+    drillActions: dataContract.drillActions.length,
   };
 };
 
