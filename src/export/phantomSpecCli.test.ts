@@ -34,6 +34,24 @@ const createReadySpec = () => ({
           linkedFields: ['Region', 'Account', 'revenue'],
         },
       ],
+      requirementItems: [
+        {
+          id: 'req-client-segment',
+          title: 'Confirm regional segmentation',
+          detail: 'Client must confirm whether APAC should be split out.',
+          disposition: 'client_decision',
+          status: 'open',
+          ownerRole: 'client_stakeholder',
+        },
+        {
+          id: 'req-default-sort',
+          title: 'Sort regions by revenue descending',
+          disposition: 'assumption',
+          status: 'resolved',
+          ownerRole: 'consultant',
+          resolution: 'Use descending revenue sort unless challenged.',
+        },
+      ],
     },
     designEntryPoint: 'figma-led',
     designSources: [
@@ -117,6 +135,38 @@ const createReadySpec = () => ({
 });
 
 describe('phantom spec CLI', () => {
+  it('inspects classified workflow requirements for agents', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'phantom-requirements-inspect-'));
+    const specPath = join(tempDir, 'spec.json');
+    const spec = createReadySpec();
+
+    try {
+      await writeFile(specPath, `${JSON.stringify(spec, null, 2)}\n`);
+      const { stdout } = await execFileAsync(
+        process.execPath,
+        ['tools/phantom-spec-cli.mjs', 'inspect', specPath, 'requirements'],
+        { cwd: process.cwd() },
+      );
+      const result = JSON.parse(stdout);
+
+      expect(result).toMatchObject({
+        subject: 'requirements',
+        counts: {
+          client_decision: 1,
+          consultant_task: 0,
+          assumption: 1,
+          accepted_gap: 0,
+          export_blocker: 0,
+        },
+      });
+      expect(result.openItems).toHaveLength(1);
+      expect(result.clientQuestions[0].id).toBe('req-client-segment');
+      expect(result.assumptions[0].resolution).toContain('descending revenue');
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  }, 30000);
+
   it('exports React starters with route and component contracts', async () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'phantom-react-export-'));
     const specPath = join(tempDir, 'spec.json');
@@ -228,6 +278,17 @@ describe('phantom spec CLI', () => {
       expect(handoffSummary.implementationGate).toEqual(manifest.implementationGate);
       expect(handoffSummary.dataPath).toEqual(manifest.dataPath);
       expect(handoffSummary.designHandoff).toEqual(manifest.designHandoff);
+      expect(handoffSummary.requirements).toMatchObject({
+        subject: 'requirements',
+        counts: {
+          client_decision: 1,
+          consultant_task: 0,
+          assumption: 1,
+          accepted_gap: 0,
+          export_blocker: 0,
+        },
+      });
+      expect(handoffSummary.requirements.clientQuestions[0].id).toBe('req-client-segment');
 
       const implementationGate = JSON.parse(await readFile(join(outDir, 'implementation-gate.json'), 'utf8'));
       expect(implementationGate).toEqual(manifest.implementationGate);

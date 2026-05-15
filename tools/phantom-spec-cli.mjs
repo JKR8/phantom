@@ -17,7 +17,7 @@ Usage:
   npm run phantom:spec -- export-data-contract <spec.json> <dir>
   npm run phantom:spec -- export-powerbi-guide <spec.json> <dir>
   npm run phantom:spec -- export-handoff-pack <spec.json> <dir>
-  npm run phantom:spec -- inspect <spec.json> views|components|drill-actions|data-requirements|data-path|design-sources|design-mapping|design-workflow|design-handoff|approval|implementation-gate|workshop-intent|react-backlog|powerbi-build-matrix|handoff-summary
+  npm run phantom:spec -- inspect <spec.json> views|components|drill-actions|data-requirements|data-path|design-sources|design-mapping|design-workflow|design-handoff|approval|implementation-gate|workshop-intent|requirements|react-backlog|powerbi-build-matrix|handoff-summary
   npm run phantom:spec -- set-mode <spec.json> react|powerBi <out-spec.json>
   npm run phantom:spec -- set-approval <spec.json> approved <out-spec.json>
   npm run phantom:spec -- set-workshop-intent <spec.json> --business-questions "..." --audience "..." --decisions "..." --acceptance-criteria "..." --out <out-spec.json>
@@ -305,6 +305,10 @@ const inspectSpec = (spec, subject) => {
     };
   }
 
+  if (subject === 'requirements') {
+    return createRequirementSummary(spec);
+  }
+
   if (subject === 'react-backlog') {
     const tasks = createReactBacklog(spec);
     return {
@@ -351,6 +355,7 @@ const inspectSpec = (spec, subject) => {
       designMapping: createDesignMappingSummary(spec.project?.designSources || []),
       workshopIntent,
       workshopCompleteness: createWorkshopIntentCompleteness(workshopIntent),
+      requirements: createRequirementSummary(spec),
       readiness: {
         react: reactReadiness,
         powerBi: powerBiGuide.readiness,
@@ -372,7 +377,7 @@ const inspectSpec = (spec, subject) => {
     };
   }
 
-  throw new Error('Inspect subject must be views, components, drill-actions, data-requirements, data-path, design-sources, design-mapping, design-workflow, design-handoff, approval, implementation-gate, workshop-intent, react-backlog, powerbi-build-matrix, or handoff-summary.');
+  throw new Error('Inspect subject must be views, components, drill-actions, data-requirements, data-path, design-sources, design-mapping, design-workflow, design-handoff, approval, implementation-gate, workshop-intent, requirements, react-backlog, powerbi-build-matrix, or handoff-summary.');
 };
 
 const optionValue = (name) => {
@@ -1840,6 +1845,40 @@ const workshopIntentRequiredFields = [
   { key: 'decisions', label: 'decisions/actions' },
   { key: 'acceptanceCriteria', label: 'acceptance criteria' },
 ];
+
+const createRequirementCounts = () => ({
+  client_decision: 0,
+  consultant_task: 0,
+  assumption: 0,
+  accepted_gap: 0,
+  export_blocker: 0,
+});
+
+const createRequirementSummary = (spec) => {
+  const items = Array.isArray(spec.project?.specification?.requirementItems)
+    ? spec.project.specification.requirementItems
+    : [];
+  const openItems = items.filter((item) => item.status !== 'resolved');
+  const resolvedItems = items.filter((item) => item.status === 'resolved');
+  const counts = items.reduce((acc, item) => {
+    if (item.disposition in acc) {
+      acc[item.disposition] += 1;
+    }
+    return acc;
+  }, createRequirementCounts());
+
+  return {
+    subject: 'requirements',
+    counts,
+    openItems,
+    resolvedItems,
+    clientQuestions: items.filter((item) => item.disposition === 'client_decision'),
+    consultantTasks: items.filter((item) => item.disposition === 'consultant_task'),
+    assumptions: items.filter((item) => item.disposition === 'assumption'),
+    acceptedGaps: items.filter((item) => item.disposition === 'accepted_gap'),
+    exportBlockers: items.filter((item) => item.disposition === 'export_blocker'),
+  };
+};
 
 const createWorkshopIntentCompleteness = (intent = {}) => {
   const present = workshopIntentRequiredFields
