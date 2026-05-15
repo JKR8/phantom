@@ -252,6 +252,7 @@ export const ExportButton: React.FC = () => {
         nextActions: handoffSummary.nextActions,
         artifacts: {
           spec: 'phantom-spec.json',
+          handoffSummary: 'handoff-summary.json',
           dataContract: ['data-contract/data-contract.json', 'data-contract/DATA_CONTRACT.md'],
           powerBi: ['power-bi/power-bi-implementation-guide.json', 'power-bi/POWER_BI_IMPLEMENTATION_GUIDE.md'],
           react: ['react-product/REACT_IMPLEMENTATION_NOTES.md', 'react-product/react-implementation-backlog.json', 'react-product/REACT_IMPLEMENTATION_BACKLOG.md', 'react-product/phantom-spec.json', 'react-product/phantom-data-contract.json'],
@@ -285,6 +286,7 @@ ${createDesignSourcesMarkdown(spec.project.designSources)}
 - \`data-contract/\`: data requirements for API, warehouse/dbt, or semantic endpoint mapping.
 - \`power-bi/\`: Power BI build guide with readiness, visual support status, fields, and drill-through notes.
 - \`react-product/\`: React implementation starting notes plus the same spec and data contract.
+- \`handoff-summary.json\`: first-pass readiness, recommendation, counts, and next actions for agents.
 - \`HANDOFF_MANIFEST.json\`: machine-readable index for agents and engineering automation.
 `;
       const reactNotes = `# React Product Implementation Notes
@@ -314,6 +316,7 @@ npm run phantom:spec -- export-react phantom-spec.json ./generated-app
 `;
 
       zip.file('phantom-spec.json', JSON.stringify(spec, null, 2));
+      zip.file('handoff-summary.json', JSON.stringify(handoffSummary, null, 2));
       zip.file('HANDOFF_MANIFEST.json', JSON.stringify(manifest, null, 2));
       zip.file('README.md', readme);
       zip.file('data-contract/data-contract.json', JSON.stringify(contract, null, 2));

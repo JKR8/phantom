@@ -1127,6 +1127,7 @@ const writeHandoffPack = async (spec, outDir) => {
   };
   const handoffRecommendation = getHandoffRecommendation(readiness.react.ready, readiness.powerBi.ready);
   const nextActions = getHandoffNextActions(readiness.react, readiness.powerBi);
+  const handoffSummary = inspectSpec(spec, 'handoff-summary');
   const manifest = {
     manifestVersion: '0.1.0',
     sourceSpecVersion: spec.specVersion,
@@ -1142,6 +1143,7 @@ const writeHandoffPack = async (spec, outDir) => {
     nextActions,
     artifacts: {
       spec: 'phantom-spec.json',
+      handoffSummary: 'handoff-summary.json',
       dataContract: dataContract.files.map((file) => `data-contract/${file}`),
       powerBiGuide: powerBiGuide.files.map((file) => `power-bi/${file}`),
       reactStarter: reactStarter.files.map((file) => `react-starter/${file}`),
@@ -1175,6 +1177,7 @@ ${designSourcesMarkdown(spec.project?.designSources || [])}
 - \`data-contract/\`: JSON and Markdown data contract for APIs, warehouse/dbt models, or semantic endpoints.
 - \`power-bi/\`: Power BI implementation guide with readiness, visual statuses, fields, drill-through notes, and blockers.
 - \`react-starter/\`: Vite/React starter app with the spec, data contract, and typed drill actions embedded.
+- \`handoff-summary.json\`: first-pass readiness, recommendation, counts, and next actions for agents.
 - \`HANDOFF_MANIFEST.json\`: machine-readable index for agents and implementation pipelines.
 
 ## Readiness
@@ -1199,12 +1202,13 @@ ${markdownList(nextActions)}
 `;
 
   await writeFile(`${outDir}/phantom-spec.json`, `${JSON.stringify(spec, null, 2)}\n`);
+  await writeFile(`${outDir}/handoff-summary.json`, `${JSON.stringify(handoffSummary, null, 2)}\n`);
   await writeFile(`${outDir}/HANDOFF_MANIFEST.json`, `${JSON.stringify(manifest, null, 2)}\n`);
   await writeFile(`${outDir}/README.md`, readme);
 
   return {
     outDir,
-    files: ['phantom-spec.json', 'HANDOFF_MANIFEST.json', 'README.md'],
+    files: ['phantom-spec.json', 'handoff-summary.json', 'HANDOFF_MANIFEST.json', 'README.md'],
     directories: ['data-contract', 'power-bi', 'react-starter'],
     readiness: {
       react: readiness.react.ready,
