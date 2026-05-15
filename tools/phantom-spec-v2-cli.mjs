@@ -24,7 +24,7 @@ Usage:
   npm run phantom:spec:v2 -- validate <spec.md>
   npm run phantom:spec:v2 -- summary <spec.md>
   npm run phantom:spec:v2 -- readiness <spec.md> react|power_bi
-  npm run phantom:spec:v2 -- inspect <spec.md> blocks|metrics|accepted-gaps|prompts|approval|exports|all
+  npm run phantom:spec:v2 -- inspect <spec.md> blocks|metrics|accepted-gaps|prompts|approval|versions|exports|all
   npm run phantom:spec:v2 -- export-approval-pack <spec.md> <out.json>
   npm run phantom:spec:v2 -- export-react-pack <spec.md> <out.json>
   npm run phantom:spec:v2 -- export-powerbi-pack <spec.md> <out.json>
@@ -318,6 +318,44 @@ const approvalStatus = (document) => {
   };
 };
 
+const versionHistory = (document) => {
+  const approval = isRecord(document.frontmatter.approval) ? document.frontmatter.approval : {};
+  const currentVersion = hasText(approval.current_version) ? approval.current_version : undefined;
+  const documentVersion = hasText(document.frontmatter.version) ? document.frontmatter.version : undefined;
+  const requiredApprovals = stringIds(approval.required_approvals);
+  const events = asRecords(approval.history);
+  const versions = [
+    ...new Set([
+      ...events.map((event) => event.version).filter((version) => hasText(version)),
+      ...(currentVersion ? [currentVersion] : []),
+      ...(documentVersion ? [documentVersion] : []),
+    ]),
+  ];
+  return versions.map((version) => {
+    const versionEvents = events.filter((event) => event.version === version);
+    const latestEvent = [...versionEvents].reverse().find((event) => hasText(event.state));
+    const approverRoles = [
+      ...new Set(versionEvents
+        .filter((event) => event.state === 'approved')
+        .map((event) => event.role)
+        .filter((role) => hasText(role))),
+    ];
+    const missingApprovalRoles = requiredApprovals.filter((role) => !approverRoles.includes(role));
+    const approved = missingApprovalRoles.length === 0
+      && versionEvents.some((event) => event.state === 'approved' && hasText(event.approver));
+    return {
+      version,
+      current: version === currentVersion,
+      state: hasText(latestEvent?.state) ? latestEvent.state : undefined,
+      events: versionEvents,
+      approverRoles,
+      missingApprovalRoles,
+      approved,
+      stale: version !== currentVersion || (version === currentVersion && approval.state !== latestEvent?.state),
+    };
+  });
+};
+
 const readiness = (document, target = 'react') => {
   const readinessModelValue = getBlock(document, 'readiness_scoring')?.body.readiness_model;
   const readinessModel = isRecord(readinessModelValue) ? readinessModelValue : {};
@@ -406,6 +444,7 @@ const summary = (document, target = 'react') => {
     },
     readiness: readiness(document, target),
     approval: approvalStatus(document),
+    versionHistory: versionHistory(document),
   };
 };
 
@@ -413,6 +452,7 @@ const approvalPack = (document) => ({
   generatedAt: new Date().toISOString(),
   summary: summary(document),
   approval: approvalStatus(document),
+  versionHistory: versionHistory(document),
   readiness: {
     react: readiness(document, 'react'),
     powerBi: readiness(document, 'power_bi'),
@@ -688,9 +728,10 @@ try {
       'accepted-gaps': acceptedGaps(document),
       prompts: elicitationPrompts(document),
       approval: approvalStatus(document),
+      versions: versionHistory(document),
       exports: asRecords(getBlock(document, 'export_targets')?.body.exports),
     };
-    if (!(subject in subjects)) throw new Error('Inspect subject must be blocks, metrics, accepted-gaps, prompts, approval, exports, or all.');
+    if (!(subject in subjects)) throw new Error('Inspect subject must be blocks, metrics, accepted-gaps, prompts, approval, versions, exports, or all.');
     print(subjects[subject]);
   }
   if (command === 'export-approval-pack') {

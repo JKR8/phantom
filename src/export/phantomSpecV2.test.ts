@@ -13,6 +13,7 @@ import {
   createPhantomSpecV2PowerBiExport,
   createPhantomSpecV2ReactProductExport,
   createPhantomSpecV2Summary,
+  createPhantomSpecV2VersionHistory,
   PHANTOM_V2_SCHEMA_ID,
   parseAndValidatePhantomSpecV2Markdown,
   parsePhantomSpecV2Markdown,
@@ -197,6 +198,20 @@ describe('phantomSpecV2', () => {
       requiredApprovals: ['approver', 'analytics_owner'],
       missingApprovalRoles: ['approver', 'analytics_owner'],
     });
+    expect(createPhantomSpecV2VersionHistory(document)).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        version: '0.2.0-draft',
+        current: true,
+        state: 'pending',
+        approved: false,
+        missingApprovalRoles: ['approver', 'analytics_owner'],
+      }),
+      expect.objectContaining({
+        version: '0.2.0',
+        current: false,
+        stale: true,
+      }),
+    ]));
 
     const prompts = createPhantomSpecV2ElicitationPrompts(document);
     expect(prompts).toEqual([
@@ -227,6 +242,7 @@ describe('phantomSpecV2', () => {
     expect(approvalPack.generatedAt).toBe('2026-05-15T00:00:00.000Z');
     expect(approvalPack.readiness.react.score).toBeCloseTo(0.8667, 4);
     expect(approvalPack.readiness.powerBi.score).toBeCloseTo(0.8167, 4);
+    expect(approvalPack.versionHistory.length).toBeGreaterThanOrEqual(1);
     expect(approvalPack.elicitationPrompts).toHaveLength(1);
     expect(approvalPack.exportTargets).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: 'react_app' }),
@@ -300,6 +316,16 @@ describe('phantomSpecV2', () => {
       approved: true,
       missingApprovalRoles: [],
     });
+    expect(createPhantomSpecV2VersionHistory(updatedDocument)).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        version: '0.2.0-draft',
+        current: true,
+        state: 'approved',
+        approved: true,
+        missingApprovalRoles: [],
+        approverRoles: ['approver', 'analytics_owner'],
+      }),
+    ]));
   });
 
   it('generates v0.2 React Product and Power BI handoff exports', async () => {

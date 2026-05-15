@@ -38,6 +38,7 @@ test.describe('Routing & Guest Mode', () => {
     await page.getByRole('button', { name: 'approval', exact: true }).click();
     await expect(page.getByText('Current version')).toBeVisible();
     await expect(page.getByText('0.2.0-draft', { exact: true })).toBeVisible();
+    await expect(page.getByText('Version history')).toBeVisible();
     await page.getByRole('button', { name: 'Approve as approver' }).click();
     await expect(page.getByText('Missing roles: analytics_owner')).toBeVisible();
     await page.getByRole('button', { name: 'Approve as analytics owner' }).click();

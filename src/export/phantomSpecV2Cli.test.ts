@@ -146,6 +146,20 @@ describe('phantom v0.2 spec CLI', () => {
         expect.objectContaining({ role: 'approver', state: 'approved' }),
         expect.objectContaining({ role: 'analytics_owner', state: 'approved' }),
       ]));
+
+      const versions = await execFileAsync(
+        process.execPath,
+        ['tools/phantom-spec-v2-cli.mjs', 'inspect', secondOut, 'versions'],
+        { cwd: process.cwd() },
+      );
+      expect(JSON.parse(versions.stdout)).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          version: '0.2.0-draft',
+          current: true,
+          approved: true,
+          missingApprovalRoles: [],
+        }),
+      ]));
     } finally {
       await rm(tempDir, { recursive: true, force: true });
     }

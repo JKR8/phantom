@@ -20,6 +20,7 @@ import {
   createPhantomSpecV2PowerBiExport,
   createPhantomSpecV2ReactProductExport,
   createPhantomSpecV2Summary,
+  createPhantomSpecV2VersionHistory,
   parsePhantomSpecV2Markdown,
   replacePhantomSpecV2Frontmatter,
   scorePhantomSpecV2Readiness,
@@ -230,6 +231,7 @@ export const SpecV2Page: React.FC = () => {
       dataContract: createPhantomSpecV2DataContractExport(document),
       acceptedGaps: createPhantomSpecV2AcceptedGaps(document),
       approval: createPhantomSpecV2ApprovalStatus(document),
+      versionHistory: createPhantomSpecV2VersionHistory(document),
       reactExport: createPhantomSpecV2ReactProductExport(document),
       powerBiExport: createPhantomSpecV2PowerBiExport(document),
     };
@@ -474,6 +476,16 @@ export const SpecV2Page: React.FC = () => {
                 <div className={styles.listItem}>
                   <Text weight="semibold">Stale approval</Text>
                   <Text>{model.approval.stale ? 'Yes' : 'No'}</Text>
+                </div>
+                <div className={styles.listItem}>
+                  <Text weight="semibold">Version history</Text>
+                  {model.versionHistory.map((version) => (
+                    <Text key={version.version} size={200}>
+                      {version.version}
+                      {version.current ? ' (current)' : ''}: {version.state || 'no events'}; missing{' '}
+                      {version.missingApprovalRoles.join(', ') || 'none'}
+                    </Text>
+                  ))}
                 </div>
               </div>
             )}

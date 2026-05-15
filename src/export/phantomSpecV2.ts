@@ -104,6 +104,17 @@ export interface PhantomSpecV2ApprovalStatus {
   history: Record<string, unknown>[];
 }
 
+export interface PhantomSpecV2VersionHistoryEntry {
+  version: string;
+  current: boolean;
+  state?: string;
+  events: Record<string, unknown>[];
+  approverRoles: string[];
+  missingApprovalRoles: string[];
+  approved: boolean;
+  stale: boolean;
+}
+
 export interface PhantomSpecV2Summary {
   schemaId?: unknown;
   id?: unknown;
@@ -124,12 +135,14 @@ export interface PhantomSpecV2Summary {
   };
   readiness: PhantomSpecV2ReadinessScore;
   approval: PhantomSpecV2ApprovalStatus;
+  versionHistory: PhantomSpecV2VersionHistoryEntry[];
 }
 
 export interface PhantomSpecV2ApprovalPack {
   generatedAt: string;
   summary: PhantomSpecV2Summary;
   approval: PhantomSpecV2ApprovalStatus;
+  versionHistory: PhantomSpecV2VersionHistoryEntry[];
   readiness: {
     react: PhantomSpecV2ReadinessScore;
     powerBi: PhantomSpecV2ReadinessScore;
@@ -879,6 +892,50 @@ export const createPhantomSpecV2ApprovalStatus = (
   };
 };
 
+export const createPhantomSpecV2VersionHistory = (
+  document: PhantomSpecV2Document,
+): PhantomSpecV2VersionHistoryEntry[] => {
+  const approval = isRecord(document.frontmatter.approval) ? document.frontmatter.approval : {};
+  const currentVersion = hasText(approval.current_version) ? approval.current_version : undefined;
+  const documentVersion = hasText(document.frontmatter.version) ? document.frontmatter.version : undefined;
+  const requiredApprovals = stringIds(approval.required_approvals);
+  const events = asRecords(approval.history);
+  const versions = [
+    ...new Set([
+      ...events.map((event) => event.version).filter((version): version is string => hasText(version)),
+      ...(currentVersion ? [currentVersion] : []),
+      ...(documentVersion ? [documentVersion] : []),
+    ]),
+  ];
+
+  return versions.map((version) => {
+    const versionEvents = events.filter((event) => event.version === version);
+    const latestEvent = [...versionEvents].reverse().find((event) => hasText(event.state));
+    const approverRoles = [
+      ...new Set(
+        versionEvents
+          .filter((event) => event.state === 'approved')
+          .map((event) => event.role)
+          .filter((role): role is string => hasText(role)),
+      ),
+    ];
+    const missingApprovalRoles = requiredApprovals.filter((role) => !approverRoles.includes(role));
+    const approved = missingApprovalRoles.length === 0
+      && versionEvents.some((event) => event.state === 'approved' && hasText(event.approver));
+
+    return {
+      version,
+      current: version === currentVersion,
+      state: hasText(latestEvent?.state) ? latestEvent.state : undefined,
+      events: versionEvents,
+      approverRoles,
+      missingApprovalRoles,
+      approved,
+      stale: version !== currentVersion || (version === currentVersion && approval.state !== latestEvent?.state),
+    };
+  });
+};
+
 export const createPhantomSpecV2Summary = (
   document: PhantomSpecV2Document,
   target: PhantomSpecV2ReadinessTarget = 'react',
@@ -915,6 +972,7 @@ export const createPhantomSpecV2Summary = (
     },
     readiness: scorePhantomSpecV2Readiness(document, target),
     approval: createPhantomSpecV2ApprovalStatus(document),
+    versionHistory: createPhantomSpecV2VersionHistory(document),
   };
 };
 
@@ -925,6 +983,7 @@ export const createPhantomSpecV2ApprovalPack = (
   generatedAt,
   summary: createPhantomSpecV2Summary(document),
   approval: createPhantomSpecV2ApprovalStatus(document),
+  versionHistory: createPhantomSpecV2VersionHistory(document),
   readiness: {
     react: scorePhantomSpecV2Readiness(document, 'react'),
     powerBi: scorePhantomSpecV2Readiness(document, 'power_bi'),
