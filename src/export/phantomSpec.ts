@@ -176,6 +176,7 @@ export interface PhantomReactImplementationTask {
   title: string;
   type: string;
   suggestedComponent: string;
+  designSources: string[];
   fields: string[];
   metrics: string[];
   dimensions: string[];
@@ -602,6 +603,9 @@ const componentName = (type: string) =>
 export const createReactImplementationBacklog = (spec: PhantomSpec): PhantomReactImplementationTask[] =>
   getSpecComponents(spec).map((component) => {
     const fields = component.dataRequirements.fields;
+    const linkedDesignSources = spec.project.designSources
+      .filter((source) => (source.linkedComponentIds || []).includes(component.id))
+      .map((source) => source.id);
     const workItems = [
       `Replace placeholder with ${componentName(component.type)}.`,
       fields.length
@@ -621,6 +625,7 @@ export const createReactImplementationBacklog = (spec: PhantomSpec): PhantomReac
       title: component.title,
       type: component.type,
       suggestedComponent: componentName(component.type),
+      designSources: linkedDesignSources,
       fields,
       metrics: component.dataRequirements.metrics,
       dimensions: component.dataRequirements.dimensions,
@@ -638,6 +643,7 @@ export const createReactImplementationBacklogMarkdown = (tasks: PhantomReactImpl
 - Component ID: ${task.componentId}
 - Type: ${task.type}
 - Suggested React component: ${task.suggestedComponent}
+- Linked design sources: ${task.designSources.join(', ') || 'None'}
 - Required fields: ${task.fields.join(', ') || 'None'}
 - Metrics: ${task.metrics.join(', ') || 'None'}
 - Dimensions: ${task.dimensions.join(', ') || 'None'}

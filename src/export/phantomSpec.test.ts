@@ -195,7 +195,12 @@ describe('phantomSpec', () => {
       specification: {
         signOffStatus: 'draft',
         designEntryPoint: 'figma-led',
-        designSources: [{ id: 'figma-1', type: 'figmaFrame', name: 'Client frame' }],
+        designSources: [{
+          id: 'figma-1',
+          type: 'figmaFrame',
+          name: 'Client frame',
+          linkedComponentIds: ['visual-1'],
+        }],
       },
     });
 
@@ -206,11 +211,14 @@ describe('phantomSpec', () => {
     expect(backlog[0]).toMatchObject({
       componentId: 'visual-1',
       suggestedComponent: 'BarComponent',
+      designSources: ['figma-1'],
       fields: ['Region', 'revenue'],
       powerBiStatus: 'ready',
     });
     expect(backlog[1].workItems).toContain('React implementation can exceed Power BI constraints; Power BI status is unsupported.');
     expect(markdown).toContain('### Profit Distribution');
+    expect(markdown).toContain('- Linked design sources: figma-1');
+    expect(markdown).toContain('- Linked design sources: None');
     expect(markdown).toContain('- [ ] Apply linked design-source guidance for visual fidelity.');
     expect(markdown).toContain('- Power BI compatibility: unsupported');
   });

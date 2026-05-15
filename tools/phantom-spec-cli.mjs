@@ -1014,6 +1014,9 @@ const createReactBacklog = (spec) =>
   (spec.views || []).flatMap((view) => (view.components || []).map((component) => {
     const fields = component.dataRequirements?.fields || [];
     const powerBiStatus = component.exportTargets?.powerBi?.status || 'unknown';
+    const linkedDesignSources = (spec.project?.designSources || [])
+      .filter((source) => (source.linkedComponentIds || []).includes(component.id))
+      .map((source) => source.id);
     const workItems = [
       `Replace placeholder with ${reactComponentName(component.type)}.`,
       fields.length
@@ -1033,6 +1036,7 @@ const createReactBacklog = (spec) =>
       title: component.title,
       type: component.type,
       suggestedComponent: reactComponentName(component.type),
+      designSources: linkedDesignSources,
       fields,
       metrics: component.dataRequirements?.metrics || [],
       dimensions: component.dataRequirements?.dimensions || [],
@@ -1049,6 +1053,7 @@ const reactBacklogMarkdown = (tasks = []) => {
 - Component ID: ${task.componentId}
 - Type: ${task.type}
 - Suggested React component: ${task.suggestedComponent}
+- Linked design sources: ${(task.designSources || []).join(', ') || 'None'}
 - Required fields: ${task.fields.join(', ') || 'None'}
 - Metrics: ${task.metrics.join(', ') || 'None'}
 - Dimensions: ${task.dimensions.join(', ') || 'None'}
