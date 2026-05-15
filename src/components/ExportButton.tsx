@@ -249,6 +249,7 @@ export const ExportButton: React.FC = () => {
         },
         readiness: handoffSummary.readiness,
         handoffRecommendation: handoffSummary.handoffRecommendation,
+        designMapping: handoffSummary.designMapping,
         workshopIntent: handoffSummary.workshopIntent,
         workshopCompleteness: handoffSummary.workshopCompleteness,
         nextActions: handoffSummary.nextActions,
@@ -282,6 +283,14 @@ Generated from Phantom Spec ${spec.specVersion}.
 
 ${createDesignSourcesMarkdown(spec.project.designSources)}
 
+## Design Mapping
+
+- Sources: ${handoffSummary.designMapping.totalSources}
+- Mapped sources: ${handoffSummary.designMapping.mappedSources}
+- Unmapped sources: ${handoffSummary.designMapping.unmappedSources}
+- Linked views: ${handoffSummary.designMapping.linkedViewIds.join(', ') || 'None'}
+- Linked components: ${handoffSummary.designMapping.linkedComponentIds.join(', ') || 'None'}
+
 ## Workshop Intent
 
 - Business questions: ${contract.workshopIntent.businessQuestions || 'Not specified'}
@@ -302,7 +311,7 @@ ${createDesignSourcesMarkdown(spec.project.designSources)}
 - \`data-contract/\`: data requirements for API, warehouse/dbt, or semantic endpoint mapping.
 - \`power-bi/\`: Power BI build guide with readiness, visual support status, fields, and drill-through notes.
 - \`react-product/\`: React implementation starting notes plus the same spec and data contract.
-- \`handoff-summary.json\`: first-pass readiness, recommendation, counts, and next actions for agents.
+- \`handoff-summary.json\`: first-pass design mapping, readiness, recommendation, counts, and next actions for agents.
 - \`HANDOFF_MANIFEST.json\`: machine-readable index for agents and engineering automation.
 `;
       const reactNotes = `# React Product Implementation Notes
@@ -327,6 +336,14 @@ Use \`phantom-spec.json\` and \`phantom-data-contract.json\` as the implementati
 ## Design Sources
 
 ${createDesignSourcesMarkdown(spec.project.designSources)}
+
+## Design Mapping
+
+- Sources: ${handoffSummary.designMapping.totalSources}
+- Mapped sources: ${handoffSummary.designMapping.mappedSources}
+- Unmapped sources: ${handoffSummary.designMapping.unmappedSources}
+- Linked views: ${handoffSummary.designMapping.linkedViewIds.join(', ') || 'None'}
+- Linked components: ${handoffSummary.designMapping.linkedComponentIds.join(', ') || 'None'}
 
 ## Component Backlog
 
