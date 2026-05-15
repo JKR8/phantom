@@ -431,6 +431,7 @@ const getHandoffRecommendation = (reactReady, powerBiReady) => {
 
 const getHandoffNextActions = (reactReadiness, powerBiReadiness) => [
   ...reactReadiness.errors.map((issue) => `React blocker: ${issue.message}`),
+  ...reactReadiness.warnings.map((issue) => `React warning: ${issue.message}`),
   ...powerBiReadiness.errors.map((issue) => `Power BI blocker: ${issue.message}`),
   ...powerBiReadiness.warnings.map((issue) => `Power BI warning: ${issue.message}`),
 ];

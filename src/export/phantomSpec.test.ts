@@ -288,6 +288,9 @@ describe('phantomSpec', () => {
     expect(summary.nextActions).toContain(
       'Power BI blocker: Profit Distribution is design-only and cannot be treated as Power BI-ready.',
     );
+    expect(summary.nextActions).toContain(
+      'React warning: Stakeholder sketch is not mapped to any Phantom view or component.',
+    );
     expect(createHandoffNextActions(summary.readiness.react, summary.readiness.powerBi)).toEqual(summary.nextActions);
   });
 
