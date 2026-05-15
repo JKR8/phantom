@@ -1018,6 +1018,7 @@ const createDataContract = (spec) => {
       designEntryPoint: spec.project?.designEntryPoint,
       designSources: spec.project?.designSources || [],
     },
+    designWorkflow: createDesignWorkflow(spec),
     workshopIntent: createWorkshopIntent(spec.project?.specification),
     dataSources: spec.project?.specification?.dataSources || [],
     fields: allFields.map((name) => ({
@@ -1203,6 +1204,17 @@ Generated from Phantom Spec ${contract.sourceSpecVersion}.
 ## Design Sources
 
 ${designSourcesMarkdown(contract.project.designSources)}
+
+## Design Workflow
+
+- Design plane: ${contract.designWorkflow.designPlane}
+- Phantom role: ${contract.designWorkflow.phantomRole}
+- Status: ${contract.designWorkflow.status}
+- Handoff modes: ${contract.designWorkflow.handoffModes.join(', ')}
+
+### Design Workflow Next Steps
+
+${markdownList(contract.designWorkflow.requiredNextSteps)}
 
 ## Workshop Intent
 

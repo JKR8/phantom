@@ -103,7 +103,7 @@ node tools/phantom-spec-cli.mjs import-design-source path/to/spec.json --type fi
 
 `export-react` creates a deterministic Vite/React starter with the Phantom Spec, data contract, design workflow contract, typed data adapter stub, drill action definitions, placeholder component cards, component-level design-source links, design mapping coverage in the README, and a README that tells engineers what to wire next.
 
-`export-data-contract` creates `data-contract.json` and `DATA_CONTRACT.md` with fields, metrics, dimensions, component data requirements, filters, drill actions, design-source references, and implementation notes. This is the handoff artifact for client APIs, warehouse/dbt models, optional semantic endpoints, and agents that need a stable analytical contract.
+`export-data-contract` creates `data-contract.json` and `DATA_CONTRACT.md` with fields, metrics, dimensions, component data requirements, filters, drill actions, design workflow, design-source references, and implementation notes. This is the handoff artifact for client APIs, warehouse/dbt models, optional semantic endpoints, and agents that need a stable analytical contract.
 
 `export-powerbi-guide` creates `power-bi-implementation-guide.json` and `POWER_BI_IMPLEMENTATION_GUIDE.md` with the design workflow, Power BI readiness, visual support statuses, field requirements, drill-through notes, blockers, and a build checklist.
 

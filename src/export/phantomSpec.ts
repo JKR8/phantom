@@ -127,6 +127,7 @@ export interface PhantomDataContract {
     designEntryPoint: 'figma-led' | 'phantom-led';
     designSources: DesignSource[];
   };
+  designWorkflow: PhantomDesignWorkflow;
   workshopIntent: PhantomWorkshopIntent;
   dataSources: unknown;
   fields: PhantomDataContractField[];
@@ -800,6 +801,7 @@ export const createPhantomDataContract = (
       designEntryPoint: spec.project.designEntryPoint,
       designSources: spec.project.designSources,
     },
+    designWorkflow: createPhantomDesignWorkflow(spec),
     workshopIntent: createWorkshopIntent(spec.project.specification),
     dataSources: (spec.project.specification as Record<string, unknown>).dataSources || [],
     fields: fields.map((name) => ({
@@ -846,6 +848,17 @@ Generated from Phantom Spec ${contract.sourceSpecVersion}.
 ## Design Sources
 
 ${createDesignSourcesMarkdown(contract.project.designSources)}
+
+## Design Workflow
+
+- Design plane: ${contract.designWorkflow.designPlane}
+- Phantom role: ${contract.designWorkflow.phantomRole}
+- Status: ${contract.designWorkflow.status}
+- Handoff modes: ${contract.designWorkflow.handoffModes.join(', ')}
+
+### Design Workflow Next Steps
+
+${markdownList(contract.designWorkflow.requiredNextSteps)}
 
 ## Workshop Intent
 

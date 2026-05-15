@@ -655,6 +655,11 @@ describe('phantomSpec', () => {
     const markdown = createPhantomDataContractMarkdown(contract);
 
     expect(contract.project.designEntryPoint).toBe('figma-led');
+    expect(contract.designWorkflow).toMatchObject({
+      entryPoint: 'figma-led',
+      designPlane: 'figma',
+      status: 'ready',
+    });
     expect(contract.workshopIntent).toMatchObject({
       businessQuestions: 'Which regions are underperforming?',
       audience: 'Retail executives',
@@ -673,6 +678,9 @@ describe('phantomSpec', () => {
     expect(markdown).toContain('| drill-1 | Open region detail | visual-1 | detailPanel:region-detail | Region->region |');
     expect(markdown).toContain('## Design Sources');
     expect(markdown).toContain('- Executive concept (type: figmaFrame; components: visual-1)');
+    expect(markdown).toContain('## Design Workflow');
+    expect(markdown).toContain('- Design plane: figma');
+    expect(markdown).toContain('- Status: ready');
     expect(markdown).toContain('## Workshop Intent');
     expect(markdown).toContain('- Decisions/actions: Choose regions for follow-up.');
     expect(markdown).toContain('- Acceptance criteria: Every visual has approved fields and drill behavior.');
