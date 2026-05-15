@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   applyPhantomSpecV2Approval,
+  applyPhantomSpecV2PromptResolution,
   createPhantomSpecV2AcceptedGaps,
   createPhantomSpecV2ApprovalPack,
   createPhantomSpecV2ApprovalStatus,
@@ -362,6 +363,48 @@ describe('phantomSpecV2', () => {
     ]));
     expect(powerBiExport.constraints).toEqual(expect.arrayContaining([
       'Power BI Mode is a constrained implementation guide, not a promise of visual parity.',
+    ]));
+  });
+
+  it('resolves component elicitation prompts through controlled Markdown mutations', async () => {
+    const markdown = await readV2Spec();
+    const result = applyPhantomSpecV2PromptResolution(markdown, {
+      objectType: 'component',
+      objectId: 'elicitation_panel',
+      fieldPath: 'pbi_fallback_behavior',
+      value: 'Document Power BI as an implementation note and use React for exact workshop behavior.',
+      ownerRole: 'dashboard_builder',
+      date: '2026-05-15',
+      notes: 'Accepted during workshop.',
+    });
+
+    expect(result.prompts).toEqual([]);
+    expect(result.readiness.categories.requiredFieldsCompleteness).toMatchObject({
+      numerator: 3,
+      denominator: 3,
+    });
+    expect(result.readiness.score).toBeCloseTo(1, 4);
+    expect(result.readiness.buildReady).toBe(false);
+    expect(result.readiness.blockingIssues).toEqual([
+      expect.objectContaining({ code: 'GATE_CURRENT_VERSION_APPROVAL_FAILED' }),
+    ]);
+
+    const updatedBlock = result.document.blocks.find((block) => block.header.id === 'component_instances');
+    const components = Array.isArray(updatedBlock?.body.components) ? updatedBlock.body.components : [];
+    expect(components).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: 'elicitation_panel',
+        pbi_fallback_behavior: 'Document Power BI as an implementation note and use React for exact workshop behavior.',
+        elicitation: expect.objectContaining({
+          missing_fields: [],
+          resolved_prompts: [
+            expect.objectContaining({
+              field: 'pbi_fallback_behavior',
+              owner_role: 'dashboard_builder',
+            }),
+          ],
+        }),
+      }),
     ]));
   });
 });

@@ -218,6 +218,16 @@ export interface PhantomSpecV2ApprovalInput {
   date?: string;
 }
 
+export interface PhantomSpecV2PromptResolutionInput {
+  objectType: 'component';
+  objectId: string;
+  fieldPath: string;
+  value: string;
+  ownerRole?: string;
+  notes?: string;
+  date?: string;
+}
+
 const requiredBlockIds = [
   'pages',
   'component_library',
@@ -270,6 +280,8 @@ const parseYaml = (raw: string, label: string): Record<string, unknown> => {
   }
   return parsed;
 };
+
+const stringifyYaml = (value: Record<string, unknown>) => stringify(value).trimEnd();
 
 const extractFrontmatter = (markdown: string) => {
   const normalized = markdown.replace(/^\uFEFF/, '');
@@ -1106,7 +1118,7 @@ export const replacePhantomSpecV2Frontmatter = (
   frontmatter: Record<string, unknown>,
 ) => {
   const normalized = markdown.replace(/^\uFEFF/, '');
-  const nextFrontmatter = `---\n${stringify(frontmatter).trimEnd()}\n---`;
+  const nextFrontmatter = `---\n${stringifyYaml(frontmatter)}\n---`;
   if (!normalized.startsWith('---')) {
     return `${nextFrontmatter}\n\n${normalized}`;
   }
@@ -1117,6 +1129,88 @@ export const replacePhantomSpecV2Frontmatter = (
   const bodyStart = normalized.indexOf('\n', closing + 4);
   const body = bodyStart >= 0 ? normalized.slice(bodyStart + 1) : '';
   return `${nextFrontmatter}\n\n${body}`;
+};
+
+const replacePhantomSpecV2Block = (
+  markdown: string,
+  block: PhantomSpecV2Block,
+  nextBody: Record<string, unknown>,
+) => {
+  const nextRaw = stringifyYaml(nextBody);
+  if (!markdown.includes(block.raw)) {
+    throw new Error(`Could not locate raw block ${block.header.id} in Markdown.`);
+  }
+  return markdown.replace(block.raw, nextRaw);
+};
+
+export const applyPhantomSpecV2PromptResolution = (
+  markdown: string,
+  input: PhantomSpecV2PromptResolutionInput,
+) => {
+  if (input.objectType !== 'component') {
+    throw new Error('Only component prompt resolution is supported in this mutation.');
+  }
+  if (!hasText(input.objectId)) {
+    throw new Error('Prompt resolution objectId is required.');
+  }
+  if (!hasText(input.fieldPath)) {
+    throw new Error('Prompt resolution fieldPath is required.');
+  }
+  if (!hasText(input.value)) {
+    throw new Error('Prompt resolution value is required.');
+  }
+
+  const document = parsePhantomSpecV2Markdown(markdown);
+  const block = getBlock(document, 'component_instances');
+  if (!block) {
+    throw new Error('Missing component_instances block.');
+  }
+  const components = asRecords(block.body.components);
+  const componentIndex = components.findIndex((component) => component.id === input.objectId);
+  if (componentIndex < 0) {
+    throw new Error(`Component not found: ${input.objectId}.`);
+  }
+
+  const component = components[componentIndex];
+  const elicitation = isRecord(component.elicitation) ? component.elicitation : {};
+  const missingFields = stringIds(elicitation.missing_fields);
+  if (!missingFields.includes(input.fieldPath)) {
+    throw new Error(`Prompt ${input.fieldPath} is not unresolved for component ${input.objectId}.`);
+  }
+  const resolvedPrompts = asRecords(elicitation.resolved_prompts);
+  const nextComponent = {
+    ...component,
+    [input.fieldPath]: input.value,
+    elicitation: {
+      ...elicitation,
+      missing_fields: missingFields.filter((field) => field !== input.fieldPath),
+      resolved_prompts: [
+        ...resolvedPrompts,
+        {
+          field: input.fieldPath,
+          value: input.value,
+          owner_role: input.ownerRole || 'facilitator',
+          date: input.date || new Date().toISOString().slice(0, 10),
+          notes: input.notes || '',
+        },
+      ],
+    },
+  };
+  const nextBlockBody = {
+    ...block.body,
+    components: components.map((componentItem, index) =>
+      index === componentIndex ? nextComponent : componentItem,
+    ),
+  };
+  const nextMarkdown = replacePhantomSpecV2Block(markdown, block, nextBlockBody);
+  const nextDocument = parsePhantomSpecV2Markdown(nextMarkdown);
+
+  return {
+    markdown: nextMarkdown,
+    document: nextDocument,
+    prompts: createPhantomSpecV2ElicitationPrompts(nextDocument),
+    readiness: scorePhantomSpecV2Readiness(nextDocument),
+  };
 };
 
 export const parseAndValidatePhantomSpecV2Markdown = (markdown: string) => {

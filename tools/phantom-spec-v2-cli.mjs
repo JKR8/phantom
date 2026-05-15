@@ -28,6 +28,7 @@ Usage:
   npm run phantom:spec:v2 -- export-approval-pack <spec.md> <out.json>
   npm run phantom:spec:v2 -- export-react-pack <spec.md> <out.json>
   npm run phantom:spec:v2 -- export-powerbi-pack <spec.md> <out.json>
+  npm run phantom:spec:v2 -- resolve-prompt <spec.md> --component elicitation_panel --field pbi_fallback_behavior --value "..." --out <out.md>
   npm run phantom:spec:v2 -- approve <spec.md> --role approver --approver "Name" --out <out.md>
 
 Commands operate on Markdown specs with YAML frontmatter and fenced phantom_block YAML sections.
@@ -586,6 +587,57 @@ const replaceFrontmatter = (markdown, frontmatter) => {
   return `${nextFrontmatter}\n\n${body}`;
 };
 
+const replaceBlock = (markdown, block, nextBody) => {
+  const nextRaw = stringify(nextBody).trimEnd();
+  if (!markdown.includes(block.raw)) throw new Error(`Could not locate raw block ${block.header.id} in Markdown.`);
+  return markdown.replace(block.raw, nextRaw);
+};
+
+const resolvePrompt = (markdown, document, input) => {
+  if (!hasText(input.objectId)) throw new Error('Prompt resolution component id is required.');
+  if (!hasText(input.fieldPath)) throw new Error('Prompt resolution field is required.');
+  if (!hasText(input.value)) throw new Error('Prompt resolution value is required.');
+  const block = getBlock(document, 'component_instances');
+  if (!block) throw new Error('Missing component_instances block.');
+  const components = asRecords(block.body.components);
+  const componentIndex = components.findIndex((component) => component.id === input.objectId);
+  if (componentIndex < 0) throw new Error(`Component not found: ${input.objectId}.`);
+  const component = components[componentIndex];
+  const elicitation = isRecord(component.elicitation) ? component.elicitation : {};
+  const missingFields = stringIds(elicitation.missing_fields);
+  if (!missingFields.includes(input.fieldPath)) {
+    throw new Error(`Prompt ${input.fieldPath} is not unresolved for component ${input.objectId}.`);
+  }
+  const nextComponent = {
+    ...component,
+    [input.fieldPath]: input.value,
+    elicitation: {
+      ...elicitation,
+      missing_fields: missingFields.filter((field) => field !== input.fieldPath),
+      resolved_prompts: [
+        ...asRecords(elicitation.resolved_prompts),
+        {
+          field: input.fieldPath,
+          value: input.value,
+          owner_role: input.ownerRole || 'facilitator',
+          date: input.date || new Date().toISOString().slice(0, 10),
+          notes: input.notes || '',
+        },
+      ],
+    },
+  };
+  const nextMarkdown = replaceBlock(markdown, block, {
+    ...block.body,
+    components: components.map((componentItem, index) => (index === componentIndex ? nextComponent : componentItem)),
+  });
+  const nextDocument = parseMarkdownSpec(nextMarkdown);
+  return {
+    markdown: nextMarkdown,
+    prompts: elicitationPrompts(nextDocument),
+    readiness: readiness(nextDocument),
+  };
+};
+
 try {
   if (!command || ['help', '--help', '-h'].includes(command)) {
     usage();
@@ -599,6 +651,7 @@ try {
     'export-approval-pack',
     'export-react-pack',
     'export-powerbi-pack',
+    'resolve-prompt',
     'approve',
   ];
   if (!validCommands.includes(command)) throw new Error(`Unknown command: ${command}`);
@@ -678,6 +731,28 @@ try {
       buildReady: pack.buildReady,
       visuals: pack.visualBuildMatrix.length,
       fallbackRequired: pack.visualBuildMatrix.filter((visual) => visual.fallbackRequired).length,
+    });
+  }
+  if (command === 'resolve-prompt') {
+    const objectId = optionValue('--component') || args[0] || '';
+    const fieldPath = optionValue('--field') || args[1] || '';
+    const value = optionValue('--value') || args[2] || '';
+    const outPath = optionValue('--out') || args[args.length - 1];
+    if (!outPath) throw new Error('Missing --out path for resolve-prompt.');
+    const result = resolvePrompt(rawMarkdown, document, {
+      objectId,
+      fieldPath,
+      value,
+      ownerRole: optionValue('--owner-role') || optionValue('--owner') || args[3] || 'facilitator',
+      date: optionValue('--date') || args[4],
+      notes: optionValue('--notes') || '',
+    });
+    await writeFile(resolve(outPath), result.markdown);
+    print({
+      outPath,
+      unresolvedPrompts: result.prompts.length,
+      readinessScore: result.readiness.score,
+      buildReady: result.readiness.buildReady,
     });
   }
   if (command === 'approve') {

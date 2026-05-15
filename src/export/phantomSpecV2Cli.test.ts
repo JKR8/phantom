@@ -202,4 +202,52 @@ describe('phantom v0.2 spec CLI', () => {
       await rm(tempDir, { recursive: true, force: true });
     }
   });
+
+  it('resolves an elicitation prompt and writes an updated Markdown spec', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'phantom-v2-resolve-prompt-'));
+    const outPath = join(tempDir, 'resolved.md');
+
+    try {
+      const { stdout } = await execFileAsync(
+        process.execPath,
+        [
+          'tools/phantom-spec-v2-cli.mjs',
+          'resolve-prompt',
+          specPath,
+          '--component',
+          'elicitation_panel',
+          '--field',
+          'pbi_fallback_behavior',
+          '--value',
+          'Document Power BI as an implementation note and use React for exact workshop behavior.',
+          '--owner-role',
+          'dashboard_builder',
+          '--date',
+          '2026-05-15',
+          '--out',
+          outPath,
+        ],
+        { cwd: process.cwd() },
+      );
+      expect(JSON.parse(stdout)).toMatchObject({
+        outPath,
+        unresolvedPrompts: 0,
+        buildReady: false,
+      });
+
+      const prompts = await execFileAsync(
+        process.execPath,
+        ['tools/phantom-spec-v2-cli.mjs', 'inspect', outPath, 'prompts'],
+        { cwd: process.cwd() },
+      );
+      expect(JSON.parse(prompts.stdout)).toEqual([]);
+
+      const updated = await readFile(outPath, 'utf8');
+      expect(updated).toContain('pbi_fallback_behavior: Document Power BI as an implementation note');
+      expect(updated).toContain('resolved_prompts:');
+      expect(updated).toContain('owner_role: dashboard_builder');
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
 });
