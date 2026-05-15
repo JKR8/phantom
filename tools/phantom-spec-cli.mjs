@@ -598,6 +598,7 @@ const writeReactStarter = async (spec, outDir) => {
   const components = (spec.views || []).flatMap((view) => view.components || []);
   const dataContract = createDataContract(spec);
   const backlog = createReactBacklog(spec);
+  const designMapping = createDesignMappingSummary(spec.project?.designSources || []);
   await rm(outDir, { recursive: true, force: true });
   await mkdir(`${outDir}/src`, { recursive: true });
 
@@ -776,6 +777,14 @@ It includes:
 ## Design Sources
 
 ${designSourcesMarkdown(spec.project?.designSources || [])}
+
+## Design Mapping
+
+- Sources: ${designMapping.totalSources}
+- Mapped sources: ${designMapping.mappedSources}
+- Unmapped sources: ${designMapping.unmappedSources}
+- Linked views: ${designMapping.linkedViewIds.join(', ') || 'None'}
+- Linked components: ${designMapping.linkedComponentIds.join(', ') || 'None'}
 
 ## Component Backlog
 
