@@ -16,7 +16,7 @@ Usage:
   npm run phantom:spec -- export-data-contract <spec.json> <dir>
   npm run phantom:spec -- export-powerbi-guide <spec.json> <dir>
   npm run phantom:spec -- export-handoff-pack <spec.json> <dir>
-  npm run phantom:spec -- inspect <spec.json> components|drill-actions|data-requirements|design-sources|react-backlog
+  npm run phantom:spec -- inspect <spec.json> components|drill-actions|data-requirements|design-sources|react-backlog|powerbi-build-matrix
   npm run phantom:spec -- import-design-source <spec.json> figmaFrame "Client frame" <url> <frame-id> "notes" <out-spec.json>
 
 Commands:
@@ -233,7 +233,19 @@ const inspectSpec = (spec, subject) => {
     };
   }
 
-  throw new Error('Inspect subject must be components, drill-actions, data-requirements, design-sources, or react-backlog.');
+  if (subject === 'powerbi-build-matrix') {
+    const guide = createPowerBiGuide(spec);
+    return {
+      subject,
+      readiness: guide.readiness,
+      summary: guide.summary,
+      components: guide.components,
+      drillActions: guide.drillActions,
+      buildChecklist: guide.buildChecklist,
+    };
+  }
+
+  throw new Error('Inspect subject must be components, drill-actions, data-requirements, design-sources, react-backlog, or powerbi-build-matrix.');
 };
 
 const optionValue = (name) => {
