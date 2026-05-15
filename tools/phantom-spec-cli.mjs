@@ -434,15 +434,18 @@ const createDesignHandoff = (spec) => {
   const isFigmaLed = workflow.entryPoint === 'figma-led';
   const views = spec.views || [];
   const designSources = spec.project?.designSources || [];
+  const isExternalDesignSource = (source) => source.type !== 'phantomDefault';
   const components = views.flatMap((view) =>
     (view.components || []).map((component) => {
       const linkedSources = designSources.filter((source) =>
         (source.linkedViewIds || []).includes(view.id) || (source.linkedComponentIds || []).includes(component.id),
       );
+      const externalLinkedSources = linkedSources.filter(isExternalDesignSource);
+      const defaultLinkedSources = linkedSources.filter((source) => !isExternalDesignSource(source));
       const missingDesignSource = isFigmaLed && linkedSources.length === 0;
       const status = missingDesignSource
         ? 'missing-design-source'
-        : linkedSources.length > 0
+        : externalLinkedSources.length > 0
           ? 'mapped-to-design-source'
           : 'phantom-default';
 
@@ -453,12 +456,15 @@ const createDesignHandoff = (spec) => {
         viewId: view.id,
         designSourceIds: linkedSources.map((source) => source.id),
         designSourceNames: linkedSources.map((source) => source.name),
-        usesPhantomDefaults: linkedSources.length === 0,
+        usesPhantomDefaults: linkedSources.length === 0 || defaultLinkedSources.length > 0,
         status,
         implementationNotes: [
-          ...(linkedSources.length > 0
-            ? [`Apply visual direction from: ${linkedSources.map((source) => source.name).join(', ')}.`]
-            : ['Use Phantom defaults for layout, spacing, interaction states, and component styling.']),
+          ...(externalLinkedSources.length > 0
+            ? [`Apply visual direction from: ${externalLinkedSources.map((source) => source.name).join(', ')}.`]
+            : []),
+          ...(defaultLinkedSources.length > 0 || linkedSources.length === 0
+            ? ['Use Phantom defaults for layout, spacing, interaction states, and component styling.']
+            : []),
           ...(missingDesignSource
             ? ['Map this component to a Figma frame/component, screenshot, or explicit Phantom default before engineering handoff.']
             : []),
@@ -470,14 +476,17 @@ const createDesignHandoff = (spec) => {
   const missingMappings = components
     .filter((component) => component.status === 'missing-design-source')
     .map((component) => component.componentId);
-  const hasMappedComponents = components.some((component) => component.designSourceIds.length > 0);
+  const hasExternalMappedComponents = components.some((component) => component.status === 'mapped-to-design-source');
+  const hasDefaultComponents = components.some((component) => component.usesPhantomDefaults);
   const sourceMode = !isFigmaLed
     ? 'phantom-defaults'
     : designSources.length === 0
       ? 'needs-source'
-      : missingMappings.length > 0 && hasMappedComponents
+      : (hasExternalMappedComponents && (hasDefaultComponents || missingMappings.length > 0))
         ? 'mixed'
-        : 'figma-imported';
+        : hasExternalMappedComponents
+          ? 'figma-imported'
+          : 'phantom-defaults';
 
   return {
     subject: 'design-handoff',

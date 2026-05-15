@@ -246,6 +246,62 @@ describe('phantom spec CLI', () => {
     }
   }, 30000);
 
+  it('inspects mixed Figma and Phantom-default design handoff for agents', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'phantom-mixed-design-handoff-'));
+    const specPath = join(tempDir, 'spec.json');
+    const spec = createReadySpec();
+    spec.project.designSources = [
+      {
+        id: 'figma-1',
+        type: 'figmaFrame',
+        name: 'Client frame',
+        linkedViewIds: [],
+        linkedComponentIds: ['visual-1'],
+      },
+      {
+        id: 'phantom-defaults',
+        type: 'phantomDefault',
+        name: 'Phantom analytical defaults',
+        linkedViewIds: [],
+        linkedComponentIds: ['visual-2'],
+      },
+    ];
+    Object.assign(spec.project.specification, { designSources: spec.project.designSources });
+
+    try {
+      await writeFile(specPath, `${JSON.stringify(spec, null, 2)}\n`);
+      const { stdout } = await execFileAsync(
+        process.execPath,
+        ['tools/phantom-spec-cli.mjs', 'inspect', specPath, 'design-handoff'],
+        { cwd: process.cwd() },
+      );
+      const handoff = JSON.parse(stdout);
+
+      expect(handoff).toMatchObject({
+        subject: 'design-handoff',
+        entryPoint: 'figma-led',
+        sourceMode: 'mixed',
+        missingMappings: [],
+      });
+      expect(handoff.components).toEqual([
+        expect.objectContaining({
+          componentId: 'visual-1',
+          designSourceIds: ['figma-1'],
+          status: 'mapped-to-design-source',
+          usesPhantomDefaults: false,
+        }),
+        expect.objectContaining({
+          componentId: 'visual-2',
+          designSourceIds: ['phantom-defaults'],
+          status: 'phantom-default',
+          usesPhantomDefaults: true,
+        }),
+      ]);
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  }, 30000);
+
   it('inspects data paths for adapter and model planning', async () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'phantom-data-path-'));
     const specPath = join(tempDir, 'spec.json');

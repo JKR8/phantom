@@ -840,15 +840,18 @@ export const createPhantomDesignWorkflow = (spec: PhantomSpec): PhantomDesignWor
 export const createPhantomDesignHandoff = (spec: PhantomSpec): PhantomDesignHandoff => {
   const workflow = createPhantomDesignWorkflow(spec);
   const isFigmaLed = workflow.entryPoint === 'figma-led';
+  const isExternalDesignSource = (source: DesignSource) => source.type !== 'phantomDefault';
   const components = spec.views.flatMap((view) =>
     view.components.map((component): PhantomDesignHandoffComponent => {
       const linkedSources = spec.project.designSources.filter((source) =>
         (source.linkedViewIds || []).includes(view.id) || (source.linkedComponentIds || []).includes(component.id),
       );
+      const externalLinkedSources = linkedSources.filter(isExternalDesignSource);
+      const defaultLinkedSources = linkedSources.filter((source) => !isExternalDesignSource(source));
       const missingDesignSource = isFigmaLed && linkedSources.length === 0;
       const status: PhantomDesignHandoffComponent['status'] = missingDesignSource
         ? 'missing-design-source'
-        : linkedSources.length > 0
+        : externalLinkedSources.length > 0
           ? 'mapped-to-design-source'
           : 'phantom-default';
 
@@ -859,12 +862,15 @@ export const createPhantomDesignHandoff = (spec: PhantomSpec): PhantomDesignHand
         viewId: view.id,
         designSourceIds: linkedSources.map((source) => source.id),
         designSourceNames: linkedSources.map((source) => source.name),
-        usesPhantomDefaults: linkedSources.length === 0,
+        usesPhantomDefaults: linkedSources.length === 0 || defaultLinkedSources.length > 0,
         status,
         implementationNotes: [
-          ...(linkedSources.length > 0
-            ? [`Apply visual direction from: ${linkedSources.map((source) => source.name).join(', ')}.`]
-            : ['Use Phantom defaults for layout, spacing, interaction states, and component styling.']),
+          ...(externalLinkedSources.length > 0
+            ? [`Apply visual direction from: ${externalLinkedSources.map((source) => source.name).join(', ')}.`]
+            : []),
+          ...(defaultLinkedSources.length > 0 || linkedSources.length === 0
+            ? ['Use Phantom defaults for layout, spacing, interaction states, and component styling.']
+            : []),
           ...(missingDesignSource
             ? ['Map this component to a Figma frame/component, screenshot, or explicit Phantom default before engineering handoff.']
             : []),
@@ -876,14 +882,17 @@ export const createPhantomDesignHandoff = (spec: PhantomSpec): PhantomDesignHand
   const missingMappings = components
     .filter((component) => component.status === 'missing-design-source')
     .map((component) => component.componentId);
-  const hasMappedComponents = components.some((component) => component.designSourceIds.length > 0);
+  const hasExternalMappedComponents = components.some((component) => component.status === 'mapped-to-design-source');
+  const hasDefaultComponents = components.some((component) => component.usesPhantomDefaults);
   const sourceMode: PhantomDesignHandoff['sourceMode'] = !isFigmaLed
     ? 'phantom-defaults'
     : spec.project.designSources.length === 0
       ? 'needs-source'
-      : missingMappings.length > 0 && hasMappedComponents
+      : (hasExternalMappedComponents && (hasDefaultComponents || missingMappings.length > 0))
         ? 'mixed'
-        : 'figma-imported';
+        : hasExternalMappedComponents
+          ? 'figma-imported'
+          : 'phantom-defaults';
 
   return {
     subject: 'design-handoff',

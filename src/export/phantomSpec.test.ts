@@ -694,6 +694,66 @@ describe('phantomSpec', () => {
     });
   });
 
+  it('treats explicit Phantom defaults as valid design mappings in Figma-led handoff', () => {
+    const spec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [
+        item({}),
+        item({ id: 'visual-2', type: 'kpi', title: 'Revenue KPI', props: { metric: 'revenue' } }),
+      ],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      specification: {
+        signOffStatus: 'draft',
+        designEntryPoint: 'figma-led',
+        designSources: [
+          {
+            id: 'figma-1',
+            type: 'figmaFrame',
+            name: 'Client concept',
+            linkedComponentIds: ['visual-1'],
+          },
+          {
+            id: 'phantom-defaults',
+            type: 'phantomDefault',
+            name: 'Phantom analytical defaults',
+            linkedComponentIds: ['visual-2'],
+          },
+        ],
+      },
+    });
+
+    const handoff = createPhantomDesignHandoff(spec);
+
+    expect(createPhantomDesignWorkflow(spec).status).toBe('ready');
+    expect(handoff).toMatchObject({
+      entryPoint: 'figma-led',
+      sourceMode: 'mixed',
+      canSkipFigma: false,
+      missingMappings: [],
+    });
+    expect(handoff.components).toEqual([
+      expect.objectContaining({
+        componentId: 'visual-1',
+        designSourceIds: ['figma-1'],
+        status: 'mapped-to-design-source',
+        usesPhantomDefaults: false,
+      }),
+      expect.objectContaining({
+        componentId: 'visual-2',
+        designSourceIds: ['phantom-defaults'],
+        status: 'phantom-default',
+        usesPhantomDefaults: true,
+      }),
+    ]);
+    expect(handoff.components[1].implementationNotes).toContain(
+      'Use Phantom defaults for layout, spacing, interaction states, and component styling.',
+    );
+  });
+
   it('marks Figma-led design workflow as needing a design source before handoff', () => {
     const spec = createPhantomSpec({
       scenario: 'Retail',
