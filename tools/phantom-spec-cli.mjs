@@ -655,6 +655,7 @@ const writeReactStarter = async (spec, outDir) => {
   const dataContract = createDataContract(spec);
   const backlog = createReactBacklog(spec);
   const designMapping = createDesignMappingSummary(spec.project?.designSources || []);
+  const designWorkflow = createDesignWorkflow(spec);
   await rm(outDir, { recursive: true, force: true });
   await mkdir(`${outDir}/src`, { recursive: true });
 
@@ -685,6 +686,7 @@ const writeReactStarter = async (spec, outDir) => {
 import { createRoot } from 'react-dom/client';
 import spec from './phantom-spec.json';
 import dataContract from './phantom-data-contract.json';
+import designWorkflow from './design-workflow.json';
 import { getComponentDataRequest } from './data-adapter';
 import { drillActions } from './drill-actions';
 import './styles.css';
@@ -707,6 +709,8 @@ const App = () => (
       <div className="meta">
         <span>{spec.mode}</span>
         <span>{spec.project.designEntryPoint}</span>
+        <span>{designWorkflow.designPlane}</span>
+        <span>{designWorkflow.status}</span>
         <span>{spec.views.length} view(s)</span>
         <span>{dataContract.fields.length} field(s)</span>
         <span>{drillActions.length} drill action(s)</span>
@@ -811,6 +815,7 @@ It includes:
 - the exported Phantom data contract
 - a typed data adapter stub
 - drill action definitions for routes/detail panels
+- a machine-readable design workflow contract
 - a React/Vite shell
 - one placeholder card per Phantom component
 - data requirements visible in the UI
@@ -820,7 +825,19 @@ It includes:
 1. Replace placeholder cards with production components.
 2. Wire \`src/data-adapter.ts\` to the client API, warehouse/dbt model, or semantic API.
 3. Implement drill actions from \`spec.interactions.drillActions\`.
-4. Apply any Figma/design-source references from \`spec.project.designSources\`.
+4. Review \`src/design-workflow.json\` before deciding whether to pull from Figma or continue with Phantom defaults.
+5. Apply any Figma/design-source references from \`spec.project.designSources\`.
+
+## Design Workflow
+
+- Design plane: ${designWorkflow.designPlane}
+- Phantom role: ${designWorkflow.phantomRole}
+- Status: ${designWorkflow.status}
+- Handoff modes: ${designWorkflow.handoffModes.join(', ')}
+
+### Design Workflow Next Steps
+
+${markdownList(designWorkflow.requiredNextSteps)}
 
 ## Workshop Intent
 
@@ -940,6 +957,7 @@ export default defineConfig({
   await writeFile(`${outDir}/src/styles.css`, styles);
   await writeFile(`${outDir}/src/phantom-spec.json`, `${JSON.stringify(spec, null, 2)}\n`);
   await writeFile(`${outDir}/src/phantom-data-contract.json`, `${JSON.stringify(dataContract, null, 2)}\n`);
+  await writeFile(`${outDir}/src/design-workflow.json`, `${JSON.stringify(designWorkflow, null, 2)}\n`);
   await writeFile(`${outDir}/src/data-adapter.ts`, dataAdapterTs);
   await writeFile(`${outDir}/src/drill-actions.ts`, drillActionsTs);
   await writeFile(`${outDir}/react-implementation-backlog.json`, `${JSON.stringify(backlog, null, 2)}\n`);
@@ -948,7 +966,7 @@ export default defineConfig({
 
   return {
     outDir,
-    files: ['package.json', 'index.html', 'tsconfig.json', 'vite.config.ts', 'src/App.tsx', 'src/styles.css', 'src/phantom-spec.json', 'src/phantom-data-contract.json', 'src/data-adapter.ts', 'src/drill-actions.ts', 'react-implementation-backlog.json', 'REACT_IMPLEMENTATION_BACKLOG.md', 'README.md'],
+    files: ['package.json', 'index.html', 'tsconfig.json', 'vite.config.ts', 'src/App.tsx', 'src/styles.css', 'src/phantom-spec.json', 'src/phantom-data-contract.json', 'src/design-workflow.json', 'src/data-adapter.ts', 'src/drill-actions.ts', 'react-implementation-backlog.json', 'REACT_IMPLEMENTATION_BACKLOG.md', 'README.md'],
     components: components.length,
     fields: dataContract.fields.length,
     drillActions: dataContract.drillActions.length,
