@@ -683,15 +683,17 @@ export default defineConfig({
   await writeFile(`${outDir}/src/phantom-data-contract.json`, `${JSON.stringify(dataContract, null, 2)}\n`);
   await writeFile(`${outDir}/src/data-adapter.ts`, dataAdapterTs);
   await writeFile(`${outDir}/src/drill-actions.ts`, drillActionsTs);
+  await writeFile(`${outDir}/react-implementation-backlog.json`, `${JSON.stringify(backlog, null, 2)}\n`);
   await writeFile(`${outDir}/REACT_IMPLEMENTATION_BACKLOG.md`, `# React Implementation Backlog\n\n${reactBacklogMarkdown(backlog)}\n`);
   await writeFile(`${outDir}/README.md`, readme);
 
   return {
     outDir,
-    files: ['package.json', 'index.html', 'tsconfig.json', 'vite.config.ts', 'src/App.tsx', 'src/styles.css', 'src/phantom-spec.json', 'src/phantom-data-contract.json', 'src/data-adapter.ts', 'src/drill-actions.ts', 'REACT_IMPLEMENTATION_BACKLOG.md', 'README.md'],
+    files: ['package.json', 'index.html', 'tsconfig.json', 'vite.config.ts', 'src/App.tsx', 'src/styles.css', 'src/phantom-spec.json', 'src/phantom-data-contract.json', 'src/data-adapter.ts', 'src/drill-actions.ts', 'react-implementation-backlog.json', 'REACT_IMPLEMENTATION_BACKLOG.md', 'README.md'],
     components: components.length,
     fields: dataContract.fields.length,
     drillActions: dataContract.drillActions.length,
+    reactImplementationTasks: backlog.length,
   };
 };
 
@@ -1056,6 +1058,7 @@ const writeHandoffPack = async (spec, outDir) => {
       components: reactStarter.components,
       fields: reactStarter.fields,
       drillActions: reactStarter.drillActions,
+      reactImplementationTasks: reactStarter.reactImplementationTasks,
       powerBiApproximateVisuals: powerBiGuide.approximateVisuals,
       powerBiUnsupportedVisuals: powerBiGuide.unsupportedVisuals,
     },

@@ -252,12 +252,13 @@ export const ExportButton: React.FC = () => {
           spec: 'phantom-spec.json',
           dataContract: ['data-contract/data-contract.json', 'data-contract/DATA_CONTRACT.md'],
           powerBi: ['power-bi/power-bi-implementation-guide.json', 'power-bi/POWER_BI_IMPLEMENTATION_GUIDE.md'],
-          react: ['react-product/REACT_IMPLEMENTATION_NOTES.md', 'react-product/REACT_IMPLEMENTATION_BACKLOG.md', 'react-product/phantom-spec.json', 'react-product/phantom-data-contract.json'],
+          react: ['react-product/REACT_IMPLEMENTATION_NOTES.md', 'react-product/react-implementation-backlog.json', 'react-product/REACT_IMPLEMENTATION_BACKLOG.md', 'react-product/phantom-spec.json', 'react-product/phantom-data-contract.json'],
         },
         summary: {
           components: powerBiGuide.summary.components,
           fields: contract.fields.length,
           drillActions: powerBiGuide.summary.drillActions,
+          reactImplementationTasks: reactBacklog.length,
           powerBiApproximateVisuals: powerBiGuide.summary.approximateVisuals,
           powerBiUnsupportedVisuals: powerBiGuide.summary.unsupportedVisuals,
         },
@@ -318,6 +319,7 @@ npm run phantom:spec -- export-react phantom-spec.json ./generated-app
       zip.file('power-bi/power-bi-implementation-guide.json', JSON.stringify(powerBiGuide, null, 2));
       zip.file('power-bi/POWER_BI_IMPLEMENTATION_GUIDE.md', createPowerBiImplementationGuideMarkdown(powerBiGuide));
       zip.file('react-product/REACT_IMPLEMENTATION_NOTES.md', reactNotes);
+      zip.file('react-product/react-implementation-backlog.json', JSON.stringify(reactBacklog, null, 2));
       zip.file('react-product/REACT_IMPLEMENTATION_BACKLOG.md', createReactImplementationBacklogMarkdown(reactBacklog));
       zip.file('react-product/phantom-spec.json', JSON.stringify(spec, null, 2));
       zip.file('react-product/phantom-data-contract.json', JSON.stringify(contract, null, 2));
