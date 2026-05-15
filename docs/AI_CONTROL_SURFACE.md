@@ -53,6 +53,9 @@ npm run phantom:spec -- readiness path/to/spec.json powerBi
 npm run phantom:spec -- export-react path/to/spec.json ./generated-app
 npm run phantom:spec -- export-data-contract path/to/spec.json ./handoff
 npm run phantom:spec -- export-powerbi-guide path/to/spec.json ./handoff
+npm run phantom:spec -- inspect path/to/spec.json components
+npm run phantom:spec -- inspect path/to/spec.json drill-actions
+npm run phantom:spec -- inspect path/to/spec.json data-requirements
 ```
 
 `validate` returns:
@@ -65,6 +68,8 @@ npm run phantom:spec -- export-powerbi-guide path/to/spec.json ./handoff
 ```
 
 `summary` returns a compact JSON payload with scenario, mode, component count, data requirements, and Power BI support counts.
+
+`inspect` returns focused JSON for `components`, `drill-actions`, or `data-requirements`, so agents can query the spec before deciding what to generate or validate.
 
 `readiness` returns a machine-readable report with `ready`, `errors`, and `warnings`. It exits non-zero when blockers exist, which lets agents and CI stop before generating misleading implementation output.
 
@@ -86,9 +91,9 @@ Future commands should include:
 - `phantom export powerbi-guide <file> --out <dir>`
 - `phantom export data-contract <file> --out <dir>`
 - `phantom export react <file> --out <dir>`
-- `phantom inspect components <file>`
-- `phantom inspect drill-actions <file>`
-- `phantom inspect data-requirements <file>`
+- `phantom inspect components <file>` implemented as `npm run phantom:spec -- inspect <file> components`
+- `phantom inspect drill-actions <file>` implemented as `npm run phantom:spec -- inspect <file> drill-actions`
+- `phantom inspect data-requirements <file>` implemented as `npm run phantom:spec -- inspect <file> data-requirements`
 
 ## Intended API Roadmap
 

@@ -14,6 +14,7 @@ Usage:
   npm run phantom:spec -- export-react <spec.json> <dir>
   npm run phantom:spec -- export-data-contract <spec.json> <dir>
   npm run phantom:spec -- export-powerbi-guide <spec.json> <dir>
+  npm run phantom:spec -- inspect <spec.json> components|drill-actions|data-requirements
 
 Commands:
   validate             Validate a Phantom Spec JSON file for agent/build handoff.
@@ -22,6 +23,7 @@ Commands:
   export-react         Generate a minimal React starter scaffold from a ready spec.
   export-data-contract Generate JSON and Markdown data contract handoff files.
   export-powerbi-guide Generate a Power BI implementation guide.
+  inspect              Print a focused machine-readable view of a spec section.
 `);
 };
 
@@ -88,6 +90,59 @@ const summarizeSpec = (spec) => {
     dimensions: spec.dataContract?.dimensions || [],
     powerBi: byPowerBiStatus,
   };
+};
+
+const inspectSpec = (spec, subject) => {
+  const components = (spec.views || []).flatMap((view) =>
+    (view.components || []).map((component) => ({
+      viewId: view.id,
+      viewName: view.name,
+      id: component.id,
+      title: component.title,
+      type: component.type,
+      fields: component.dataRequirements?.fields || [],
+      metrics: component.dataRequirements?.metrics || [],
+      dimensions: component.dataRequirements?.dimensions || [],
+      reactStatus: component.exportTargets?.react?.status || 'unknown',
+      powerBiStatus: component.exportTargets?.powerBi?.status || 'unknown',
+      powerBiNotes: component.exportTargets?.powerBi?.notes || [],
+    })),
+  );
+
+  if (subject === 'components') {
+    return {
+      subject,
+      count: components.length,
+      components,
+    };
+  }
+
+  if (subject === 'drill-actions') {
+    return {
+      subject,
+      count: spec.interactions?.drillActions?.length || 0,
+      drillActions: spec.interactions?.drillActions || [],
+    };
+  }
+
+  if (subject === 'data-requirements') {
+    const contract = createDataContract(spec);
+    return {
+      subject,
+      metrics: contract.metrics,
+      dimensions: contract.dimensions,
+      fields: contract.fields,
+      components: contract.components.map((component) => ({
+        componentId: component.componentId,
+        title: component.title,
+        fields: component.fields,
+        metrics: component.metrics,
+        dimensions: component.dimensions,
+      })),
+    };
+  }
+
+  throw new Error('Inspect subject must be components, drill-actions, or data-requirements.');
 };
 
 const getTarget = (spec) => {
@@ -683,7 +738,7 @@ try {
     process.exit(0);
   }
 
-  if (!['validate', 'summary', 'readiness', 'export-react', 'export-data-contract', 'export-powerbi-guide'].includes(command)) {
+  if (!['validate', 'summary', 'readiness', 'export-react', 'export-data-contract', 'export-powerbi-guide', 'inspect'].includes(command)) {
     throw new Error(`Unknown command: ${command}`);
   }
 
@@ -704,6 +759,14 @@ try {
       process.exit(1);
     }
     console.log(JSON.stringify(summarizeSpec(spec), null, 2));
+  }
+
+  if (command === 'inspect') {
+    if (errors.length > 0) {
+      console.error(JSON.stringify({ valid: false, errors }, null, 2));
+      process.exit(1);
+    }
+    console.log(JSON.stringify(inspectSpec(spec, args[0]), null, 2));
   }
 
   if (command === 'readiness') {
