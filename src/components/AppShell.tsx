@@ -32,7 +32,7 @@ import {
 } from '@fluentui/react-icons';
 import { FieldsPane } from './FieldsPane';
 import { PropertiesPanel } from './PropertiesPanel';
-import { SpecificationPanel } from './SpecificationPanel';
+import { ConsultantWorkflowPanel } from './ConsultantWorkflowPanel';
 import { DataModelPanel } from './DataModelPanel';
 import { DataModelPane } from './DataModelPane';
 import { PBIUiKitPane } from './PBIUiKitPane';
@@ -194,7 +194,7 @@ const useStyles = makeStyles({
     marginTop: '12px',
   },
   ffmaPane: {
-    width: '240px',
+    width: '280px',
     borderRight: `1px solid ${tokens.colorNeutralStroke2}`,
     flexShrink: 0,
     overflowY: 'auto',
@@ -494,7 +494,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
               appearance="subtle"
               style={showSpec ? navBtnActiveStyle : navBtnStyle}
               onClick={() => { setShowSpec(!showSpec); setShowPBIUiKit(false); setShowDataModelPane(false); }}
-              title="Dashboard Specification"
+              title="Consultant Workflow"
             />
           </nav>
         )}
@@ -510,7 +510,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children, readOnly }) => {
         )}
         {showSpec && !readOnly && !showDataModelFull && !showDataModelPane && (
           <div className={styles.ffmaPane}>
-            <SpecificationPanel />
+            <ConsultantWorkflowPanel />
           </div>
         )}
         {showDataModelFull && !readOnly ? (

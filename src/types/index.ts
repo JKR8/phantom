@@ -362,10 +362,37 @@ export interface DataSourceReference {
   linkedFields?: string[];
 }
 
+export type RequirementDisposition =
+  | 'client_decision'
+  | 'consultant_task'
+  | 'assumption'
+  | 'accepted_gap'
+  | 'export_blocker';
+
+export type RequirementStatus = 'open' | 'resolved' | 'deferred';
+
+export interface RequirementItem {
+  id: string;
+  title: string;
+  detail?: string;
+  disposition: RequirementDisposition;
+  status: RequirementStatus;
+  ownerRole?: string;
+  source?: 'workshop_note' | 'readiness_check' | 'consultant' | 'system';
+  linkedComponentIds?: string[];
+  resolution?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 /**
  * Dashboard specification - captures requirements and context
  */
 export interface DashboardSpecification {
+  /** Fast raw notes captured during a live workshop before they are structured */
+  rawRequirementNotes?: string;
+  /** Structured decisions, consultant tasks, assumptions, gaps, and blockers that drive the clean spec */
+  requirementItems?: RequirementItem[];
   /** Business questions this dashboard answers */
   businessQuestions?: string;
   /** Data granularity level */

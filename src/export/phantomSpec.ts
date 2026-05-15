@@ -1,4 +1,15 @@
-import type { DashboardItem, DashboardSpecification, DataSourceReference, DesignSource, DrillAction, ExportMode, LayoutMode, Scenario } from '../types';
+import type {
+  DashboardItem,
+  DashboardSpecification,
+  DataSourceReference,
+  DesignSource,
+  DrillAction,
+  ExportMode,
+  LayoutMode,
+  RequirementDisposition,
+  RequirementItem,
+  Scenario,
+} from '../types';
 
 export const PHANTOM_SPEC_VERSION = '0.1.0';
 
@@ -369,6 +380,7 @@ export interface PhantomHandoffSummary {
   designMapping: PhantomDesignMappingSummary;
   workshopIntent: PhantomWorkshopIntent;
   workshopCompleteness: PhantomWorkshopIntentCompleteness;
+  requirements: PhantomRequirementSummary;
   readiness: {
     react: PhantomReadinessReport;
     powerBi: PhantomReadinessReport;
@@ -387,6 +399,18 @@ export interface PhantomHandoffSummary {
     powerBiUnsupportedVisuals: number;
   };
   nextActions: string[];
+}
+
+export interface PhantomRequirementSummary {
+  subject: 'requirements';
+  counts: Record<RequirementDisposition, number>;
+  openItems: RequirementItem[];
+  resolvedItems: RequirementItem[];
+  clientQuestions: RequirementItem[];
+  consultantTasks: RequirementItem[];
+  assumptions: RequirementItem[];
+  acceptedGaps: RequirementItem[];
+  exportBlockers: RequirementItem[];
 }
 
 export interface PhantomWorkshopIntent {
@@ -693,6 +717,36 @@ const WORKSHOP_INTENT_REQUIRED_FIELDS: Array<{ key: keyof PhantomWorkshopIntent;
   { key: 'decisions', label: 'decisions/actions' },
   { key: 'acceptanceCriteria', label: 'acceptance criteria' },
 ];
+
+const createRequirementCounts = () => ({
+  client_decision: 0,
+  consultant_task: 0,
+  assumption: 0,
+  accepted_gap: 0,
+  export_blocker: 0,
+});
+
+export const createPhantomRequirementSummary = (spec: PhantomSpec): PhantomRequirementSummary => {
+  const items = spec.project.specification.requirementItems || [];
+  const openItems = items.filter((item) => item.status !== 'resolved');
+  const resolvedItems = items.filter((item) => item.status === 'resolved');
+  const counts = items.reduce<Record<RequirementDisposition, number>>((acc, item) => {
+    acc[item.disposition] += 1;
+    return acc;
+  }, createRequirementCounts());
+
+  return {
+    subject: 'requirements',
+    counts,
+    openItems,
+    resolvedItems,
+    clientQuestions: items.filter((item) => item.disposition === 'client_decision'),
+    consultantTasks: items.filter((item) => item.disposition === 'consultant_task'),
+    assumptions: items.filter((item) => item.disposition === 'assumption'),
+    acceptedGaps: items.filter((item) => item.disposition === 'accepted_gap'),
+    exportBlockers: items.filter((item) => item.disposition === 'export_blocker'),
+  };
+};
 
 const createWorkshopIntentCompleteness = (
   intent: PhantomWorkshopIntent,
@@ -1597,6 +1651,7 @@ export const createPhantomHandoffSummary = (spec: PhantomSpec): PhantomHandoffSu
     designMapping: createPhantomDesignMappingSummary(spec.project.designSources),
     workshopIntent,
     workshopCompleteness: createWorkshopIntentCompleteness(workshopIntent),
+    requirements: createPhantomRequirementSummary(spec),
     readiness: {
       react: reactReadiness,
       powerBi: powerBiGuide.readiness,
