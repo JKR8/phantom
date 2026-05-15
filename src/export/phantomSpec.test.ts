@@ -20,6 +20,7 @@ import {
   createPowerBiImplementationGuideMarkdown,
   createReactImplementationBacklog,
   createReactImplementationBacklogMarkdown,
+  createReactProductBuildPack,
   mergeDesignSourceIntoSpec,
   getComponentDataRequirements,
   getPowerBiExportStatus,
@@ -226,6 +227,89 @@ describe('phantomSpec', () => {
     expect(markdown).toContain('- Linked design sources: None');
     expect(markdown).toContain('- [ ] Apply linked design-source guidance for visual fidelity.');
     expect(markdown).toContain('- Power BI compatibility: unsupported');
+  });
+
+  it('creates a reusable React Product Build Pack API artifact', () => {
+    const spec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [
+        item({}),
+        item({ id: 'visual-2', type: 'table', title: 'Account Detail', props: { dimensions: ['Region', 'Account'], metrics: ['revenue'] } }),
+      ],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      specification: {
+        signOffStatus: 'approved',
+        businessQuestions: 'Which regions need intervention?',
+        audience: 'Executives',
+        decisions: 'Prioritize stores for margin recovery.',
+        acceptanceCriteria: 'Users can drill from region to account detail.',
+        grain: 'daily',
+        refreshCadence: 'daily',
+        sourceSystems: 'Snowflake mart',
+        dataSources: [{
+          id: 'orders-mart',
+          type: 'dbt',
+          name: 'Orders mart',
+          model: 'mart_orders',
+          linkedComponentIds: ['visual-1', 'visual-2'],
+          linkedFields: ['Region', 'Account', 'revenue'],
+        }],
+        designEntryPoint: 'figma-led',
+        designSources: [{
+          id: 'figma-1',
+          type: 'figmaFrame',
+          name: 'Executive concept',
+          linkedComponentIds: ['visual-1', 'visual-2'],
+        }],
+      },
+      drillActions: [{
+        id: 'drill-1',
+        sourceComponentId: 'visual-1',
+        trigger: 'click',
+        targetType: 'detailPanel',
+        targetId: 'account-detail',
+        label: 'Open account detail',
+        context: [{ source: 'Region', target: 'Region' }],
+        preserveFilters: true,
+      }],
+    });
+
+    const pack = createReactProductBuildPack(spec, '2026-05-15T00:00:00.000Z');
+
+    expect(Object.keys(pack.files)).toEqual([
+      'phantom-spec.json',
+      'phantom-data-contract.json',
+      'design-handoff.json',
+      'implementation-gate.json',
+      'react-implementation-backlog.json',
+      'REACT_IMPLEMENTATION_BACKLOG.md',
+      'REACT_IMPLEMENTATION_NOTES.md',
+      'REACT_BUILD_MANIFEST.json',
+    ]);
+    expect(pack.manifest).toMatchObject({
+      target: 'react-product',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      implementationGate: {
+        readyForImplementation: true,
+        reactReady: true,
+      },
+      summary: {
+        components: 2,
+        fields: 2,
+        drillActions: 1,
+        reactImplementationTasks: 2,
+      },
+    });
+    expect(pack.files['REACT_BUILD_MANIFEST.json']).toBe(pack.manifest);
+    expect(pack.files['phantom-data-contract.json'].workshopIntent.businessQuestions).toBe('Which regions need intervention?');
+    expect(pack.files['design-handoff.json'].missingMappings).toEqual([]);
+    expect(pack.files['react-implementation-backlog.json']).toHaveLength(2);
+    expect(pack.files['REACT_IMPLEMENTATION_NOTES.md']).toContain('# React Product Build Pack');
+    expect(pack.files['REACT_IMPLEMENTATION_NOTES.md']).toContain('Ready for implementation: Yes');
   });
 
   it('creates a handoff summary with recommendation and next actions', () => {

@@ -195,9 +195,9 @@ Future commands should include:
 - `phantom import design-source <file> --type figmaFrame --name <name> --url <url> --out <file>` implemented as `npm run phantom:spec -- import-design-source <file> ...`
 - `phantom import data-source <file> --type dbt --name <name> --model <model> --fields <fields> --components <ids> --out <file>` implemented as `npm run phantom:spec -- import-data-source <file> ...`
 
-## Intended API Roadmap
+## Current TypeScript API
 
-The public TypeScript API should expose:
+The public TypeScript API exports the core spec, readiness, design workflow, and handoff artifact creators from `src/export`:
 
 - `createPhantomSpec`
 - `validatePhantomSpec`
@@ -210,8 +210,14 @@ The public TypeScript API should expose:
 - `createPhantomWorkshopIntentCompleteness`
 - `createPhantomDataContract`
 - `createReactImplementationBacklog`
+- `createReactProductBuildPack`
 - `createPowerBiImplementationGuide`
 - `createPhantomHandoffSummary`
+
+## Intended API Roadmap
+
+Future public API work should add filesystem-oriented generators that mirror the CLI without requiring callers to shell out:
+
 - `generateReactStarter`
 - `generatePowerBiImplementationPack`
 - `generateDataContract`

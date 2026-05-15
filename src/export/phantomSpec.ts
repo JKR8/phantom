@@ -212,6 +212,53 @@ export interface PhantomReactImplementationTask {
   workItems: string[];
 }
 
+export interface PhantomReactProductBuildPack {
+  manifest: {
+    manifestVersion: '0.1.0';
+    sourceSpecVersion: PhantomSpec['specVersion'];
+    generatedAt: string;
+    project: {
+      scenario: Scenario;
+      mode: ExportMode;
+      signOffStatus: DashboardSpecification['signOffStatus'];
+      designEntryPoint: 'figma-led' | 'phantom-led';
+      designSources: DesignSource[];
+    };
+    target: 'react-product';
+    implementationGate: PhantomImplementationGate;
+    dataPath: PhantomDataPath;
+    designWorkflow: PhantomDesignWorkflow;
+    designHandoff: PhantomDesignHandoff;
+    workshopIntent: PhantomWorkshopIntent;
+    workshopCompleteness: PhantomWorkshopIntentCompleteness;
+    artifacts: {
+      spec: 'phantom-spec.json';
+      dataContract: 'phantom-data-contract.json';
+      designHandoff: 'design-handoff.json';
+      implementationGate: 'implementation-gate.json';
+      backlog: ['react-implementation-backlog.json', 'REACT_IMPLEMENTATION_BACKLOG.md'];
+      notes: 'REACT_IMPLEMENTATION_NOTES.md';
+    };
+    summary: {
+      components: number;
+      views: number;
+      drillActions: number;
+      fields: number;
+      reactImplementationTasks: number;
+    };
+  };
+  files: {
+    'phantom-spec.json': PhantomSpec;
+    'phantom-data-contract.json': PhantomDataContract;
+    'design-handoff.json': PhantomDesignHandoff;
+    'implementation-gate.json': PhantomImplementationGate;
+    'react-implementation-backlog.json': PhantomReactImplementationTask[];
+    'REACT_IMPLEMENTATION_BACKLOG.md': string;
+    'REACT_IMPLEMENTATION_NOTES.md': string;
+    'REACT_BUILD_MANIFEST.json': PhantomReactProductBuildPack['manifest'];
+  };
+}
+
 export type PhantomHandoffTarget = 'dual-track' | 'react-product' | 'power-bi' | 'fix-before-handoff';
 
 export interface PhantomHandoffRecommendation {
@@ -976,6 +1023,113 @@ export const createReactImplementationBacklogMarkdown = (tasks: PhantomReactImpl
 
 ${task.workItems.map((item) => `- [ ] ${item}`).join('\n')}`)
     .join('\n\n');
+};
+
+export const createReactProductBuildPack = (
+  spec: PhantomSpec,
+  generatedAt = new Date().toISOString(),
+): PhantomReactProductBuildPack => {
+  const contract = createPhantomDataContract(spec, generatedAt);
+  const reactBacklog = createReactImplementationBacklog(spec);
+  const handoffSummary = createPhantomHandoffSummary(spec);
+  const designHandoff = createPhantomDesignHandoff(spec);
+  const backlogMarkdown = createReactImplementationBacklogMarkdown(reactBacklog);
+  const manifest: PhantomReactProductBuildPack['manifest'] = {
+    manifestVersion: '0.1.0',
+    sourceSpecVersion: spec.specVersion,
+    generatedAt,
+    project: {
+      scenario: spec.project.scenario,
+      mode: spec.mode,
+      signOffStatus: spec.project.specification.signOffStatus || 'draft',
+      designEntryPoint: spec.project.designEntryPoint,
+      designSources: spec.project.designSources,
+    },
+    target: 'react-product',
+    implementationGate: handoffSummary.implementationGate,
+    dataPath: handoffSummary.dataPath,
+    designWorkflow: handoffSummary.designWorkflow,
+    designHandoff,
+    workshopIntent: handoffSummary.workshopIntent,
+    workshopCompleteness: handoffSummary.workshopCompleteness,
+    artifacts: {
+      spec: 'phantom-spec.json',
+      dataContract: 'phantom-data-contract.json',
+      designHandoff: 'design-handoff.json',
+      implementationGate: 'implementation-gate.json',
+      backlog: ['react-implementation-backlog.json', 'REACT_IMPLEMENTATION_BACKLOG.md'],
+      notes: 'REACT_IMPLEMENTATION_NOTES.md',
+    },
+    summary: {
+      components: getSpecComponents(spec).length,
+      views: spec.views.length,
+      drillActions: spec.interactions.drillActions.length,
+      fields: contract.fields.length,
+      reactImplementationTasks: reactBacklog.length,
+    },
+  };
+  const notes = `# React Product Build Pack
+
+Use this pack when Phantom is the workshop/spec source for a custom analytical React app.
+
+## Implementation Gate
+
+- Ready for implementation: ${handoffSummary.implementationGate.readyForImplementation ? 'Yes' : 'No'}
+- Approved for implementation: ${handoffSummary.implementationGate.approvedForImplementation ? 'Yes' : 'No'}
+- Design ready: ${handoffSummary.implementationGate.designReady ? 'Yes' : 'No'}
+- Data path ready: ${handoffSummary.implementationGate.dataPathReady ? 'Yes' : 'No'}
+- Workshop intent complete: ${handoffSummary.implementationGate.workshopIntentComplete ? 'Yes' : 'No'}
+- React ready: ${handoffSummary.implementationGate.reactReady ? 'Yes' : 'No'}
+
+### Implementation Gate Next Steps
+
+${markdownList(handoffSummary.implementationGate.requiredNextSteps)}
+
+## Build Inputs
+
+- \`phantom-spec.json\`: canonical workshop/spec artifact.
+- \`phantom-data-contract.json\`: fields, metrics, dimensions, filters, data sources, and drill actions.
+- \`design-handoff.json\`: component-level Figma/default provenance.
+- \`implementation-gate.json\`: go/no-go state for agents and engineers.
+- \`react-implementation-backlog.json\`: machine-readable component backlog.
+
+## Workshop Intent
+
+- Business questions: ${contract.workshopIntent.businessQuestions || 'Not specified'}
+- Audience: ${contract.workshopIntent.audience || 'Not specified'}
+- Decisions/actions: ${contract.workshopIntent.decisions || 'Not specified'}
+- Acceptance criteria: ${contract.workshopIntent.acceptanceCriteria || 'Not specified'}
+- Build notes: ${contract.workshopIntent.buildNotes || 'Not specified'}
+
+## Design Workflow
+
+- Design plane: ${handoffSummary.designWorkflow.designPlane}
+- Phantom role: ${handoffSummary.designWorkflow.phantomRole}
+- Status: ${handoffSummary.designWorkflow.status}
+- Handoff modes: ${handoffSummary.designWorkflow.handoffModes.join(', ')}
+
+## Design Sources
+
+${createDesignSourcesMarkdown(spec.project.designSources)}
+
+## Component Backlog
+
+${backlogMarkdown}
+`;
+
+  return {
+    manifest,
+    files: {
+      'phantom-spec.json': spec,
+      'phantom-data-contract.json': contract,
+      'design-handoff.json': designHandoff,
+      'implementation-gate.json': handoffSummary.implementationGate,
+      'react-implementation-backlog.json': reactBacklog,
+      'REACT_IMPLEMENTATION_BACKLOG.md': backlogMarkdown,
+      'REACT_IMPLEMENTATION_NOTES.md': notes,
+      'REACT_BUILD_MANIFEST.json': manifest,
+    },
+  };
 };
 
 export const createHandoffRecommendation = (

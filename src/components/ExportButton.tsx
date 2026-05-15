@@ -44,6 +44,7 @@ import {
   createPowerBiImplementationGuideMarkdown,
   createReactImplementationBacklog,
   createReactImplementationBacklogMarkdown,
+  createReactProductBuildPack,
   downloadPBIPPackage,
   generateAllMeasures,
   getSchemaForScenario,
@@ -232,88 +233,13 @@ export const ExportButton: React.FC = () => {
     setIsExporting(true);
     try {
       const spec = createCurrentSpec();
-      const contract = createPhantomDataContract(spec);
-      const reactBacklog = createReactImplementationBacklog(spec);
-      const handoffSummary = createPhantomHandoffSummary(spec);
-      const designHandoff = createPhantomDesignHandoff(spec);
       const date = new Date().toISOString().split('T')[0];
       const zip = new JSZip();
-      const manifest = {
-        manifestVersion: '0.1.0',
-        sourceSpecVersion: spec.specVersion,
-        generatedAt: new Date().toISOString(),
-        project: {
-          scenario: spec.project.scenario,
-          mode: spec.mode,
-          signOffStatus: spec.project.specification.signOffStatus || 'draft',
-          designEntryPoint: spec.project.designEntryPoint,
-          designSources: spec.project.designSources,
-        },
-        target: 'react-product',
-        implementationGate: handoffSummary.implementationGate,
-        dataPath: handoffSummary.dataPath,
-        designWorkflow: handoffSummary.designWorkflow,
-        designHandoff,
-        workshopIntent: handoffSummary.workshopIntent,
-        workshopCompleteness: handoffSummary.workshopCompleteness,
-        artifacts: {
-          spec: 'phantom-spec.json',
-          dataContract: 'phantom-data-contract.json',
-          designHandoff: 'design-handoff.json',
-          implementationGate: 'implementation-gate.json',
-          backlog: ['react-implementation-backlog.json', 'REACT_IMPLEMENTATION_BACKLOG.md'],
-          notes: 'REACT_IMPLEMENTATION_NOTES.md',
-        },
-        summary: {
-          components: spec.views.flatMap((view) => view.components).length,
-          views: spec.views.length,
-          drillActions: spec.interactions.drillActions.length,
-          fields: contract.fields.length,
-          reactImplementationTasks: reactBacklog.length,
-        },
-      };
-      const reactNotes = `# React Product Build Pack
+      const buildPack = createReactProductBuildPack(spec);
 
-Use this pack when Phantom is the workshop/spec source for a custom analytical React app.
-
-## Implementation Gate
-
-- Ready for implementation: ${handoffSummary.implementationGate.readyForImplementation ? 'Yes' : 'No'}
-- Approved for implementation: ${handoffSummary.implementationGate.approvedForImplementation ? 'Yes' : 'No'}
-- Design ready: ${handoffSummary.implementationGate.designReady ? 'Yes' : 'No'}
-- Data path ready: ${handoffSummary.implementationGate.dataPathReady ? 'Yes' : 'No'}
-- Workshop intent complete: ${handoffSummary.implementationGate.workshopIntentComplete ? 'Yes' : 'No'}
-- React ready: ${handoffSummary.implementationGate.reactReady ? 'Yes' : 'No'}
-
-## Build Inputs
-
-- \`phantom-spec.json\`: canonical workshop/spec artifact.
-- \`phantom-data-contract.json\`: fields, metrics, dimensions, filters, data sources, and drill actions.
-- \`design-handoff.json\`: component-level Figma/default provenance.
-- \`implementation-gate.json\`: go/no-go state for agents and engineers.
-- \`react-implementation-backlog.json\`: machine-readable component backlog.
-
-## Workshop Intent
-
-- Business questions: ${contract.workshopIntent.businessQuestions || 'Not specified'}
-- Audience: ${contract.workshopIntent.audience || 'Not specified'}
-- Decisions/actions: ${contract.workshopIntent.decisions || 'Not specified'}
-- Acceptance criteria: ${contract.workshopIntent.acceptanceCriteria || 'Not specified'}
-- Build notes: ${contract.workshopIntent.buildNotes || 'Not specified'}
-
-## Component Backlog
-
-${createReactImplementationBacklogMarkdown(reactBacklog)}
-`;
-
-      zip.file('phantom-spec.json', JSON.stringify(spec, null, 2));
-      zip.file('phantom-data-contract.json', JSON.stringify(contract, null, 2));
-      zip.file('design-handoff.json', JSON.stringify(designHandoff, null, 2));
-      zip.file('implementation-gate.json', JSON.stringify(handoffSummary.implementationGate, null, 2));
-      zip.file('react-implementation-backlog.json', JSON.stringify(reactBacklog, null, 2));
-      zip.file('REACT_IMPLEMENTATION_BACKLOG.md', createReactImplementationBacklogMarkdown(reactBacklog));
-      zip.file('REACT_IMPLEMENTATION_NOTES.md', reactNotes);
-      zip.file('REACT_BUILD_MANIFEST.json', JSON.stringify(manifest, null, 2));
+      Object.entries(buildPack.files).forEach(([filename, contents]) => {
+        zip.file(filename, typeof contents === 'string' ? contents : JSON.stringify(contents, null, 2));
+      });
 
       const blob = await zip.generateAsync({ type: 'blob' });
       downloadBlob(blob, `${scenario}_React_Product_Build_Pack_${date}.zip`);
