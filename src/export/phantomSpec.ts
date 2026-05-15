@@ -80,6 +80,46 @@ export interface PhantomReadinessReport {
   warnings: PhantomReadinessIssue[];
 }
 
+export interface PhantomDataContractField {
+  name: string;
+  kind: 'metric' | 'dimension' | 'field';
+  requiredBy: string[];
+}
+
+export interface PhantomDataContractComponent {
+  viewId: string;
+  viewName: string;
+  componentId: string;
+  title: string;
+  type: string;
+  fields: string[];
+  metrics: string[];
+  dimensions: string[];
+  filters: unknown;
+  expectedGrain: unknown;
+  exportTargets: PhantomSpecComponent['exportTargets'];
+}
+
+export interface PhantomDataContract {
+  contractVersion: '0.1.0';
+  sourceSpecVersion: typeof PHANTOM_SPEC_VERSION;
+  generatedAt: string;
+  project: {
+    scenario: Scenario;
+    mode: ExportMode;
+    designEntryPoint: 'figma-led' | 'phantom-led';
+    designSources: DesignSource[];
+  };
+  dataSources: unknown;
+  fields: PhantomDataContractField[];
+  metrics: string[];
+  dimensions: string[];
+  filters: Record<string, unknown>;
+  components: PhantomDataContractComponent[];
+  drillActions: DrillAction[];
+  implementationNotes: string[];
+}
+
 const PBI_DESIGN_ONLY_VISUALS = new Set(['histogram', 'boxplot', 'violin', 'regressionScatter', 'barbell', 'slope']);
 const PBI_APPROXIMATE_VISUALS = new Set(['lollipop', 'diverging', 'bullet', 'lineForecast']);
 
@@ -206,6 +246,122 @@ export const createPhantomSpec = (input: {
 };
 
 const getSpecComponents = (spec: PhantomSpec) => spec.views.flatMap((view) => view.components);
+
+const getDataContractFieldKind = (spec: PhantomSpec, field: string): PhantomDataContractField['kind'] => {
+  if (spec.dataContract.metrics.includes(field)) return 'metric';
+  if (spec.dataContract.dimensions.includes(field)) return 'dimension';
+  return 'field';
+};
+
+const markdownList = (items: string[]) => (items.length ? items.map((item) => `- ${item}`).join('\n') : '- None specified');
+
+export const createPhantomDataContract = (
+  spec: PhantomSpec,
+  generatedAt = new Date().toISOString(),
+): PhantomDataContract => {
+  const components = spec.views.flatMap((view) =>
+    view.components.map((component) => ({
+      viewId: view.id,
+      viewName: view.name,
+      componentId: component.id,
+      title: component.title,
+      type: component.type,
+      fields: component.dataRequirements.fields,
+      metrics: component.dataRequirements.metrics,
+      dimensions: component.dataRequirements.dimensions,
+      filters: (component.props as Record<string, unknown>).filters || [],
+      expectedGrain: (component.props as Record<string, unknown>).grain || null,
+      exportTargets: component.exportTargets,
+    })),
+  );
+  const fields = uniq([
+    ...spec.dataContract.fields,
+    ...components.flatMap((component) => component.fields),
+  ]);
+
+  return {
+    contractVersion: '0.1.0',
+    sourceSpecVersion: spec.specVersion,
+    generatedAt,
+    project: {
+      scenario: spec.project.scenario,
+      mode: spec.mode,
+      designEntryPoint: spec.project.designEntryPoint,
+      designSources: spec.project.designSources,
+    },
+    dataSources: (spec.project.specification as Record<string, unknown>).dataSources || [],
+    fields: fields.map((name) => ({
+      name,
+      kind: getDataContractFieldKind(spec, name),
+      requiredBy: components
+        .filter((component) => component.fields.includes(name))
+        .map((component) => component.componentId),
+    })),
+    metrics: spec.dataContract.metrics,
+    dimensions: spec.dataContract.dimensions,
+    filters: spec.filters,
+    components,
+    drillActions: spec.interactions.drillActions,
+    implementationNotes: [
+      'Map each component to a client-owned API, warehouse/dbt model, or optional semantic endpoint.',
+      'Preserve component IDs in implementation so tests, agents, and drill actions can reference stable targets.',
+      'Use designSources for Figma-led visual fidelity, but treat this contract as the source of truth for analytical behavior.',
+    ],
+  };
+};
+
+export const createPhantomDataContractMarkdown = (contract: PhantomDataContract) => {
+  const fieldRows = contract.fields
+    .map((field) => `| ${field.name} | ${field.kind} | ${field.requiredBy.join(', ') || 'None'} |`)
+    .join('\n');
+  const componentRows = contract.components
+    .map((component) => `| ${component.componentId} | ${component.title} | ${component.type} | ${component.fields.join(', ') || 'None'} |`)
+    .join('\n');
+  const drillRows = contract.drillActions
+    .map((action) => `| ${action.id} | ${action.label} | ${action.sourceComponentId} | ${action.targetType}:${action.targetId} | ${action.context.map((context) => `${context.source}->${context.target}`).join(', ') || 'None'} |`)
+    .join('\n');
+
+  return `# ${contract.project.scenario} Data Contract
+
+Generated from Phantom Spec ${contract.sourceSpecVersion}.
+
+## Project
+
+- Mode: ${contract.project.mode}
+- Entry point: ${contract.project.designEntryPoint}
+- Design sources: ${contract.project.designSources.length}
+
+## Metrics
+
+${markdownList(contract.metrics)}
+
+## Dimensions
+
+${markdownList(contract.dimensions)}
+
+## Fields
+
+| Field | Kind | Required By |
+| --- | --- | --- |
+${fieldRows || '| None | field | None |'}
+
+## Components
+
+| Component ID | Title | Type | Required Fields |
+| --- | --- | --- | --- |
+${componentRows || '| None | None | None | None |'}
+
+## Drill Actions
+
+| Action ID | Label | Source | Target | Context |
+| --- | --- | --- | --- | --- |
+${drillRows || '| None | None | None | None | None |'}
+
+## Implementation Notes
+
+${markdownList(contract.implementationNotes)}
+`;
+};
 
 export const checkPhantomReadiness = (spec: PhantomSpec, target: ExportMode = spec.mode): PhantomReadinessReport => {
   const errors: PhantomReadinessIssue[] = [];

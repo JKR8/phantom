@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { checkPhantomReadiness, createPhantomSpec, getComponentDataRequirements, getPowerBiExportStatus } from './phantomSpec';
+import {
+  checkPhantomReadiness,
+  createPhantomDataContract,
+  createPhantomDataContractMarkdown,
+  createPhantomSpec,
+  getComponentDataRequirements,
+  getPowerBiExportStatus,
+} from './phantomSpec';
 import type { DashboardItem } from '../types';
 
 const item = (overrides: Partial<DashboardItem>): DashboardItem => ({
@@ -106,5 +113,47 @@ describe('phantomSpec', () => {
     expect(report.errors.map((issue) => issue.code)).toContain('BROKEN_DRILL_SOURCE');
     expect(report.warnings.map((issue) => issue.code)).toContain('POWER_BI_APPROXIMATE_VISUAL');
     expect(report.warnings.map((issue) => issue.code)).toContain('DRILL_ACTION_WITHOUT_CONTEXT');
+  });
+
+  it('creates a data contract from a Phantom spec', () => {
+    const spec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [item({})],
+      filters: { Year: 2026 },
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      drillActions: [
+        {
+          id: 'drill-1',
+          sourceComponentId: 'visual-1',
+          trigger: 'click',
+          targetType: 'detailPanel',
+          targetId: 'region-detail',
+          label: 'Open region detail',
+          context: [{ source: 'Region', target: 'region' }],
+          preserveFilters: true,
+        },
+      ],
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      specification: {
+        signOffStatus: 'draft',
+        designEntryPoint: 'figma-led',
+        designSources: [{ id: 'figma-1', type: 'figmaFrame', name: 'Executive concept' }],
+      },
+    });
+
+    const contract = createPhantomDataContract(spec, '2026-05-15T01:00:00.000Z');
+    const markdown = createPhantomDataContractMarkdown(contract);
+
+    expect(contract.project.designEntryPoint).toBe('figma-led');
+    expect(contract.fields).toEqual([
+      { name: 'Region', kind: 'dimension', requiredBy: ['visual-1'] },
+      { name: 'revenue', kind: 'metric', requiredBy: ['visual-1'] },
+    ]);
+    expect(contract.components[0].fields).toEqual(['Region', 'revenue']);
+    expect(contract.drillActions[0].targetId).toBe('region-detail');
+    expect(markdown).toContain('| visual-1 | Revenue by Region | bar | Region, revenue |');
+    expect(markdown).toContain('| drill-1 | Open region detail | visual-1 | detailPanel:region-detail | Region->region |');
   });
 });

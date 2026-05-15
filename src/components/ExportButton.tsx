@@ -32,7 +32,14 @@ import {
 import html2canvas from 'html2canvas';
 import { useStore } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
-import { createPhantomSpec, downloadPBIPPackage, generateAllMeasures, getSchemaForScenario } from '../export';
+import {
+  createPhantomDataContract,
+  createPhantomDataContractMarkdown,
+  createPhantomSpec,
+  downloadPBIPPackage,
+  generateAllMeasures,
+  getSchemaForScenario,
+} from '../export';
 
 const useStyles = makeStyles({
   dialogContent: {
@@ -74,6 +81,32 @@ export const ExportButton: React.FC = () => {
   const items = useStore((state) => state.items);
   const scenario = useStore((state) => state.scenario);
   const activePalette = useThemeStore((state) => state.activePalette);
+
+  const createCurrentSpec = () => {
+    const state = useStore.getState();
+    return createPhantomSpec({
+      scenario,
+      items,
+      drillActions: state.drillActions,
+      filters: state.filters,
+      layoutMode: state.layoutMode,
+      exportMode: state.exportMode,
+      themePalette: activePalette.name,
+      specification: state.specification,
+    });
+  };
+
+  const downloadTextFile = (contents: string, filename: string, type: string) => {
+    const blob = new Blob([contents], { type });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   const handlePBIExport = async () => {
     setIsExporting(true);
@@ -142,27 +175,28 @@ export const ExportButton: React.FC = () => {
   };
 
   const handleJSONExport = () => {
-    const state = useStore.getState();
-    const exportData = createPhantomSpec({
-      scenario,
-      items,
-      drillActions: state.drillActions,
-      filters: state.filters,
-      layoutMode: state.layoutMode,
-      exportMode: state.exportMode,
-      themePalette: activePalette.name,
-      specification: state.specification,
-    });
+    const exportData = createCurrentSpec();
+    downloadTextFile(
+      JSON.stringify(exportData, null, 2),
+      `${scenario}_Phantom_Spec_${new Date().toISOString().split('T')[0]}.json`,
+      'application/json',
+    );
+  };
 
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${scenario}_Phantom_Spec_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+  const handleDataContractExport = () => {
+    const spec = createCurrentSpec();
+    const contract = createPhantomDataContract(spec);
+    const date = new Date().toISOString().split('T')[0];
+    downloadTextFile(
+      JSON.stringify(contract, null, 2),
+      `${scenario}_Data_Contract_${date}.json`,
+      'application/json',
+    );
+    downloadTextFile(
+      createPhantomDataContractMarkdown(contract),
+      `${scenario}_Data_Contract_${date}.md`,
+      'text/markdown',
+    );
   };
 
   return (
@@ -189,6 +223,9 @@ export const ExportButton: React.FC = () => {
             </MenuItem>
             <MenuItem icon={<CodeRegular />} onClick={handleJSONExport}>
               Phantom Spec JSON
+            </MenuItem>
+            <MenuItem icon={<DocumentDataRegular />} onClick={handleDataContractExport}>
+              Data Contract
             </MenuItem>
           </MenuList>
         </MenuPopover>
