@@ -717,6 +717,7 @@ const App = () => (
       <h1>{spec.project.scenario} Analytical App</h1>
       <div className="meta">
         <span>{spec.mode}</span>
+        <span>{dataContract.project.signOffStatus || 'draft'}</span>
         <span>{spec.project.designEntryPoint}</span>
         <span>{designWorkflow.designPlane}</span>
         <span>{designWorkflow.status}</span>
@@ -835,7 +836,12 @@ It includes:
 2. Wire \`src/data-adapter.ts\` to the client API, warehouse/dbt model, or semantic API.
 3. Implement drill actions from \`spec.interactions.drillActions\`.
 4. Review \`src/design-workflow.json\` before deciding whether to pull from Figma or continue with Phantom defaults.
-5. Apply any Figma/design-source references from \`spec.project.designSources\`.
+5. Confirm sign-off status is approved before treating the starter as an implementation contract.
+6. Apply any Figma/design-source references from \`spec.project.designSources\`.
+
+## Project Status
+
+- Sign-off: ${dataContract.project.signOffStatus || 'draft'}
 
 ## Design Workflow
 
