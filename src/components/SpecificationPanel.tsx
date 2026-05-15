@@ -14,6 +14,7 @@ import { useThemeStore } from '../store/useThemeStore';
 import {
   checkPhantomReadiness,
   createPhantomDesignMappingSummary,
+  createPhantomDesignWorkflow,
   createPhantomSpec,
   createPhantomWorkshopIntentCompleteness,
 } from '../export';
@@ -167,6 +168,10 @@ export const SpecificationPanel: React.FC = () => {
     () => createPhantomDesignMappingSummary(currentSpec.project.designSources),
     [currentSpec],
   );
+  const designWorkflow = React.useMemo(
+    () => createPhantomDesignWorkflow(currentSpec),
+    [currentSpec],
+  );
   const workshopCompleteness = React.useMemo(
     () => createPhantomWorkshopIntentCompleteness(currentSpec),
     [currentSpec],
@@ -213,6 +218,12 @@ export const SpecificationPanel: React.FC = () => {
   const getStatusColor = (status: string | undefined): 'warning' | 'success' | 'informative' => {
     if (status === 'approved') return 'success';
     if (status === 'in-review') return 'warning';
+    return 'informative';
+  };
+
+  const getWorkflowStatusColor = (status: string): 'warning' | 'success' | 'informative' => {
+    if (status === 'ready') return 'success';
+    if (status === 'needs-design-source' || status === 'needs-mapping') return 'warning';
     return 'informative';
   };
 
@@ -365,6 +376,18 @@ export const SpecificationPanel: React.FC = () => {
 
         <div className={styles.metricGrid}>
           <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Workflow</Text>
+            <Badge appearance="filled" color={getWorkflowStatusColor(designWorkflow.status)}>
+              {designWorkflow.status.replace(/-/g, ' ')}
+            </Badge>
+          </div>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Design Plane</Text>
+            <Text className={styles.metricValue}>
+              {designWorkflow.designPlane === 'figma' ? 'Figma' : 'Phantom'}
+            </Text>
+          </div>
+          <div className={styles.readinessCard}>
             <Text className={styles.readinessLabel}>Sources</Text>
             <Text className={styles.metricValue}>{designMapping.totalSources}</Text>
           </div>
@@ -383,6 +406,9 @@ export const SpecificationPanel: React.FC = () => {
             </Text>
           </div>
         </div>
+        <Text className={styles.hint}>
+          Next: {designWorkflow.requiredNextSteps[0] || 'ready for implementation handoff'}
+        </Text>
         <Text className={styles.hint}>
           Linked views: {designMapping.linkedViewIds.join(', ') || 'none'}; linked components: {designMapping.linkedComponentIds.join(', ') || 'none'}
         </Text>
