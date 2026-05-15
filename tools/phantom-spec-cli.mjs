@@ -355,6 +355,7 @@ const writeReactStarter = async (spec, outDir) => {
 import { createRoot } from 'react-dom/client';
 import spec from './phantom-spec.json';
 import dataContract from './phantom-data-contract.json';
+import { getComponentDataRequest } from './data-adapter';
 import { drillActions } from './drill-actions';
 import './styles.css';
 
@@ -364,7 +365,7 @@ const ComponentCard = ({ component }: { component: any }) => (
       <strong>{component.title}</strong>
       <span>{component.type}</span>
     </div>
-    <pre>{JSON.stringify(component.dataRequirements, null, 2)}</pre>
+    <pre>{JSON.stringify(getComponentDataRequest(component.id), null, 2)}</pre>
   </section>
 );
 
@@ -478,6 +479,7 @@ It includes:
 
 - the exported Phantom Spec
 - the exported Phantom data contract
+- a typed data adapter stub
 - drill action definitions for routes/detail panels
 - a React/Vite shell
 - one placeholder card per Phantom component
@@ -486,9 +488,48 @@ It includes:
 ## Next Steps
 
 1. Replace placeholder cards with production components.
-2. Wire data requirements to the client API, warehouse/dbt model, or semantic API.
+2. Wire \`src/data-adapter.ts\` to the client API, warehouse/dbt model, or semantic API.
 3. Implement drill actions from \`spec.interactions.drillActions\`.
 4. Apply any Figma/design-source references from \`spec.project.designSources\`.
+`;
+
+  const dataAdapterTs = `import dataContract from './phantom-data-contract.json';
+
+export type DataFieldKind = 'metric' | 'dimension' | 'field';
+
+export type DataField = {
+  name: string;
+  kind: DataFieldKind;
+  requiredBy: string[];
+};
+
+export type ComponentDataRequest = {
+  componentId: string;
+  title: string;
+  type: string;
+  fields: string[];
+  metrics: string[];
+  dimensions: string[];
+  filters: unknown;
+  expectedGrain: unknown;
+};
+
+export const dataFields = dataContract.fields as DataField[];
+export const componentDataRequests = dataContract.components as ComponentDataRequest[];
+
+export const getComponentDataRequest = (componentId: string) =>
+  componentDataRequests.find((request) => request.componentId === componentId);
+
+export async function fetchComponentData(componentId: string): Promise<unknown[]> {
+  const request = getComponentDataRequest(componentId);
+  if (!request) {
+    throw new Error(\`Unknown Phantom component: \${componentId}\`);
+  }
+
+  // Replace this stub with a client API, warehouse/dbt, or semantic endpoint call.
+  // Keep component IDs stable so drill actions and tests can target the same visual.
+  return [];
+}
 `;
 
   const drillActionsTs = `export type DrillActionContextMap = {
@@ -545,12 +586,13 @@ export default defineConfig({
   await writeFile(`${outDir}/src/styles.css`, styles);
   await writeFile(`${outDir}/src/phantom-spec.json`, `${JSON.stringify(spec, null, 2)}\n`);
   await writeFile(`${outDir}/src/phantom-data-contract.json`, `${JSON.stringify(dataContract, null, 2)}\n`);
+  await writeFile(`${outDir}/src/data-adapter.ts`, dataAdapterTs);
   await writeFile(`${outDir}/src/drill-actions.ts`, drillActionsTs);
   await writeFile(`${outDir}/README.md`, readme);
 
   return {
     outDir,
-    files: ['package.json', 'index.html', 'tsconfig.json', 'vite.config.ts', 'src/App.tsx', 'src/styles.css', 'src/phantom-spec.json', 'src/phantom-data-contract.json', 'src/drill-actions.ts', 'README.md'],
+    files: ['package.json', 'index.html', 'tsconfig.json', 'vite.config.ts', 'src/App.tsx', 'src/styles.css', 'src/phantom-spec.json', 'src/phantom-data-contract.json', 'src/data-adapter.ts', 'src/drill-actions.ts', 'README.md'],
     components: components.length,
     fields: dataContract.fields.length,
     drillActions: dataContract.drillActions.length,

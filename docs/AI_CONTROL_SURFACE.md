@@ -77,7 +77,7 @@ npm run phantom:spec -- inspect path/to/spec.json data-requirements
 
 `readiness` returns a machine-readable report with `ready`, `errors`, and `warnings`. It exits non-zero when blockers exist, which lets agents and CI stop before generating misleading implementation output.
 
-`export-react` creates a deterministic Vite/React starter with the Phantom Spec, data contract, drill action definitions, placeholder component cards, and a README that tells engineers what to wire next.
+`export-react` creates a deterministic Vite/React starter with the Phantom Spec, data contract, typed data adapter stub, drill action definitions, placeholder component cards, and a README that tells engineers what to wire next.
 
 `export-data-contract` creates `data-contract.json` and `DATA_CONTRACT.md` with fields, metrics, dimensions, component data requirements, filters, drill actions, design-source references, and implementation notes. This is the handoff artifact for client APIs, warehouse/dbt models, optional semantic endpoints, and agents that need a stable analytical contract.
 
