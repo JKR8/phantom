@@ -148,6 +148,7 @@ export interface PhantomPowerBiImplementationGuide {
     designEntryPoint: 'figma-led' | 'phantom-led';
     designSources: DesignSource[];
   };
+  designWorkflow: PhantomDesignWorkflow;
   workshopIntent: PhantomWorkshopIntent;
   readiness: PhantomReadinessReport;
   summary: {
@@ -905,6 +906,7 @@ export const createPowerBiImplementationGuide = (
       designEntryPoint: spec.project.designEntryPoint,
       designSources: spec.project.designSources,
     },
+    designWorkflow: createPhantomDesignWorkflow(spec),
     workshopIntent: createWorkshopIntent(spec.project.specification),
     readiness: checkPhantomReadiness(spec, 'powerBi'),
     summary: {
@@ -971,6 +973,17 @@ Generated from Phantom Spec ${guide.sourceSpecVersion}.
 ## Design Sources
 
 ${createDesignSourcesMarkdown(guide.project.designSources)}
+
+## Design Workflow
+
+- Design plane: ${guide.designWorkflow.designPlane}
+- Phantom role: ${guide.designWorkflow.phantomRole}
+- Status: ${guide.designWorkflow.status}
+- Handoff modes: ${guide.designWorkflow.handoffModes.join(', ')}
+
+### Design Workflow Next Steps
+
+${markdownList(guide.designWorkflow.requiredNextSteps)}
 
 ## Workshop Intent
 

@@ -105,7 +105,7 @@ node tools/phantom-spec-cli.mjs import-design-source path/to/spec.json --type fi
 
 `export-data-contract` creates `data-contract.json` and `DATA_CONTRACT.md` with fields, metrics, dimensions, component data requirements, filters, drill actions, design-source references, and implementation notes. This is the handoff artifact for client APIs, warehouse/dbt models, optional semantic endpoints, and agents that need a stable analytical contract.
 
-`export-powerbi-guide` creates `power-bi-implementation-guide.json` and `POWER_BI_IMPLEMENTATION_GUIDE.md` with Power BI readiness, visual support statuses, field requirements, drill-through notes, blockers, and a build checklist.
+`export-powerbi-guide` creates `power-bi-implementation-guide.json` and `POWER_BI_IMPLEMENTATION_GUIDE.md` with the design workflow, Power BI readiness, visual support statuses, field requirements, drill-through notes, blockers, and a build checklist.
 
 `export-handoff-pack` creates a bundled folder with `phantom-spec.json`, `handoff-summary.json`, `HANDOFF_MANIFEST.json`, `README.md`, `data-contract/`, `power-bi/`, and `react-starter/`. `handoff-summary.json` and `HANDOFF_MANIFEST.json` both include `designWorkflow`, `designMapping`, `workshopIntent`, and `workshopCompleteness`, so agents can gate on the Figma-led/Phantom-led workflow, unmapped design sources, or missing business questions, audience, decisions/actions, or acceptance criteria before generating implementation work. This is the preferred consultant-to-engineering handoff when both React Product Mode and Power BI Mode artifacts should travel together.
 

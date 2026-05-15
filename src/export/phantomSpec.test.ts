@@ -729,6 +729,11 @@ describe('phantomSpec', () => {
     expect(guide.summary.readyVisuals).toBe(1);
     expect(guide.summary.approximateVisuals).toBe(1);
     expect(guide.summary.unsupportedVisuals).toBe(1);
+    expect(guide.designWorkflow).toMatchObject({
+      entryPoint: 'figma-led',
+      designPlane: 'figma',
+      status: 'ready',
+    });
     expect(guide.workshopIntent).toMatchObject({
       businessQuestions: 'Which regional variances need action?',
       audience: 'Power BI report builders',
@@ -742,6 +747,9 @@ describe('phantomSpec', () => {
     expect(markdown).toContain('ERROR POWER_BI_UNSUPPORTED_VISUAL');
     expect(markdown).toContain('| drill-1 | Open region detail | visual-1 | view:region-detail | Region->region | Yes |');
     expect(markdown).toContain('- Power BI concept (type: figmaFrame; url: https://www.figma.com/design/power-bi; frame: 3:4; components: visual-2)');
+    expect(markdown).toContain('## Design Workflow');
+    expect(markdown).toContain('- Design plane: figma');
+    expect(markdown).toContain('- Status: ready');
     expect(markdown).toContain('## Workshop Intent');
     expect(markdown).toContain('- Business questions: Which regional variances need action?');
     expect(markdown).toContain('- Acceptance criteria: All unsupported visuals have documented alternatives.');

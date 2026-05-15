@@ -1270,6 +1270,7 @@ const createPowerBiGuide = (spec) => {
       designEntryPoint: spec.project?.designEntryPoint,
       designSources: spec.project?.designSources || [],
     },
+    designWorkflow: createDesignWorkflow(spec),
     workshopIntent: createWorkshopIntent(spec.project?.specification),
     readiness,
     summary: {
@@ -1336,6 +1337,17 @@ Generated from Phantom Spec ${guide.sourceSpecVersion}.
 ## Design Sources
 
 ${designSourcesMarkdown(guide.project.designSources)}
+
+## Design Workflow
+
+- Design plane: ${guide.designWorkflow.designPlane}
+- Phantom role: ${guide.designWorkflow.phantomRole}
+- Status: ${guide.designWorkflow.status}
+- Handoff modes: ${guide.designWorkflow.handoffModes.join(', ')}
+
+### Design Workflow Next Steps
+
+${markdownList(guide.designWorkflow.requiredNextSteps)}
 
 ## Workshop Intent
 
