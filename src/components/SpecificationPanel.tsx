@@ -11,7 +11,7 @@ import {
 } from '@fluentui/react-components';
 import { useStore } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
-import { checkPhantomReadiness, createPhantomSpec } from '../export';
+import { checkPhantomReadiness, createPhantomDesignMappingSummary, createPhantomSpec } from '../export';
 import type { DashboardSpecification, DesignSource, DesignSourceType } from '../types';
 
 const parseIdList = (value: string) =>
@@ -94,6 +94,11 @@ const useStyles = makeStyles({
     gridTemplateColumns: '1fr 1fr',
     gap: '8px',
   },
+  metricGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+    gap: '8px',
+  },
   readinessCard: {
     display: 'flex',
     flexDirection: 'column',
@@ -122,6 +127,11 @@ const useStyles = makeStyles({
     color: '#605E5C',
     lineHeight: '1.35',
   },
+  metricValue: {
+    fontSize: '15px',
+    color: '#252423',
+    fontWeight: 600,
+  },
 });
 
 export const SpecificationPanel: React.FC = () => {
@@ -148,6 +158,10 @@ export const SpecificationPanel: React.FC = () => {
   }), [activePalette.name, drillActions, exportMode, filters, items, layoutMode, scenario, specification]);
   const reactReadiness = React.useMemo(() => checkPhantomReadiness(currentSpec, 'react'), [currentSpec]);
   const powerBiReadiness = React.useMemo(() => checkPhantomReadiness(currentSpec, 'powerBi'), [currentSpec]);
+  const designMapping = React.useMemo(
+    () => createPhantomDesignMappingSummary(currentSpec.project.designSources),
+    [currentSpec],
+  );
   const visibleIssues = [...powerBiReadiness.errors, ...powerBiReadiness.warnings].slice(0, 3);
 
   const handleChange = (field: keyof DashboardSpecification, value: string) => {
@@ -313,6 +327,30 @@ export const SpecificationPanel: React.FC = () => {
             Use Figma-led when visual design starts outside Phantom; use Phantom defaults when speed matters.
           </Text>
         </div>
+
+        <div className={styles.metricGrid}>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Sources</Text>
+            <Text className={styles.metricValue}>{designMapping.totalSources}</Text>
+          </div>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Mapped</Text>
+            <Text className={styles.metricValue}>{designMapping.mappedSources}</Text>
+          </div>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Unmapped</Text>
+            <Text className={styles.metricValue}>{designMapping.unmappedSources}</Text>
+          </div>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Targets</Text>
+            <Text className={styles.metricValue}>
+              {designMapping.linkedViewIds.length + designMapping.linkedComponentIds.length}
+            </Text>
+          </div>
+        </div>
+        <Text className={styles.hint}>
+          Linked views: {designMapping.linkedViewIds.join(', ') || 'none'}; linked components: {designMapping.linkedComponentIds.join(', ') || 'none'}
+        </Text>
 
         <div className={styles.selectRow}>
           <div className={`${styles.fieldRow} ${styles.selectField}`}>
