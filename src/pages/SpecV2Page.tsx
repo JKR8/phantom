@@ -11,6 +11,7 @@ import { ArrowLeftRegular } from '@fluentui/react-icons';
 import { useNavigate } from 'react-router-dom';
 import v2SpecMarkdown from '../../phantom_product_spec_v0.2.md?raw';
 import {
+  applyPhantomSpecV2Approval,
   applyPhantomSpecV2PromptResolution,
   createPhantomSpecV2AcceptedGaps,
   createPhantomSpecV2ApprovalStatus,
@@ -20,6 +21,7 @@ import {
   createPhantomSpecV2ReactProductExport,
   createPhantomSpecV2Summary,
   parsePhantomSpecV2Markdown,
+  replacePhantomSpecV2Frontmatter,
   scorePhantomSpecV2Readiness,
   validatePhantomSpecV2Document,
 } from '../export/phantomSpecV2';
@@ -249,6 +251,15 @@ export const SpecV2Page: React.FC = () => {
     });
     setSpecMarkdown(result.markdown);
   };
+  const approveAs = (role: 'approver' | 'analytics_owner') => {
+    const result = applyPhantomSpecV2Approval(model.document, {
+      approver: role === 'approver' ? 'Workshop approver' : 'Analytics owner',
+      role,
+      date: '2026-05-15',
+      notes: 'Approved in the v0.2 workshop surface.',
+    });
+    setSpecMarkdown(replacePhantomSpecV2Frontmatter(specMarkdown, result.frontmatter));
+  };
 
   return (
     <main className={styles.page}>
@@ -441,6 +452,24 @@ export const SpecV2Page: React.FC = () => {
                   <Text size={200}>
                     Missing roles: {model.approval.missingApprovalRoles.join(', ') || 'none'}
                   </Text>
+                  <div className={styles.tabRow}>
+                    <Button
+                      size="small"
+                      appearance="primary"
+                      disabled={!model.approval.missingApprovalRoles.includes('approver')}
+                      onClick={() => approveAs('approver')}
+                    >
+                      Approve as approver
+                    </Button>
+                    <Button
+                      size="small"
+                      appearance="primary"
+                      disabled={!model.approval.missingApprovalRoles.includes('analytics_owner')}
+                      onClick={() => approveAs('analytics_owner')}
+                    >
+                      Approve as analytics owner
+                    </Button>
+                  </div>
                 </div>
                 <div className={styles.listItem}>
                   <Text weight="semibold">Stale approval</Text>

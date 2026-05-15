@@ -38,10 +38,16 @@ test.describe('Routing & Guest Mode', () => {
     await page.getByRole('button', { name: 'approval', exact: true }).click();
     await expect(page.getByText('Current version')).toBeVisible();
     await expect(page.getByText('0.2.0-draft', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Approve as approver' }).click();
+    await expect(page.getByText('Missing roles: analytics_owner')).toBeVisible();
+    await page.getByRole('button', { name: 'Approve as analytics owner' }).click();
+    await expect(page.getByText('Missing roles: none')).toBeVisible();
+    await expect(page.getByText('Build ready')).toHaveCount(2);
 
     await page.getByRole('button', { name: 'exports', exact: true }).click();
     await expect(page.getByText('React Product Mode')).toBeVisible();
     await expect(page.getByText('Power BI Mode')).toBeVisible();
+    await expect(page.getByText('Build ready: yes')).toHaveCount(2);
   });
 
   test('/dashboards redirects guest to /login', async ({ page }) => {
