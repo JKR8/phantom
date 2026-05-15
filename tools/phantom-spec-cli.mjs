@@ -20,12 +20,14 @@ Usage:
   npm run phantom:spec -- set-mode <spec.json> react|powerBi <out-spec.json>
   npm run phantom:spec -- set-approval <spec.json> approved <out-spec.json>
   npm run phantom:spec -- set-workshop-intent <spec.json> --business-questions "..." --audience "..." --decisions "..." --acceptance-criteria "..." --out <out-spec.json>
+  npm run phantom:spec -- add-view <spec.json> --id detail --name "Region Detail" --out <out-spec.json>
   npm run phantom:spec -- add-drill-action <spec.json> --source visual-1 --target-type view --target detail --context Region:Region --out <out-spec.json>
   npm run phantom:spec -- import-design-source <spec.json> figmaFrame "Client frame" <url> <frame-id> "notes" <out-spec.json>
   npm run phantom:spec -- import-data-source <spec.json> dbt "Orders mart" mart_orders Region,revenue visual-1 <out-spec.json>
   node tools/phantom-spec-cli.mjs set-mode <spec.json> --mode powerBi --out <out-spec.json>
   node tools/phantom-spec-cli.mjs set-approval <spec.json> --status approved --out <out-spec.json>
   node tools/phantom-spec-cli.mjs set-workshop-intent <spec.json> --business-questions "..." --audience "..." --decisions "..." --acceptance-criteria "..." --build-notes "..." --out <out-spec.json>
+  node tools/phantom-spec-cli.mjs add-view <spec.json> --id detail --name "Region Detail" --out <out-spec.json>
   node tools/phantom-spec-cli.mjs add-drill-action <spec.json> --id drill-1 --source visual-1 --trigger click --target-type view --target detail --label "Open detail" --context Region:Region --out <out-spec.json>
   node tools/phantom-spec-cli.mjs import-design-source <spec.json> --type figmaFrame --name "Client frame" --url <url> --frame-id <frame-id> --views main --components kpi-1,chart-1 --out <out-spec.json>
   node tools/phantom-spec-cli.mjs import-data-source <spec.json> --type dbt --name "Orders mart" --model mart_orders --fields Region,revenue --components visual-1 --out <out-spec.json>
@@ -43,6 +45,7 @@ Commands:
   set-mode             Write a spec copy switched to React Product or Power BI Mode.
   set-approval         Write a spec copy with updated sign-off status.
   set-workshop-intent  Write a spec copy with updated client workshop intent fields.
+  add-view             Add or update a dashboard/detail view in a spec.
   add-drill-action     Add or update an analytical drill-through/navigation action.
   import-design-source Add or update a Figma/screenshot/reference design source in a spec.
   import-data-source   Add or update an API/warehouse/dbt/semantic/file data source in a spec.
@@ -782,6 +785,50 @@ const setWorkshopIntent = (spec) => {
     outPath: resolve(outPath),
     workshopIntent,
     completeness: createWorkshopIntentCompleteness(workshopIntent),
+    implementationGate: createImplementationGate(nextSpec),
+  };
+};
+
+const addView = (spec) => {
+  const positional = positionalOptions();
+  const name = optionValue('--name') || positional[0];
+  const id = optionValue('--id') || slug(name || 'view');
+  const layoutMode = optionValue('--layout-mode') || optionValue('--layout') || spec.views?.[0]?.layoutMode || 'Free';
+  const outPath = optionValue('--out') || positional[positional.length - 1];
+  if (!id) {
+    throw new Error('Missing --id or --name for add-view.');
+  }
+  if (!name) {
+    throw new Error('Missing --name for add-view.');
+  }
+  if (!['Free', 'Standard'].includes(layoutMode)) {
+    throw new Error('Layout mode must be Free or Standard.');
+  }
+  if (!outPath) {
+    throw new Error('Missing --out path for add-view.');
+  }
+
+  const view = {
+    id,
+    name,
+    type: 'dashboard',
+    layoutMode,
+    components: [],
+  };
+  const existingViews = spec.views || [];
+  const nextSpec = {
+    ...spec,
+    views: [
+      ...existingViews.filter((existingView) => existingView.id !== id),
+      view,
+    ],
+  };
+
+  return {
+    nextSpec,
+    outPath: resolve(outPath),
+    view,
+    summary: summarizeSpec(nextSpec),
     implementationGate: createImplementationGate(nextSpec),
   };
 };
@@ -2326,7 +2373,7 @@ try {
     process.exit(0);
   }
 
-  if (!['validate', 'summary', 'diff', 'readiness', 'export-react', 'export-data-contract', 'export-powerbi-guide', 'export-handoff-pack', 'inspect', 'set-mode', 'set-approval', 'set-workshop-intent', 'add-drill-action', 'import-design-source', 'import-data-source'].includes(command)) {
+  if (!['validate', 'summary', 'diff', 'readiness', 'export-react', 'export-data-contract', 'export-powerbi-guide', 'export-handoff-pack', 'inspect', 'set-mode', 'set-approval', 'set-workshop-intent', 'add-view', 'add-drill-action', 'import-design-source', 'import-data-source'].includes(command)) {
     throw new Error(`Unknown command: ${command}`);
   }
 
@@ -2428,6 +2475,21 @@ try {
       outPath,
       workshopIntent,
       completeness,
+      implementationGate,
+    }, null, 2));
+  }
+
+  if (command === 'add-view') {
+    if (errors.length > 0) {
+      console.error(JSON.stringify({ valid: false, errors }, null, 2));
+      process.exit(1);
+    }
+    const { nextSpec, outPath, view, summary, implementationGate } = addView(spec);
+    await writeFile(outPath, `${JSON.stringify(nextSpec, null, 2)}\n`);
+    console.log(JSON.stringify({
+      outPath,
+      view,
+      summary,
       implementationGate,
     }, null, 2));
   }

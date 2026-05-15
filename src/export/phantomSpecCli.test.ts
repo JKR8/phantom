@@ -535,6 +535,62 @@ describe('phantom spec CLI', () => {
     }
   }, 30000);
 
+  it('adds views through the CLI for drill-through routes', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'phantom-add-view-'));
+    const specPath = join(tempDir, 'spec.json');
+    const outPath = join(tempDir, 'spec.with-view.json');
+    const reactOutDir = join(tempDir, 'react-starter');
+    const spec = JSON.parse(JSON.stringify(createReadySpec()));
+    spec.views = [spec.views[0]];
+
+    try {
+      await writeFile(specPath, `${JSON.stringify(spec, null, 2)}\n`);
+      const { stdout } = await execFileAsync(
+        process.execPath,
+        [
+          'tools/phantom-spec-cli.mjs',
+          'add-view',
+          specPath,
+          '--id',
+          'detail',
+          '--name',
+          'Region Detail',
+          '--out',
+          outPath,
+        ],
+        { cwd: process.cwd() },
+      );
+      const result = JSON.parse(stdout);
+      const nextSpec = JSON.parse(await readFile(outPath, 'utf8'));
+
+      expect(result).toMatchObject({
+        outPath,
+        view: {
+          id: 'detail',
+          name: 'Region Detail',
+          type: 'dashboard',
+          layoutMode: 'Free',
+          components: [],
+        },
+        summary: {
+          views: 2,
+        },
+      });
+      expect(nextSpec.views.map((view: { id: string }) => view.id)).toEqual(['main', 'detail']);
+
+      await execFileAsync(
+        process.execPath,
+        ['tools/phantom-spec-cli.mjs', 'export-react', outPath, reactOutDir],
+        { cwd: process.cwd() },
+      );
+      const routes = await readFile(join(reactOutDir, 'src/routes.ts'), 'utf8');
+      expect(routes).toContain('"viewId": "detail"');
+      expect(routes).toContain('"path": "/region-detail"');
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  }, 30000);
+
   it('adds drill actions through the CLI for analytical journeys', async () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'phantom-add-drill-action-'));
     const specPath = join(tempDir, 'spec.json');
