@@ -229,12 +229,15 @@ export const SpecificationPanel: React.FC = () => {
     updateSpecification({ [field]: value });
   };
 
-  const primaryDataSource = specification.dataSources?.[0];
   const designEntryPoint = specification.designEntryPoint || 'phantom-led';
   const designSources = specification.designSources || [];
+  const dataSources = specification.dataSources || [];
   const displayedDesignSources = designSources.length
     ? designSources
     : [{ id: 'design-source-draft', type: 'figmaFrame' as DesignSourceType, name: '' }];
+  const displayedDataSources = dataSources.length
+    ? dataSources
+    : [{ id: 'data-source-draft', type: 'dbt' as DataSourceReferenceType, name: '' }];
 
   const createBlankDesignSource = (type: DesignSourceType = 'figmaFrame'): DesignSource => ({
     id: `design-source-${Date.now()}`,
@@ -296,35 +299,49 @@ export const SpecificationPanel: React.FC = () => {
     });
   };
 
-  const handleDataSourceChange = (field: keyof DataSourceReference, value: string) => {
-    const currentSource: DataSourceReference = primaryDataSource || {
-      id: 'data-source-primary',
-      type: 'dbt',
-      name: '',
-    };
-    const nextSource = {
+  const createBlankDataSource = (type: DataSourceReferenceType = 'dbt'): DataSourceReference => ({
+    id: `data-source-${Date.now()}`,
+    type,
+    name: '',
+  });
+
+  const updateDataSourceAt = (index: number, updates: Partial<DataSourceReference>) => {
+    const nextSources = dataSources.length ? [...dataSources] : [createBlankDataSource()];
+    const currentSource = nextSources[index] || createBlankDataSource();
+    nextSources[index] = {
       ...currentSource,
-      [field]: value,
       id: currentSource.id || `data-source-${Date.now()}`,
+      name: currentSource.name || '',
+      ...updates,
     };
-    updateSpecification({ dataSources: [nextSource] });
+    updateSpecification({ dataSources: nextSources });
+  };
+
+  const handleDataSourceChange = (index: number, field: keyof DataSourceReference, value: string) => {
+    updateDataSourceAt(index, {
+      [field]: value,
+    });
   };
 
   const handleDataSourceListChange = (
+    index: number,
     field: 'linkedComponentIds' | 'linkedFields',
     value: string,
   ) => {
-    const currentSource: DataSourceReference = primaryDataSource || {
-      id: 'data-source-primary',
-      type: 'dbt',
-      name: '',
-    };
     const nextValues = parseIdList(value);
-    const nextSource = {
-      ...currentSource,
-      ...(nextValues.length ? { [field]: nextValues } : { [field]: undefined }),
-    };
-    updateSpecification({ dataSources: [nextSource] });
+    updateDataSourceAt(index, nextValues.length ? { [field]: nextValues } : { [field]: undefined });
+  };
+
+  const addDataSource = (type: DataSourceReferenceType = 'dbt') => {
+    updateSpecification({
+      dataSources: [...dataSources, createBlankDataSource(type)],
+    });
+  };
+
+  const removeDataSource = (index: number) => {
+    updateSpecification({
+      dataSources: dataSources.filter((_, sourceIndex) => sourceIndex !== index),
+    });
   };
 
   const getStatusColor = (status: string | undefined): 'warning' | 'success' | 'informative' => {
@@ -823,90 +840,120 @@ export const SpecificationPanel: React.FC = () => {
           Next: {dataPath.requiredNextSteps[0] || 'data path ready for handoff'}
         </Text>
 
-        <div className={styles.selectRow}>
-          <div className={`${styles.fieldRow} ${styles.selectField}`}>
-            <Label className={styles.fieldLabel}>Data Source Type</Label>
-            <Select
-              size="small"
-              value={primaryDataSource?.type || 'dbt'}
-              onChange={(_, d) => handleDataSourceChange('type', d.value as DataSourceReferenceType)}
-            >
-              <option value="dbt">dbt Model</option>
-              <option value="warehouse">Warehouse Table</option>
-              <option value="api">REST API</option>
-              <option value="graphql">GraphQL</option>
-              <option value="semantic">Semantic API</option>
-              <option value="file">File</option>
-              <option value="manual">Manual</option>
-              <option value="unknown">Unknown</option>
-            </Select>
-          </div>
-
-          <div className={`${styles.fieldRow} ${styles.selectField}`}>
-            <Label className={styles.fieldLabel}>Data Source Name</Label>
-            <Input
-              size="small"
-              placeholder="Orders mart"
-              value={primaryDataSource?.name || ''}
-              onChange={(_, d) => handleDataSourceChange('name', d.value)}
-            />
-          </div>
+        <div className={styles.actionRow}>
+          <Button size="small" appearance="secondary" onClick={() => addDataSource('dbt')}>
+            Add dbt Model
+          </Button>
+          <Button size="small" appearance="secondary" onClick={() => addDataSource('api')}>
+            Add API
+          </Button>
+          <Button size="small" appearance="secondary" onClick={() => addDataSource('file')}>
+            Add File
+          </Button>
         </div>
 
-        <div className={styles.selectRow}>
-          <div className={`${styles.fieldRow} ${styles.selectField}`}>
-            <Label className={styles.fieldLabel}>Model / Table</Label>
-            <Input
-              size="small"
-              placeholder="mart_orders"
-              value={primaryDataSource?.model || ''}
-              onChange={(_, d) => handleDataSourceChange('model', d.value)}
-            />
-          </div>
+        {displayedDataSources.map((source, index) => (
+          <div className={styles.sourceCard} key={source.id || `data-source-${index}`}>
+            <div className={styles.sourceHeader}>
+              <Text className={styles.sourceTitle}>
+                {source.name || `Data Source ${index + 1}`}
+              </Text>
+              <Button
+                size="small"
+                appearance="subtle"
+                disabled={dataSources.length === 0}
+                onClick={() => removeDataSource(index)}
+              >
+                Remove
+              </Button>
+            </div>
 
-          <div className={`${styles.fieldRow} ${styles.selectField}`}>
-            <Label className={styles.fieldLabel}>Endpoint URL</Label>
-            <Input
-              size="small"
-              placeholder="https://api.client.com/orders"
-              value={primaryDataSource?.url || ''}
-              onChange={(_, d) => handleDataSourceChange('url', d.value)}
-            />
-          </div>
-        </div>
+            <div className={styles.selectRow}>
+              <div className={`${styles.fieldRow} ${styles.selectField}`}>
+                <Label className={styles.fieldLabel}>Data Source Type</Label>
+                <Select
+                  size="small"
+                  value={source.type || 'dbt'}
+                  onChange={(_, d) => handleDataSourceChange(index, 'type', d.value as DataSourceReferenceType)}
+                >
+                  <option value="dbt">dbt Model</option>
+                  <option value="warehouse">Warehouse Table</option>
+                  <option value="api">REST API</option>
+                  <option value="graphql">GraphQL</option>
+                  <option value="semantic">Semantic API</option>
+                  <option value="file">File</option>
+                  <option value="manual">Manual</option>
+                  <option value="unknown">Unknown</option>
+                </Select>
+              </div>
 
-        <div className={styles.selectRow}>
-          <div className={`${styles.fieldRow} ${styles.selectField}`}>
-            <Label className={styles.fieldLabel}>Linked Components</Label>
-            <Input
-              size="small"
-              placeholder="visual-1, visual-2"
-              value={formatIdList(primaryDataSource?.linkedComponentIds)}
-              onChange={(_, d) => handleDataSourceListChange('linkedComponentIds', d.value)}
-            />
-          </div>
+              <div className={`${styles.fieldRow} ${styles.selectField}`}>
+                <Label className={styles.fieldLabel}>Data Source Name</Label>
+                <Input
+                  size="small"
+                  placeholder="Orders mart"
+                  value={source.name || ''}
+                  onChange={(_, d) => handleDataSourceChange(index, 'name', d.value)}
+                />
+              </div>
+            </div>
 
-          <div className={`${styles.fieldRow} ${styles.selectField}`}>
-            <Label className={styles.fieldLabel}>Linked Fields</Label>
-            <Input
-              size="small"
-              placeholder="Region, revenue"
-              value={formatIdList(primaryDataSource?.linkedFields)}
-              onChange={(_, d) => handleDataSourceListChange('linkedFields', d.value)}
-            />
-          </div>
-        </div>
+            <div className={styles.selectRow}>
+              <div className={`${styles.fieldRow} ${styles.selectField}`}>
+                <Label className={styles.fieldLabel}>Model / Table</Label>
+                <Input
+                  size="small"
+                  placeholder="mart_orders"
+                  value={source.model || ''}
+                  onChange={(_, d) => handleDataSourceChange(index, 'model', d.value)}
+                />
+              </div>
 
-        <div className={styles.fieldRow}>
-          <Label className={styles.fieldLabel}>Data Source Notes</Label>
-          <Textarea
-            className={styles.textarea}
-            placeholder="Ownership, assumptions, transformations, or API notes..."
-            value={primaryDataSource?.description || ''}
-            onChange={(_, d) => handleDataSourceChange('description', d.value)}
-            resize="vertical"
-          />
-        </div>
+              <div className={`${styles.fieldRow} ${styles.selectField}`}>
+                <Label className={styles.fieldLabel}>Endpoint URL</Label>
+                <Input
+                  size="small"
+                  placeholder="https://api.client.com/orders"
+                  value={source.url || ''}
+                  onChange={(_, d) => handleDataSourceChange(index, 'url', d.value)}
+                />
+              </div>
+            </div>
+
+            <div className={styles.selectRow}>
+              <div className={`${styles.fieldRow} ${styles.selectField}`}>
+                <Label className={styles.fieldLabel}>Linked Components</Label>
+                <Input
+                  size="small"
+                  placeholder="visual-1, visual-2"
+                  value={formatIdList(source.linkedComponentIds)}
+                  onChange={(_, d) => handleDataSourceListChange(index, 'linkedComponentIds', d.value)}
+                />
+              </div>
+
+              <div className={`${styles.fieldRow} ${styles.selectField}`}>
+                <Label className={styles.fieldLabel}>Linked Fields</Label>
+                <Input
+                  size="small"
+                  placeholder="Region, revenue"
+                  value={formatIdList(source.linkedFields)}
+                  onChange={(_, d) => handleDataSourceListChange(index, 'linkedFields', d.value)}
+                />
+              </div>
+            </div>
+
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Data Source Notes</Label>
+              <Textarea
+                className={styles.textarea}
+                placeholder="Ownership, assumptions, transformations, or API notes..."
+                value={source.description || ''}
+                onChange={(_, d) => handleDataSourceChange(index, 'description', d.value)}
+                resize="vertical"
+              />
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Distribution */}
