@@ -332,11 +332,18 @@ ${handoffSummary.designWorkflow.requiredNextSteps.map((step) => `- ${step}`).joi
 
 Use \`phantom-spec.json\` and \`phantom-data-contract.json\` as the implementation contract.
 
+## Project Status
+
+- Sign-off: ${contract.project.signOffStatus || 'draft'}
+- Recommended handoff: ${handoffSummary.handoffRecommendation.target}
+- Guidance: ${handoffSummary.handoffRecommendation.guidance}
+
 ## Expected Work
 
 - Replace Phantom placeholder visuals with production React components.
 - Wire data requirements to client-owned APIs, warehouse/dbt models, or optional semantic endpoints.
 - Implement drill actions from \`phantom-spec.json > interactions.drillActions\`.
+- Confirm sign-off status is approved before treating this as a final implementation contract.
 - Apply Figma/design-source references from \`phantom-spec.json > project.designSources\` when present.
 
 ## Workshop Intent
