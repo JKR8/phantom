@@ -21,6 +21,19 @@ const createReadySpec = () => ({
       audience: 'Executives',
       decisions: 'Prioritise regions.',
       acceptanceCriteria: 'Revenue by region is clear and drillable.',
+      grain: 'daily',
+      refreshCadence: 'daily',
+      sourceSystems: 'Snowflake mart; CRM',
+      dataSources: [
+        {
+          id: 'orders-mart',
+          type: 'dbt',
+          name: 'Orders mart',
+          model: 'mart_orders',
+          linkedComponentIds: ['visual-1', 'visual-2'],
+          linkedFields: ['Region', 'Account', 'revenue'],
+        },
+      ],
     },
     designEntryPoint: 'figma-led',
     designSources: [
@@ -180,6 +193,41 @@ describe('phantom spec CLI', () => {
       const readme = await readFile(join(outDir, 'README.md'), 'utf8');
       expect(readme).toContain('## Implementation Gate');
       expect(readme).toContain('Ready for implementation: Yes');
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  }, 30000);
+
+  it('inspects data paths for adapter and model planning', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'phantom-data-path-'));
+    const specPath = join(tempDir, 'spec.json');
+    const spec = createReadySpec();
+
+    try {
+      await writeFile(specPath, `${JSON.stringify(spec, null, 2)}\n`);
+      const { stdout } = await execFileAsync(
+        process.execPath,
+        ['tools/phantom-spec-cli.mjs', 'inspect', specPath, 'data-path'],
+        { cwd: process.cwd() },
+      );
+      const dataPath = JSON.parse(stdout);
+
+      expect(dataPath).toMatchObject({
+        subject: 'data-path',
+        grain: 'daily',
+        refreshCadence: 'daily',
+        sourceSystems: ['Snowflake mart', 'CRM'],
+        unmappedComponents: [],
+        unmappedFields: [],
+        requiredNextSteps: [],
+      });
+      expect(dataPath.dataSources[0]).toMatchObject({
+        id: 'orders-mart',
+        type: 'dbt',
+        model: 'mart_orders',
+      });
+      expect(dataPath.components.map((component: { candidateDataSources: string[] }) => component.candidateDataSources))
+        .toEqual([['orders-mart'], ['orders-mart']]);
     } finally {
       await rm(tempDir, { recursive: true, force: true });
     }

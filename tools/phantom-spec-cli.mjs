@@ -16,7 +16,7 @@ Usage:
   npm run phantom:spec -- export-data-contract <spec.json> <dir>
   npm run phantom:spec -- export-powerbi-guide <spec.json> <dir>
   npm run phantom:spec -- export-handoff-pack <spec.json> <dir>
-  npm run phantom:spec -- inspect <spec.json> components|drill-actions|data-requirements|design-sources|design-mapping|design-workflow|approval|implementation-gate|workshop-intent|react-backlog|powerbi-build-matrix|handoff-summary
+  npm run phantom:spec -- inspect <spec.json> components|drill-actions|data-requirements|data-path|design-sources|design-mapping|design-workflow|approval|implementation-gate|workshop-intent|react-backlog|powerbi-build-matrix|handoff-summary
   npm run phantom:spec -- import-design-source <spec.json> figmaFrame "Client frame" <url> <frame-id> "notes" <out-spec.json>
   node tools/phantom-spec-cli.mjs import-design-source <spec.json> --type figmaFrame --name "Client frame" --url <url> --frame-id <frame-id> --views main --components kpi-1,chart-1 --out <out-spec.json>
 
@@ -216,6 +216,10 @@ const inspectSpec = (spec, subject) => {
     };
   }
 
+  if (subject === 'data-path') {
+    return createDataPath(spec);
+  }
+
   if (subject === 'design-sources') {
     return {
       subject,
@@ -319,7 +323,7 @@ const inspectSpec = (spec, subject) => {
     };
   }
 
-  throw new Error('Inspect subject must be components, drill-actions, data-requirements, design-sources, design-mapping, design-workflow, approval, implementation-gate, workshop-intent, react-backlog, powerbi-build-matrix, or handoff-summary.');
+  throw new Error('Inspect subject must be components, drill-actions, data-requirements, data-path, design-sources, design-mapping, design-workflow, approval, implementation-gate, workshop-intent, react-backlog, powerbi-build-matrix, or handoff-summary.');
 };
 
 const optionValue = (name) => {
@@ -1218,7 +1222,7 @@ const createDataContract = (spec) => {
     },
     designWorkflow: createDesignWorkflow(spec),
     workshopIntent: createWorkshopIntent(spec.project?.specification),
-    dataSources: spec.project?.specification?.dataSources || [],
+    dataSources: normalizeDataSources(spec.project?.specification),
     fields: allFields.map((name) => ({
       name,
       kind: fieldKind(name, spec),
@@ -1273,6 +1277,69 @@ const createWorkshopIntentCompleteness = (intent = {}) => {
   };
 };
 
+const parseSourceSystems = (sourceSystems) =>
+  String(sourceSystems || '')
+    .split(/[\n,;]+/)
+    .map((source) => source.trim())
+    .filter(Boolean);
+
+const normalizeDataSources = (specification = {}) =>
+  Array.isArray(specification.dataSources) ? specification.dataSources : [];
+
+const createDataPath = (spec) => {
+  const dataSources = normalizeDataSources(spec.project?.specification);
+  const components = (spec.views || []).flatMap((view) => view.components || []).map((component) => {
+    const fields = component.dataRequirements?.fields || [];
+    const candidateDataSources = dataSources
+      .filter((source) => {
+        const linkedComponent = (source.linkedComponentIds || []).includes(component.id);
+        const linkedField = fields.some((field) => (source.linkedFields || []).includes(field));
+        return linkedComponent || linkedField;
+      })
+      .map((source) => source.id);
+
+    return {
+      componentId: component.id,
+      title: component.title,
+      fields,
+      metrics: component.dataRequirements?.metrics || [],
+      dimensions: component.dataRequirements?.dimensions || [],
+      candidateDataSources,
+    };
+  });
+  const mappedFields = new Set(dataSources.flatMap((source) => source.linkedFields || []));
+  const unmappedFields = (spec.dataContract?.fields || []).filter((field) => !mappedFields.has(field));
+  const unmappedComponents = components
+    .filter((component) => component.candidateDataSources.length === 0)
+    .map((component) => component.componentId);
+  const sourceSystems = parseSourceSystems(spec.project?.specification?.sourceSystems);
+  const hasAnySourceContext = sourceSystems.length > 0 || dataSources.length > 0;
+
+  return {
+    subject: 'data-path',
+    grain: spec.project?.specification?.grain,
+    refreshCadence: spec.project?.specification?.refreshCadence,
+    sourceSystems,
+    dataSources,
+    components,
+    unmappedComponents,
+    unmappedFields,
+    requiredNextSteps: [
+      ...(!hasAnySourceContext
+        ? ['Capture at least one source system or structured data source before implementation handoff.']
+        : []),
+      ...(unmappedComponents.length > 0
+        ? ['Map each component to a client API, warehouse/dbt model, semantic API, file, or manual source.']
+        : []),
+      ...(unmappedFields.length > 0
+        ? ['Map required fields to structured data sources or confirm they come from shared source systems.']
+        : []),
+      ...(!spec.project?.specification?.grain ? ['Confirm expected data grain.'] : []),
+      ...(!spec.project?.specification?.refreshCadence ? ['Confirm refresh cadence.'] : []),
+    ],
+  };
+};
+
 const designSourcesMarkdown = (designSources = []) => {
   if (!designSources.length) return '- None specified';
   return designSources
@@ -1286,6 +1353,24 @@ const designSourcesMarkdown = (designSources = []) => {
       source.linkedComponentIds?.length ? `components: ${source.linkedComponentIds.join(', ')}` : null,
       source.notes ? `notes: ${source.notes}` : null,
     ].filter(Boolean);
+      return `- ${source.name} (${details.join('; ')})`;
+    })
+    .join('\n');
+};
+
+const dataSourcesMarkdown = (dataSources = []) => {
+  if (!dataSources.length) return '- None specified';
+
+  return dataSources
+    .map((source) => {
+      const details = [
+        `type: ${source.type}`,
+        source.model ? `model: ${source.model}` : null,
+        source.url ? `url: ${source.url}` : null,
+        source.linkedComponentIds?.length ? `components: ${source.linkedComponentIds.join(', ')}` : null,
+        source.linkedFields?.length ? `fields: ${source.linkedFields.join(', ')}` : null,
+        source.description ? `description: ${source.description}` : null,
+      ].filter(Boolean);
       return `- ${source.name} (${details.join('; ')})`;
     })
     .join('\n');
@@ -1422,6 +1507,10 @@ ${markdownList(contract.designWorkflow.requiredNextSteps)}
 - Decisions/actions: ${contract.workshopIntent.decisions || 'Not specified'}
 - Acceptance criteria: ${contract.workshopIntent.acceptanceCriteria || 'Not specified'}
 - Build notes: ${contract.workshopIntent.buildNotes || 'Not specified'}
+
+## Data Sources
+
+${dataSourcesMarkdown(contract.dataSources)}
 
 ## Metrics
 

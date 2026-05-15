@@ -348,6 +348,20 @@ export interface DesignSource {
   notes?: string;
 }
 
+export type DataSourceReferenceType = 'api' | 'graphql' | 'warehouse' | 'dbt' | 'semantic' | 'file' | 'manual' | 'unknown';
+
+export interface DataSourceReference {
+  id: string;
+  type: DataSourceReferenceType;
+  name: string;
+  description?: string;
+  url?: string;
+  model?: string;
+  query?: string;
+  linkedComponentIds?: string[];
+  linkedFields?: string[];
+}
+
 /**
  * Dashboard specification - captures requirements and context
  */
@@ -358,6 +372,8 @@ export interface DashboardSpecification {
   grain?: 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly';
   /** Source systems for the data */
   sourceSystems?: string;
+  /** Structured source references for APIs, warehouse/dbt models, semantic APIs, files, or manual feeds */
+  dataSources?: DataSourceReference[];
   /** How often data refreshes */
   refreshCadence?: 'real-time' | 'daily' | 'weekly' | 'monthly' | 'on-demand';
   /** Who will use this dashboard */

@@ -102,6 +102,7 @@ npm run phantom:spec -- inspect path/to/spec.json implementation-gate
 npm run phantom:spec -- inspect path/to/spec.json workshop-intent
 npm run phantom:spec -- inspect path/to/spec.json design-sources
 npm run phantom:spec -- inspect path/to/spec.json data-requirements
+npm run phantom:spec -- inspect path/to/spec.json data-path
 ```
 
 For Figma-led work:

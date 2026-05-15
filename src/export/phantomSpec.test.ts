@@ -7,6 +7,7 @@ import {
   createHandoffNextActions,
   createHandoffRecommendation,
   createPhantomApprovalStatus,
+  createPhantomDataPath,
   createPhantomDesignMappingSummary,
   createPhantomDesignWorkflow,
   createPhantomHandoffSummary,
@@ -388,6 +389,64 @@ describe('phantomSpec', () => {
       guidance: 'Spec is approved for implementation handoff.',
       requiredNextSteps: [],
     });
+  });
+
+  it('creates a focused data path payload for implementation agents', () => {
+    const mappedSpec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [item({})],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      specification: {
+        grain: 'daily',
+        refreshCadence: 'daily',
+        sourceSystems: 'Snowflake mart; CRM',
+        dataSources: [{
+          id: 'orders-mart',
+          type: 'dbt',
+          name: 'orders_mart',
+          model: 'mart_orders',
+          linkedComponentIds: ['visual-1'],
+          linkedFields: ['Region', 'revenue'],
+        }],
+      },
+    });
+    const unmappedSpec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [item({})],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+    });
+
+    expect(createPhantomDataPath(mappedSpec)).toMatchObject({
+      subject: 'data-path',
+      grain: 'daily',
+      refreshCadence: 'daily',
+      sourceSystems: ['Snowflake mart', 'CRM'],
+      unmappedComponents: [],
+      unmappedFields: [],
+      requiredNextSteps: [],
+    });
+    expect(createPhantomDataPath(mappedSpec).components[0]).toMatchObject({
+      componentId: 'visual-1',
+      candidateDataSources: ['orders-mart'],
+    });
+    expect(createPhantomDataPath(unmappedSpec)).toMatchObject({
+      subject: 'data-path',
+      sourceSystems: [],
+      dataSources: [],
+      unmappedComponents: ['visual-1'],
+      unmappedFields: ['Region', 'revenue'],
+    });
+    expect(createPhantomDataPath(unmappedSpec).requiredNextSteps).toContain(
+      'Capture at least one source system or structured data source before implementation handoff.',
+    );
   });
 
   it('creates a single implementation gate for agents', () => {
@@ -803,6 +862,14 @@ describe('phantomSpec', () => {
         decisions: 'Choose regions for follow-up.',
         acceptanceCriteria: 'Every visual has approved fields and drill behavior.',
         buildNotes: 'Use the client sales mart.',
+        dataSources: [{
+          id: 'sales-mart',
+          type: 'dbt',
+          name: 'Sales mart',
+          model: 'mart_sales',
+          linkedComponentIds: ['visual-1'],
+          linkedFields: ['Region', 'revenue'],
+        }],
         designEntryPoint: 'figma-led',
         designSources: [{
           id: 'figma-1',
@@ -829,6 +896,11 @@ describe('phantomSpec', () => {
       acceptanceCriteria: 'Every visual has approved fields and drill behavior.',
       buildNotes: 'Use the client sales mart.',
     });
+    expect(contract.dataSources[0]).toMatchObject({
+      id: 'sales-mart',
+      type: 'dbt',
+      model: 'mart_sales',
+    });
     expect(contract.fields).toEqual([
       { name: 'Region', kind: 'dimension', requiredBy: ['visual-1'] },
       { name: 'revenue', kind: 'metric', requiredBy: ['visual-1'] },
@@ -847,6 +919,8 @@ describe('phantomSpec', () => {
     expect(markdown).toContain('## Workshop Intent');
     expect(markdown).toContain('- Decisions/actions: Choose regions for follow-up.');
     expect(markdown).toContain('- Acceptance criteria: Every visual has approved fields and drill behavior.');
+    expect(markdown).toContain('## Data Sources');
+    expect(markdown).toContain('- Sales mart (type: dbt; model: mart_sales; components: visual-1; fields: Region, revenue)');
   });
 
   it('creates a Power BI implementation guide with readiness and visual statuses', () => {

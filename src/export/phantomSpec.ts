@@ -1,4 +1,4 @@
-import type { DashboardItem, DashboardSpecification, DesignSource, DrillAction, ExportMode, LayoutMode, Scenario } from '../types';
+import type { DashboardItem, DashboardSpecification, DataSourceReference, DesignSource, DrillAction, ExportMode, LayoutMode, Scenario } from '../types';
 
 export const PHANTOM_SPEC_VERSION = '0.1.0';
 
@@ -117,6 +117,27 @@ export interface PhantomDataContractComponent {
   exportTargets: PhantomSpecComponent['exportTargets'];
 }
 
+export interface PhantomDataPathComponent {
+  componentId: string;
+  title: string;
+  fields: string[];
+  metrics: string[];
+  dimensions: string[];
+  candidateDataSources: string[];
+}
+
+export interface PhantomDataPath {
+  subject: 'data-path';
+  grain?: DashboardSpecification['grain'];
+  refreshCadence?: DashboardSpecification['refreshCadence'];
+  sourceSystems: string[];
+  dataSources: DataSourceReference[];
+  components: PhantomDataPathComponent[];
+  unmappedComponents: string[];
+  unmappedFields: string[];
+  requiredNextSteps: string[];
+}
+
 export interface PhantomDataContract {
   contractVersion: '0.1.0';
   sourceSpecVersion: typeof PHANTOM_SPEC_VERSION;
@@ -130,7 +151,7 @@ export interface PhantomDataContract {
   };
   designWorkflow: PhantomDesignWorkflow;
   workshopIntent: PhantomWorkshopIntent;
-  dataSources: unknown;
+  dataSources: DataSourceReference[];
   fields: PhantomDataContractField[];
   metrics: string[];
   dimensions: string[];
@@ -564,6 +585,15 @@ const createWorkshopIntent = (specification: DashboardSpecification): PhantomWor
   buildNotes: specification.buildNotes,
 });
 
+const parseSourceSystems = (sourceSystems?: string) =>
+  (sourceSystems || '')
+    .split(/[\n,;]+/)
+    .map((source) => source.trim())
+    .filter(Boolean);
+
+const normalizeDataSources = (specification: DashboardSpecification): DataSourceReference[] =>
+  Array.isArray(specification.dataSources) ? specification.dataSources : [];
+
 const hasText = (value: unknown) => typeof value === 'string' && value.trim().length > 0;
 
 const WORKSHOP_INTENT_REQUIRED_FIELDS: Array<{ key: keyof PhantomWorkshopIntent; label: string }> = [
@@ -602,6 +632,59 @@ export const createPhantomWorkshopIntent = (spec: PhantomSpec): PhantomWorkshopI
   };
 };
 
+export const createPhantomDataPath = (spec: PhantomSpec): PhantomDataPath => {
+  const dataSources = normalizeDataSources(spec.project.specification);
+  const components = getSpecComponents(spec).map((component) => {
+    const candidateDataSources = dataSources
+      .filter((source) => {
+        const linkedComponent = (source.linkedComponentIds || []).includes(component.id);
+        const linkedField = component.dataRequirements.fields.some((field) => (source.linkedFields || []).includes(field));
+        return linkedComponent || linkedField;
+      })
+      .map((source) => source.id);
+
+    return {
+      componentId: component.id,
+      title: component.title,
+      fields: component.dataRequirements.fields,
+      metrics: component.dataRequirements.metrics,
+      dimensions: component.dataRequirements.dimensions,
+      candidateDataSources,
+    };
+  });
+  const mappedFields = new Set(dataSources.flatMap((source) => source.linkedFields || []));
+  const unmappedFields = spec.dataContract.fields.filter((field) => !mappedFields.has(field));
+  const unmappedComponents = components
+    .filter((component) => component.candidateDataSources.length === 0)
+    .map((component) => component.componentId);
+  const sourceSystems = parseSourceSystems(spec.project.specification.sourceSystems);
+  const hasAnySourceContext = sourceSystems.length > 0 || dataSources.length > 0;
+
+  return {
+    subject: 'data-path',
+    grain: spec.project.specification.grain,
+    refreshCadence: spec.project.specification.refreshCadence,
+    sourceSystems,
+    dataSources,
+    components,
+    unmappedComponents,
+    unmappedFields,
+    requiredNextSteps: [
+      ...(!hasAnySourceContext
+        ? ['Capture at least one source system or structured data source before implementation handoff.']
+        : []),
+      ...(unmappedComponents.length > 0
+        ? ['Map each component to a client API, warehouse/dbt model, semantic API, file, or manual source.']
+        : []),
+      ...(unmappedFields.length > 0
+        ? ['Map required fields to structured data sources or confirm they come from shared source systems.']
+        : []),
+      ...(!spec.project.specification.grain ? ['Confirm expected data grain.'] : []),
+      ...(!spec.project.specification.refreshCadence ? ['Confirm refresh cadence.'] : []),
+    ],
+  };
+};
+
 export const createPhantomApprovalStatus = (spec: PhantomSpec): PhantomApprovalStatus => {
   const signOffStatus = spec.project.specification.signOffStatus || 'draft';
   const approvedForImplementation = signOffStatus === 'approved';
@@ -632,6 +715,24 @@ export const createDesignSourcesMarkdown = (designSources: DesignSource[]) => {
         source.linkedViewIds?.length ? `views: ${source.linkedViewIds.join(', ')}` : null,
         source.linkedComponentIds?.length ? `components: ${source.linkedComponentIds.join(', ')}` : null,
         source.notes ? `notes: ${source.notes}` : null,
+      ].filter(Boolean);
+      return `- ${source.name} (${details.join('; ')})`;
+    })
+    .join('\n');
+};
+
+const createDataSourcesMarkdown = (dataSources: DataSourceReference[]) => {
+  if (!dataSources.length) return '- None specified';
+
+  return dataSources
+    .map((source) => {
+      const details = [
+        `type: ${source.type}`,
+        source.model ? `model: ${source.model}` : null,
+        source.url ? `url: ${source.url}` : null,
+        source.linkedComponentIds?.length ? `components: ${source.linkedComponentIds.join(', ')}` : null,
+        source.linkedFields?.length ? `fields: ${source.linkedFields.join(', ')}` : null,
+        source.description ? `description: ${source.description}` : null,
       ].filter(Boolean);
       return `- ${source.name} (${details.join('; ')})`;
     })
@@ -913,7 +1014,7 @@ export const createPhantomDataContract = (
     },
     designWorkflow: createPhantomDesignWorkflow(spec),
     workshopIntent: createWorkshopIntent(spec.project.specification),
-    dataSources: (spec.project.specification as Record<string, unknown>).dataSources || [],
+    dataSources: normalizeDataSources(spec.project.specification),
     fields: fields.map((name) => ({
       name,
       kind: getDataContractFieldKind(spec, name),
@@ -978,6 +1079,10 @@ ${markdownList(contract.designWorkflow.requiredNextSteps)}
 - Decisions/actions: ${contract.workshopIntent.decisions || 'Not specified'}
 - Acceptance criteria: ${contract.workshopIntent.acceptanceCriteria || 'Not specified'}
 - Build notes: ${contract.workshopIntent.buildNotes || 'Not specified'}
+
+## Data Sources
+
+${createDataSourcesMarkdown(contract.dataSources)}
 
 ## Metrics
 
