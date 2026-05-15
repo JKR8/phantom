@@ -39,6 +39,18 @@ describe('phantomSpec', () => {
       layoutMode: 'Free',
       exportMode: 'react',
       themePalette: 'Default',
+      drillActions: [
+        {
+          id: 'drill-1',
+          sourceComponentId: 'visual-1',
+          trigger: 'click',
+          targetType: 'detailPanel',
+          targetId: 'region-detail',
+          label: 'Open region detail',
+          context: [{ source: 'Region', target: 'region' }],
+          preserveFilters: true,
+        },
+      ],
       generatedAt: '2026-05-15T00:00:00.000Z',
       specification: { signOffStatus: 'draft', audience: 'Executives' },
     });
@@ -51,5 +63,6 @@ describe('phantomSpec', () => {
     expect(spec.dataContract.metrics).toEqual(['profit', 'revenue']);
     expect(spec.dataContract.dimensions).toEqual(['Region']);
     expect(spec.views[0].components[1].exportTargets.powerBi.status).toBe('unsupported');
+    expect(spec.interactions.drillActions[0].targetId).toBe('region-detail');
   });
 });

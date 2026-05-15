@@ -37,6 +37,7 @@ export const useStore = create<DashboardState>((set, get) => ({
   filters: {},
   highlight: null,
   items: initialItems,
+  drillActions: [],
   selectedItemId: null,
   layoutMode: 'Free',
   exportMode: 'react' as ExportMode,
@@ -156,7 +157,20 @@ export const useStore = create<DashboardState>((set, get) => ({
   clearHighlight: () => set({ highlight: null }),
   clearFilters: () => set({ filters: {}, highlight: null, isDirty: true }),
   addItem: (item) => set((state) => ({ items: [...state.items, item], isDirty: true })),
-  removeItem: (id) => set((state) => ({ items: state.items.filter((i) => i.id !== id), isDirty: true })),
+  removeItem: (id) => set((state) => ({
+    items: state.items.filter((i) => i.id !== id),
+    drillActions: state.drillActions.filter((action) => action.sourceComponentId !== id),
+    isDirty: true,
+  })),
+  addDrillAction: (action) => set((state) => ({ drillActions: [...state.drillActions, action], isDirty: true })),
+  updateDrillAction: (id, updates) => set((state) => ({
+    drillActions: state.drillActions.map((action) => action.id === id ? { ...action, ...updates } : action),
+    isDirty: true,
+  })),
+  removeDrillAction: (id) => set((state) => ({
+    drillActions: state.drillActions.filter((action) => action.id !== id),
+    isDirty: true,
+  })),
   updateLayout: (layout) =>
     set((state) => {
       const newItems = state.items.map((item) => {
@@ -264,6 +278,7 @@ export const useStore = create<DashboardState>((set, get) => ({
       ...dataState,
       scenario,
       items: db.items || [],
+      drillActions: ((db.specification as any)?.drillActions || []),
       filters: db.filters || {},
       layoutMode: (db.layout_mode || 'Free') as LayoutMode,
       exportMode: (db.specification as any)?.exportMode || 'react',
@@ -282,6 +297,7 @@ export const useStore = create<DashboardState>((set, get) => ({
     return {
       scenario: state.scenario,
       items: state.items,
+      drillActions: state.drillActions,
       filters: state.filters,
       layoutMode: state.layoutMode,
       exportMode: state.exportMode,
@@ -297,6 +313,7 @@ export const useStore = create<DashboardState>((set, get) => ({
       ...generateRetailData(),
       scenario: 'Retail',
       items: initialItems,
+      drillActions: [],
       selectedItemId: null,
       layoutMode: 'Free',
       exportMode: 'react',

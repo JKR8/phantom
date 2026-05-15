@@ -313,6 +313,27 @@ export interface DashboardItem<T extends VisualType = VisualType> {
   fourQuestionsNotes?: string;
 }
 
+export type DrillActionTargetType = 'view' | 'detailPanel' | 'modal' | 'entityProfile' | 'externalUrl';
+
+export interface DrillActionContextMap {
+  /** Source field or prop key from the clicked visual/table row */
+  source: string;
+  /** Target parameter/filter/entity key */
+  target: string;
+}
+
+export interface DrillAction {
+  id: string;
+  sourceComponentId: string;
+  trigger: 'click' | 'rowClick' | 'pointClick' | 'markClick';
+  targetType: DrillActionTargetType;
+  targetId: string;
+  label: string;
+  context: DrillActionContextMap[];
+  preserveFilters: boolean;
+  notes?: string;
+}
+
 /**
  * Dashboard specification - captures requirements and context
  */
@@ -338,6 +359,7 @@ export interface DashboardSpecification {
 export interface DashboardSnapshot {
   scenario: Scenario;
   items: DashboardItem[];
+  drillActions?: DrillAction[];
   filters: Record<string, any>;
   layoutMode: LayoutMode;
   themePalette: string;
@@ -387,6 +409,7 @@ export interface DashboardState {
   filters: Record<string, any>;
   highlight: HighlightState | null;
   items: DashboardItem[];
+  drillActions: DrillAction[];
   selectedItemId: string | null;
   layoutMode: LayoutMode;
   exportMode: ExportMode;
@@ -401,6 +424,9 @@ export interface DashboardState {
   clearFilters: () => void;
   addItem: (item: DashboardItem) => void;
   removeItem: (id: string) => void;
+  addDrillAction: (action: DrillAction) => void;
+  updateDrillAction: (id: string, updates: Partial<DrillAction>) => void;
+  removeDrillAction: (id: string) => void;
   updateLayout: (layout: any[]) => void;
   loadTemplate: (templateName: string) => void;
   selectItem: (id: string | null) => void;

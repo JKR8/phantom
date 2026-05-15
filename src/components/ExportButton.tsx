@@ -146,6 +146,7 @@ export const ExportButton: React.FC = () => {
     const exportData = createPhantomSpec({
       scenario,
       items,
+      drillActions: state.drillActions,
       filters: state.filters,
       layoutMode: state.layoutMode,
       exportMode: state.exportMode,

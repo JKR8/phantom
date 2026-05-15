@@ -1,4 +1,4 @@
-import type { DashboardItem, DashboardSpecification, ExportMode, LayoutMode, Scenario } from '../types';
+import type { DashboardItem, DashboardSpecification, DrillAction, ExportMode, LayoutMode, Scenario } from '../types';
 
 export const PHANTOM_SPEC_VERSION = '0.1.0';
 
@@ -42,6 +42,9 @@ export interface PhantomSpec {
     layoutMode: LayoutMode;
     components: PhantomSpecComponent[];
   }>;
+  interactions: {
+    drillActions: DrillAction[];
+  };
   filters: Record<string, unknown>;
   dataContract: {
     metrics: string[];
@@ -123,6 +126,7 @@ export const createPhantomSpec = (input: {
   exportMode: ExportMode;
   themePalette: string;
   specification?: DashboardSpecification;
+  drillActions?: DrillAction[];
   generatedAt?: string;
 }): PhantomSpec => {
   const components = input.items.map((item): PhantomSpecComponent => ({
@@ -160,6 +164,9 @@ export const createPhantomSpec = (input: {
         components,
       },
     ],
+    interactions: {
+      drillActions: input.drillActions || [],
+    },
     filters: input.filters,
     dataContract: {
       metrics,
