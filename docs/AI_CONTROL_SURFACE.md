@@ -48,6 +48,8 @@ The current CLI starts with spec validation and summary:
 ```bash
 npm run phantom:spec -- validate path/to/spec.json
 npm run phantom:spec -- summary path/to/spec.json
+npm run phantom:spec -- readiness path/to/spec.json react
+npm run phantom:spec -- readiness path/to/spec.json powerBi
 ```
 
 `validate` returns:
@@ -61,6 +63,8 @@ npm run phantom:spec -- summary path/to/spec.json
 
 `summary` returns a compact JSON payload with scenario, mode, component count, data requirements, and Power BI support counts.
 
+`readiness` returns a machine-readable report with `ready`, `errors`, and `warnings`. It exits non-zero when blockers exist, which lets agents and CI stop before generating misleading implementation output.
+
 ## Intended CLI Roadmap
 
 Future commands should include:
@@ -68,7 +72,7 @@ Future commands should include:
 - `phantom spec validate <file>`
 - `phantom spec summary <file>`
 - `phantom spec diff <before> <after>`
-- `phantom spec check-readiness <file> --target react|power-bi`
+- `phantom spec readiness <file> react|powerBi`
 - `phantom export react <file> --out <dir>`
 - `phantom export pbi-report <file> --out <dir>`
 - `phantom export data-contract <file> --out <dir>`

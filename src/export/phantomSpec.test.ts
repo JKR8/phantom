@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createPhantomSpec, getComponentDataRequirements, getPowerBiExportStatus } from './phantomSpec';
+import { checkPhantomReadiness, createPhantomSpec, getComponentDataRequirements, getPowerBiExportStatus } from './phantomSpec';
 import type { DashboardItem } from '../types';
 
 const item = (overrides: Partial<DashboardItem>): DashboardItem => ({
@@ -71,5 +71,40 @@ describe('phantomSpec', () => {
     expect(spec.dataContract.dimensions).toEqual(['Region']);
     expect(spec.views[0].components[1].exportTargets.powerBi.status).toBe('unsupported');
     expect(spec.interactions.drillActions[0].targetId).toBe('region-detail');
+  });
+
+  it('reports Power BI readiness blockers and warnings', () => {
+    const spec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [
+        item({}),
+        item({ id: 'visual-2', type: 'boxplot', title: 'Distribution', props: { metric: 'profit' } }),
+        item({ id: 'visual-3', type: 'lollipop', title: 'Ranking', props: { dimension: 'Region', metric: 'revenue' } }),
+      ],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'powerBi',
+      themePalette: 'Default',
+      drillActions: [
+        {
+          id: 'drill-1',
+          sourceComponentId: 'missing',
+          trigger: 'click',
+          targetType: 'detailPanel',
+          targetId: 'detail',
+          label: 'Broken drill',
+          context: [],
+          preserveFilters: true,
+        },
+      ],
+    });
+
+    const report = checkPhantomReadiness(spec, 'powerBi');
+
+    expect(report.ready).toBe(false);
+    expect(report.errors.map((issue) => issue.code)).toContain('POWER_BI_UNSUPPORTED_VISUAL');
+    expect(report.errors.map((issue) => issue.code)).toContain('BROKEN_DRILL_SOURCE');
+    expect(report.warnings.map((issue) => issue.code)).toContain('POWER_BI_APPROXIMATE_VISUAL');
+    expect(report.warnings.map((issue) => issue.code)).toContain('DRILL_ACTION_WITHOUT_CONTEXT');
   });
 });

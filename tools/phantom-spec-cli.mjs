@@ -2,7 +2,7 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 
-const [, , command, specPath] = process.argv;
+const [, , command, specPath, ...args] = process.argv;
 
 const usage = () => {
   console.log(`Phantom Spec CLI
@@ -10,10 +10,12 @@ const usage = () => {
 Usage:
   npm run phantom:spec -- validate <spec.json>
   npm run phantom:spec -- summary <spec.json>
+  npm run phantom:spec -- readiness <spec.json> react|powerBi
 
 Commands:
   validate  Validate a Phantom Spec JSON file for agent/build handoff.
   summary   Print a compact machine-readable summary.
+  readiness Check React or Power BI handoff readiness.
 `);
 };
 
@@ -82,13 +84,100 @@ const summarizeSpec = (spec) => {
   };
 };
 
+const getTarget = (spec) => {
+  const targetIndex = args.indexOf('--target');
+  const positionalTarget = args.find((arg) => ['react', 'powerBi'].includes(arg));
+  const target = targetIndex >= 0 ? args[targetIndex + 1] : positionalTarget || spec.mode;
+  if (!['react', 'powerBi'].includes(target)) {
+    throw new Error('Readiness target must be react or powerBi.');
+  }
+  return target;
+};
+
+const checkReadiness = (spec, target = spec.mode) => {
+  const errors = [];
+  const warnings = [];
+  const components = (spec.views || []).flatMap((view) => view.components || []);
+  const componentIds = new Set(components.map((component) => component.id));
+
+  if (components.length === 0) {
+    errors.push({ severity: 'error', code: 'NO_COMPONENTS', message: 'Spec has no components to hand off.' });
+  }
+
+  for (const component of components) {
+    const fields = component.dataRequirements?.fields || [];
+    if (fields.length === 0 && !['textBox', 'banner'].includes(component.type)) {
+      warnings.push({
+        severity: 'warning',
+        code: 'NO_DATA_REQUIREMENTS',
+        message: `${component.title} has no detected data requirements.`,
+        componentId: component.id,
+      });
+    }
+
+    if (target === 'powerBi') {
+      const status = component.exportTargets?.powerBi?.status;
+      if (status === 'unsupported') {
+        errors.push({
+          severity: 'error',
+          code: 'POWER_BI_UNSUPPORTED_VISUAL',
+          message: `${component.title} is design-only and cannot be treated as Power BI-ready.`,
+          componentId: component.id,
+        });
+      }
+      if (status === 'approximate') {
+        warnings.push({
+          severity: 'warning',
+          code: 'POWER_BI_APPROXIMATE_VISUAL',
+          message: `${component.title} has approximate Power BI support and needs implementation notes.`,
+          componentId: component.id,
+        });
+      }
+    }
+  }
+
+  for (const action of spec.interactions?.drillActions || []) {
+    if (!componentIds.has(action.sourceComponentId)) {
+      errors.push({
+        severity: 'error',
+        code: 'BROKEN_DRILL_SOURCE',
+        message: `${action.label} references a missing source component.`,
+        drillActionId: action.id,
+      });
+    }
+    if ((action.context || []).length === 0) {
+      warnings.push({
+        severity: 'warning',
+        code: 'DRILL_ACTION_WITHOUT_CONTEXT',
+        message: `${action.label} does not pass any context to its target.`,
+        drillActionId: action.id,
+      });
+    }
+  }
+
+  if (spec.project?.designEntryPoint === 'figma-led' && (spec.project?.designSources || []).length === 0) {
+    warnings.push({
+      severity: 'warning',
+      code: 'FIGMA_LED_WITHOUT_SOURCE',
+      message: 'Project is marked Figma-led but has no linked design sources.',
+    });
+  }
+
+  return {
+    target,
+    ready: errors.length === 0,
+    errors,
+    warnings,
+  };
+};
+
 try {
   if (!command || command === 'help' || command === '--help' || command === '-h') {
     usage();
     process.exit(0);
   }
 
-  if (!['validate', 'summary'].includes(command)) {
+  if (!['validate', 'summary', 'readiness'].includes(command)) {
     throw new Error(`Unknown command: ${command}`);
   }
 
@@ -109,6 +198,21 @@ try {
       process.exit(1);
     }
     console.log(JSON.stringify(summarizeSpec(spec), null, 2));
+  }
+
+  if (command === 'readiness') {
+    if (errors.length > 0) {
+      console.error(JSON.stringify({ valid: false, errors }, null, 2));
+      process.exit(1);
+    }
+    const report = checkReadiness(spec, getTarget(spec));
+    const output = JSON.stringify(report, null, 2);
+    if (report.ready) {
+      console.log(output);
+    } else {
+      console.error(output);
+      process.exit(1);
+    }
   }
 } catch (error) {
   console.error(JSON.stringify({ error: error.message }, null, 2));

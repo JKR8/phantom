@@ -65,6 +65,21 @@ export interface PhantomSpec {
   };
 }
 
+export interface PhantomReadinessIssue {
+  severity: 'error' | 'warning';
+  code: string;
+  message: string;
+  componentId?: string;
+  drillActionId?: string;
+}
+
+export interface PhantomReadinessReport {
+  target: ExportMode;
+  ready: boolean;
+  errors: PhantomReadinessIssue[];
+  warnings: PhantomReadinessIssue[];
+}
+
 const PBI_DESIGN_ONLY_VISUALS = new Set(['histogram', 'boxplot', 'violin', 'regressionScatter', 'barbell', 'slope']);
 const PBI_APPROXIMATE_VISUALS = new Set(['lollipop', 'diverging', 'bullet', 'lineForecast']);
 
@@ -187,5 +202,87 @@ export const createPhantomSpec = (input: {
         notes: ['Use component-level Power BI statuses to identify ready, approximate, and unsupported visuals before implementation.'],
       },
     },
+  };
+};
+
+const getSpecComponents = (spec: PhantomSpec) => spec.views.flatMap((view) => view.components);
+
+export const checkPhantomReadiness = (spec: PhantomSpec, target: ExportMode = spec.mode): PhantomReadinessReport => {
+  const errors: PhantomReadinessIssue[] = [];
+  const warnings: PhantomReadinessIssue[] = [];
+  const components = getSpecComponents(spec);
+  const componentIds = new Set(components.map((component) => component.id));
+
+  if (components.length === 0) {
+    errors.push({
+      severity: 'error',
+      code: 'NO_COMPONENTS',
+      message: 'Spec has no components to hand off.',
+    });
+  }
+
+  for (const component of components) {
+    if (component.dataRequirements.fields.length === 0 && !['textBox', 'banner'].includes(component.type)) {
+      warnings.push({
+        severity: 'warning',
+        code: 'NO_DATA_REQUIREMENTS',
+        message: `${component.title} has no detected data requirements.`,
+        componentId: component.id,
+      });
+    }
+
+    if (target === 'powerBi') {
+      const status = component.exportTargets.powerBi.status;
+      if (status === 'unsupported') {
+        errors.push({
+          severity: 'error',
+          code: 'POWER_BI_UNSUPPORTED_VISUAL',
+          message: `${component.title} is design-only and cannot be treated as Power BI-ready.`,
+          componentId: component.id,
+        });
+      }
+      if (status === 'approximate') {
+        warnings.push({
+          severity: 'warning',
+          code: 'POWER_BI_APPROXIMATE_VISUAL',
+          message: `${component.title} has approximate Power BI support and needs implementation notes.`,
+          componentId: component.id,
+        });
+      }
+    }
+  }
+
+  for (const action of spec.interactions.drillActions) {
+    if (!componentIds.has(action.sourceComponentId)) {
+      errors.push({
+        severity: 'error',
+        code: 'BROKEN_DRILL_SOURCE',
+        message: `${action.label} references a missing source component.`,
+        drillActionId: action.id,
+      });
+    }
+    if (action.context.length === 0) {
+      warnings.push({
+        severity: 'warning',
+        code: 'DRILL_ACTION_WITHOUT_CONTEXT',
+        message: `${action.label} does not pass any context to its target.`,
+        drillActionId: action.id,
+      });
+    }
+  }
+
+  if (spec.project.designEntryPoint === 'figma-led' && spec.project.designSources.length === 0) {
+    warnings.push({
+      severity: 'warning',
+      code: 'FIGMA_LED_WITHOUT_SOURCE',
+      message: 'Project is marked Figma-led but has no linked design sources.',
+    });
+  }
+
+  return {
+    target,
+    ready: errors.length === 0,
+    errors,
+    warnings,
   };
 };
