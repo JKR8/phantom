@@ -250,6 +250,7 @@ export const ExportButton: React.FC = () => {
         readiness: handoffSummary.readiness,
         handoffRecommendation: handoffSummary.handoffRecommendation,
         workshopIntent: handoffSummary.workshopIntent,
+        workshopCompleteness: handoffSummary.workshopCompleteness,
         nextActions: handoffSummary.nextActions,
         artifacts: {
           spec: 'phantom-spec.json',
