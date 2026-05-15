@@ -259,6 +259,7 @@ const inspectSpec = (spec, subject) => {
     const reactReadiness = checkReadiness(spec, 'react');
     const handoffRecommendation = getHandoffRecommendation(reactReadiness.ready, powerBiGuide.readiness.ready);
     const nextActions = getHandoffNextActions(reactReadiness, powerBiGuide.readiness);
+    const workshopIntent = createWorkshopIntent(spec.project?.specification);
     return {
       subject,
       project: {
@@ -267,7 +268,8 @@ const inspectSpec = (spec, subject) => {
         designEntryPoint: spec.project?.designEntryPoint || 'phantom-led',
         designSources: spec.project?.designSources || [],
       },
-      workshopIntent: createWorkshopIntent(spec.project?.specification),
+      workshopIntent,
+      workshopCompleteness: createWorkshopIntentCompleteness(workshopIntent),
       readiness: {
         react: reactReadiness,
         powerBi: powerBiGuide.readiness,
@@ -490,6 +492,14 @@ const checkReadiness = (spec, target = spec.mode) => {
       severity: 'warning',
       code: 'MISSING_AUDIENCE',
       message: 'Workshop intent has no audience; UX, density, and distribution decisions are underspecified.',
+    });
+  }
+
+  if (!hasText(spec.project?.specification?.decisions)) {
+    warnings.push({
+      severity: 'warning',
+      code: 'MISSING_DECISIONS',
+      message: 'Workshop intent has no decisions or actions; implementation teams may not know what the experience should help users do.',
     });
   }
 
@@ -895,6 +905,28 @@ const createWorkshopIntent = (specification = {}) => ({
 });
 
 const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
+
+const workshopIntentRequiredFields = [
+  { key: 'businessQuestions', label: 'business questions' },
+  { key: 'audience', label: 'audience' },
+  { key: 'decisions', label: 'decisions/actions' },
+  { key: 'acceptanceCriteria', label: 'acceptance criteria' },
+];
+
+const createWorkshopIntentCompleteness = (intent = {}) => {
+  const present = workshopIntentRequiredFields
+    .filter((field) => hasText(intent[field.key]))
+    .map((field) => field.label);
+  const missing = workshopIntentRequiredFields
+    .filter((field) => !hasText(intent[field.key]))
+    .map((field) => field.label);
+
+  return {
+    complete: missing.length === 0,
+    present,
+    missing,
+  };
+};
 
 const designSourcesMarkdown = (designSources = []) => {
   if (!designSources.length) return '- None specified';

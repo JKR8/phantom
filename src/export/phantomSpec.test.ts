@@ -235,6 +235,11 @@ describe('phantomSpec', () => {
     expect(summary.readiness.powerBi.ready).toBe(false);
     expect(summary.workshopIntent.businessQuestions).toBe('Which regions need intervention?');
     expect(summary.workshopIntent.decisions).toBe('Prioritize stores for margin recovery.');
+    expect(summary.workshopCompleteness).toEqual({
+      complete: false,
+      present: ['business questions', 'decisions/actions'],
+      missing: ['audience', 'acceptance criteria'],
+    });
     expect(summary.counts).toMatchObject({
       components: 2,
       fields: 3,
@@ -375,6 +380,7 @@ describe('phantomSpec', () => {
     expect(report.ready).toBe(true);
     expect(report.warnings.map((issue) => issue.code)).toEqual(expect.arrayContaining([
       'MISSING_AUDIENCE',
+      'MISSING_DECISIONS',
       'MISSING_ACCEPTANCE_CRITERIA',
     ]));
     expect(report.warnings.map((issue) => issue.code)).not.toContain('MISSING_BUSINESS_QUESTIONS');

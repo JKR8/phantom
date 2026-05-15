@@ -199,6 +199,7 @@ export interface PhantomHandoffSummary {
     designSources: DesignSource[];
   };
   workshopIntent: PhantomWorkshopIntent;
+  workshopCompleteness: PhantomWorkshopIntentCompleteness;
   readiness: {
     react: PhantomReadinessReport;
     powerBi: PhantomReadinessReport;
@@ -226,6 +227,12 @@ export interface PhantomWorkshopIntent {
   decisions?: string;
   acceptanceCriteria?: string;
   buildNotes?: string;
+}
+
+export interface PhantomWorkshopIntentCompleteness {
+  complete: boolean;
+  present: string[];
+  missing: string[];
 }
 
 export interface PhantomDesignSourceInput {
@@ -492,6 +499,30 @@ const createWorkshopIntent = (specification: DashboardSpecification): PhantomWor
 });
 
 const hasText = (value: unknown) => typeof value === 'string' && value.trim().length > 0;
+
+const WORKSHOP_INTENT_REQUIRED_FIELDS: Array<{ key: keyof PhantomWorkshopIntent; label: string }> = [
+  { key: 'businessQuestions', label: 'business questions' },
+  { key: 'audience', label: 'audience' },
+  { key: 'decisions', label: 'decisions/actions' },
+  { key: 'acceptanceCriteria', label: 'acceptance criteria' },
+];
+
+const createWorkshopIntentCompleteness = (
+  intent: PhantomWorkshopIntent,
+): PhantomWorkshopIntentCompleteness => {
+  const present = WORKSHOP_INTENT_REQUIRED_FIELDS
+    .filter((field) => hasText(intent[field.key]))
+    .map((field) => field.label);
+  const missing = WORKSHOP_INTENT_REQUIRED_FIELDS
+    .filter((field) => !hasText(intent[field.key]))
+    .map((field) => field.label);
+
+  return {
+    complete: missing.length === 0,
+    present,
+    missing,
+  };
+};
 
 export const createPhantomWorkshopIntent = (spec: PhantomSpec): PhantomWorkshopIntent => ({
   subject: 'workshop-intent',
@@ -848,6 +879,7 @@ export const createPhantomHandoffSummary = (spec: PhantomSpec): PhantomHandoffSu
   const powerBiGuide = createPowerBiImplementationGuide(spec);
   const reactReadiness = checkPhantomReadiness(spec, 'react');
   const handoffRecommendation = createHandoffRecommendation(reactReadiness.ready, powerBiGuide.readiness.ready);
+  const workshopIntent = createWorkshopIntent(spec.project.specification);
 
   return {
     subject: 'handoff-summary',
@@ -857,7 +889,8 @@ export const createPhantomHandoffSummary = (spec: PhantomSpec): PhantomHandoffSu
       designEntryPoint: spec.project.designEntryPoint,
       designSources: spec.project.designSources,
     },
-    workshopIntent: createWorkshopIntent(spec.project.specification),
+    workshopIntent,
+    workshopCompleteness: createWorkshopIntentCompleteness(workshopIntent),
     readiness: {
       react: reactReadiness,
       powerBi: powerBiGuide.readiness,
@@ -964,6 +997,14 @@ export const checkPhantomReadiness = (spec: PhantomSpec, target: ExportMode = sp
       severity: 'warning',
       code: 'MISSING_AUDIENCE',
       message: 'Workshop intent has no audience; UX, density, and distribution decisions are underspecified.',
+    });
+  }
+
+  if (!hasText(spec.project.specification.decisions)) {
+    warnings.push({
+      severity: 'warning',
+      code: 'MISSING_DECISIONS',
+      message: 'Workshop intent has no decisions or actions; implementation teams may not know what the experience should help users do.',
     });
   }
 
