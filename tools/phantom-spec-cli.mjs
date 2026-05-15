@@ -1756,6 +1756,7 @@ const createPowerBiGuide = (spec) => {
     },
     designWorkflow: createDesignWorkflow(spec),
     workshopIntent: createWorkshopIntent(spec.project?.specification),
+    implementationGate: createImplementationGate(spec),
     readiness,
     summary: {
       views: spec.views?.length || 0,
@@ -1809,6 +1810,7 @@ Generated from Phantom Spec ${guide.sourceSpecVersion}.
 ## Readiness
 
 - Ready for Power BI handoff: ${guide.readiness.ready ? 'Yes' : 'No'}
+- Ready for implementation: ${guide.implementationGate.readyForImplementation ? 'Yes' : 'No'}
 - Source mode: ${guide.project.sourceMode}
 - Sign-off: ${guide.project.signOffStatus || 'draft'}
 - Entry point: ${guide.project.designEntryPoint}
@@ -1818,6 +1820,19 @@ Generated from Phantom Spec ${guide.sourceSpecVersion}.
 - Approximate visuals: ${guide.summary.approximateVisuals}
 - Unsupported visuals: ${guide.summary.unsupportedVisuals}
 - Drill actions: ${guide.summary.drillActions}
+
+## Implementation Gate
+
+- Approved for implementation: ${guide.implementationGate.approvedForImplementation ? 'Yes' : 'No'}
+- Design ready: ${guide.implementationGate.designReady ? 'Yes' : 'No'}
+- Data path ready: ${guide.implementationGate.dataPathReady ? 'Yes' : 'No'}
+- Workshop intent complete: ${guide.implementationGate.workshopIntentComplete ? 'Yes' : 'No'}
+- React ready: ${guide.implementationGate.reactReady ? 'Yes' : 'No'}
+- Power BI ready: ${guide.implementationGate.powerBiReady ? 'Yes' : 'No'}
+
+### Implementation Gate Next Steps
+
+${markdownList(guide.implementationGate.requiredNextSteps)}
 
 ## Design Sources
 

@@ -328,4 +328,37 @@ describe('phantom spec CLI', () => {
       await rm(tempDir, { recursive: true, force: true });
     }
   }, 30000);
+
+  it('exports Power BI guides with implementation gate context', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'phantom-powerbi-guide-'));
+    const specPath = join(tempDir, 'spec.json');
+    const outDir = join(tempDir, 'power-bi');
+    const spec = createReadySpec();
+
+    try {
+      await writeFile(specPath, `${JSON.stringify(spec, null, 2)}\n`);
+      const { stdout } = await execFileAsync(
+        process.execPath,
+        ['tools/phantom-spec-cli.mjs', 'export-powerbi-guide', specPath, outDir],
+        { cwd: process.cwd() },
+      );
+      const result = JSON.parse(stdout);
+
+      expect(result.files).toEqual(['power-bi-implementation-guide.json', 'POWER_BI_IMPLEMENTATION_GUIDE.md']);
+
+      const guide = JSON.parse(await readFile(join(outDir, 'power-bi-implementation-guide.json'), 'utf8'));
+      expect(guide.implementationGate).toMatchObject({
+        subject: 'implementation-gate',
+        readyForImplementation: true,
+        powerBiReady: true,
+      });
+
+      const markdown = await readFile(join(outDir, 'POWER_BI_IMPLEMENTATION_GUIDE.md'), 'utf8');
+      expect(markdown).toContain('## Implementation Gate');
+      expect(markdown).toContain('- Ready for implementation: Yes');
+      expect(markdown).toContain('- Power BI ready: Yes');
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  }, 30000);
 });
