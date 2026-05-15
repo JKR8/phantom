@@ -1676,6 +1676,23 @@ Generated from Phantom Spec ${spec.specVersion}.
 
 ${designSourcesMarkdown(spec.project?.designSources || [])}
 
+## Implementation Gate
+
+- Ready for implementation: ${handoffSummary.implementationGate.readyForImplementation ? 'Yes' : 'No'}
+- Approved for implementation: ${handoffSummary.implementationGate.approvedForImplementation ? 'Yes' : 'No'}
+- Design ready: ${handoffSummary.implementationGate.designReady ? 'Yes' : 'No'}
+- Workshop intent complete: ${handoffSummary.implementationGate.workshopIntentComplete ? 'Yes' : 'No'}
+- React ready: ${handoffSummary.implementationGate.reactReady ? 'Yes' : 'No'}
+- Power BI ready: ${handoffSummary.implementationGate.powerBiReady ? 'Yes' : 'No'}
+
+### Implementation Gate Blockers
+
+${markdownList(handoffSummary.implementationGate.blockingReasons)}
+
+### Implementation Gate Required Next Steps
+
+${markdownList(handoffSummary.implementationGate.requiredNextSteps)}
+
 ## Design Workflow
 
 - Design plane: ${handoffSummary.designWorkflow.designPlane}
