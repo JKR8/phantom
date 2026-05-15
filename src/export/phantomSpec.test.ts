@@ -8,6 +8,7 @@ import {
   createHandoffRecommendation,
   createPhantomApprovalStatus,
   createPhantomDataPath,
+  createPhantomDesignHandoff,
   createPhantomDesignMappingSummary,
   createPhantomDesignWorkflow,
   createPhantomHandoffSummary,
@@ -287,6 +288,11 @@ describe('phantomSpec', () => {
     expect(summary.designWorkflow.requiredNextSteps).toContain(
       'Map every design source to at least one Phantom view or component before engineering handoff.',
     );
+    expect(summary.designHandoff).toMatchObject({
+      subject: 'design-handoff',
+      sourceMode: 'figma-imported',
+      missingMappings: [],
+    });
     expect(summary.readiness.react.ready).toBe(true);
     expect(summary.readiness.powerBi.ready).toBe(false);
     expect(summary.workshopIntent.businessQuestions).toBe('Which regions need intervention?');
@@ -618,6 +624,73 @@ describe('phantomSpec', () => {
       entryPoint: 'phantom-led',
       designPlane: 'phantom',
       status: 'ready',
+    });
+  });
+
+  it('creates a component-level design handoff contract for Figma import or Phantom defaults', () => {
+    const figmaLedSpec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [
+        item({}),
+        item({ id: 'visual-2', type: 'kpi', title: 'Revenue KPI', props: { metric: 'revenue' } }),
+      ],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      specification: {
+        signOffStatus: 'draft',
+        designEntryPoint: 'figma-led',
+        designSources: [{
+          id: 'figma-1',
+          type: 'figmaFrame',
+          name: 'Client concept',
+          linkedComponentIds: ['visual-1'],
+        }],
+      },
+    });
+    const phantomLedSpec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [item({})],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+    });
+
+    expect(createPhantomDesignHandoff(figmaLedSpec)).toMatchObject({
+      subject: 'design-handoff',
+      entryPoint: 'figma-led',
+      designPlane: 'figma',
+      sourceMode: 'mixed',
+      canSkipFigma: false,
+      missingMappings: ['visual-2'],
+    });
+    expect(createPhantomDesignHandoff(figmaLedSpec).components).toEqual([
+      expect.objectContaining({
+        componentId: 'visual-1',
+        designSourceIds: ['figma-1'],
+        status: 'mapped-to-design-source',
+        usesPhantomDefaults: false,
+      }),
+      expect.objectContaining({
+        componentId: 'visual-2',
+        designSourceIds: [],
+        status: 'missing-design-source',
+        usesPhantomDefaults: true,
+      }),
+    ]);
+    expect(createPhantomDesignHandoff(figmaLedSpec).requiredNextSteps).toContain(
+      'Map design sources or confirm Phantom defaults for components: visual-2.',
+    );
+    expect(createPhantomDesignHandoff(phantomLedSpec)).toMatchObject({
+      entryPoint: 'phantom-led',
+      designPlane: 'phantom',
+      sourceMode: 'phantom-defaults',
+      canSkipFigma: true,
+      missingMappings: [],
     });
   });
 

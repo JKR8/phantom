@@ -16,7 +16,7 @@ Usage:
   npm run phantom:spec -- export-data-contract <spec.json> <dir>
   npm run phantom:spec -- export-powerbi-guide <spec.json> <dir>
   npm run phantom:spec -- export-handoff-pack <spec.json> <dir>
-  npm run phantom:spec -- inspect <spec.json> components|drill-actions|data-requirements|data-path|design-sources|design-mapping|design-workflow|approval|implementation-gate|workshop-intent|react-backlog|powerbi-build-matrix|handoff-summary
+  npm run phantom:spec -- inspect <spec.json> components|drill-actions|data-requirements|data-path|design-sources|design-mapping|design-workflow|design-handoff|approval|implementation-gate|workshop-intent|react-backlog|powerbi-build-matrix|handoff-summary
   npm run phantom:spec -- import-design-source <spec.json> figmaFrame "Client frame" <url> <frame-id> "notes" <out-spec.json>
   npm run phantom:spec -- import-data-source <spec.json> dbt "Orders mart" mart_orders Region,revenue visual-1 <out-spec.json>
   node tools/phantom-spec-cli.mjs import-design-source <spec.json> --type figmaFrame --name "Client frame" --url <url> --frame-id <frame-id> --views main --components kpi-1,chart-1 --out <out-spec.json>
@@ -244,6 +244,10 @@ const inspectSpec = (spec, subject) => {
     return createDesignWorkflow(spec);
   }
 
+  if (subject === 'design-handoff') {
+    return createDesignHandoff(spec);
+  }
+
   if (subject === 'approval') {
     return createApprovalStatus(spec);
   }
@@ -303,6 +307,7 @@ const inspectSpec = (spec, subject) => {
       implementationGate: createImplementationGate(spec),
       dataPath: createDataPath(spec),
       designWorkflow: createDesignWorkflow(spec),
+      designHandoff: createDesignHandoff(spec),
       designMapping: createDesignMappingSummary(spec.project?.designSources || []),
       workshopIntent,
       workshopCompleteness: createWorkshopIntentCompleteness(workshopIntent),
@@ -327,7 +332,7 @@ const inspectSpec = (spec, subject) => {
     };
   }
 
-  throw new Error('Inspect subject must be components, drill-actions, data-requirements, data-path, design-sources, design-mapping, design-workflow, approval, implementation-gate, workshop-intent, react-backlog, powerbi-build-matrix, or handoff-summary.');
+  throw new Error('Inspect subject must be components, drill-actions, data-requirements, data-path, design-sources, design-mapping, design-workflow, design-handoff, approval, implementation-gate, workshop-intent, react-backlog, powerbi-build-matrix, or handoff-summary.');
 };
 
 const optionValue = (name) => {
@@ -421,6 +426,79 @@ const createDesignWorkflow = (spec) => {
       'Export the handoff pack and use the generated readiness report, data contract, React backlog, and Power BI build matrix as the implementation source of truth.',
     ],
     agentCommands,
+  };
+};
+
+const createDesignHandoff = (spec) => {
+  const workflow = createDesignWorkflow(spec);
+  const isFigmaLed = workflow.entryPoint === 'figma-led';
+  const views = spec.views || [];
+  const designSources = spec.project?.designSources || [];
+  const components = views.flatMap((view) =>
+    (view.components || []).map((component) => {
+      const linkedSources = designSources.filter((source) =>
+        (source.linkedViewIds || []).includes(view.id) || (source.linkedComponentIds || []).includes(component.id),
+      );
+      const missingDesignSource = isFigmaLed && linkedSources.length === 0;
+      const status = missingDesignSource
+        ? 'missing-design-source'
+        : linkedSources.length > 0
+          ? 'mapped-to-design-source'
+          : 'phantom-default';
+
+      return {
+        componentId: component.id,
+        title: component.title,
+        type: component.type,
+        viewId: view.id,
+        designSourceIds: linkedSources.map((source) => source.id),
+        designSourceNames: linkedSources.map((source) => source.name),
+        usesPhantomDefaults: linkedSources.length === 0,
+        status,
+        implementationNotes: [
+          ...(linkedSources.length > 0
+            ? [`Apply visual direction from: ${linkedSources.map((source) => source.name).join(', ')}.`]
+            : ['Use Phantom defaults for layout, spacing, interaction states, and component styling.']),
+          ...(missingDesignSource
+            ? ['Map this component to a Figma frame/component, screenshot, or explicit Phantom default before engineering handoff.']
+            : []),
+          'Keep this component ID stable for data bindings, tests, drill actions, and agent automation.',
+        ],
+      };
+    }),
+  );
+  const missingMappings = components
+    .filter((component) => component.status === 'missing-design-source')
+    .map((component) => component.componentId);
+  const hasMappedComponents = components.some((component) => component.designSourceIds.length > 0);
+  const sourceMode = !isFigmaLed
+    ? 'phantom-defaults'
+    : designSources.length === 0
+      ? 'needs-source'
+      : missingMappings.length > 0 && hasMappedComponents
+        ? 'mixed'
+        : 'figma-imported';
+
+  return {
+    subject: 'design-handoff',
+    entryPoint: workflow.entryPoint,
+    designPlane: workflow.designPlane,
+    workflowStatus: workflow.status,
+    sourceMode,
+    canSkipFigma: !isFigmaLed,
+    designSources,
+    components,
+    missingMappings,
+    requiredNextSteps: uniqueSorted([
+      ...workflow.requiredNextSteps,
+      ...(missingMappings.length > 0
+        ? [`Map design sources or confirm Phantom defaults for components: ${missingMappings.join(', ')}.`]
+        : []),
+    ]),
+    agentCommands: [
+      'npm run phantom:spec -- inspect <spec.json> design-handoff',
+      ...workflow.agentCommands,
+    ],
   };
 };
 
@@ -834,6 +912,7 @@ const writeReactStarter = async (spec, outDir) => {
   const backlog = createReactBacklog(spec);
   const designMapping = createDesignMappingSummary(spec.project?.designSources || []);
   const designWorkflow = createDesignWorkflow(spec);
+  const designHandoff = createDesignHandoff(spec);
   const routeDefinitions = (spec.views || []).map((view, index) => ({
     viewId: view.id,
     name: view.name,
@@ -887,6 +966,7 @@ import { createRoot } from 'react-dom/client';
 import spec from './phantom-spec.json';
 import dataContract from './phantom-data-contract.json';
 import designWorkflow from './design-workflow.json';
+import designHandoff from './design-handoff.json';
 import { getComponentDataRequest } from './data-adapter';
 import { componentContractsById, type ComponentContract } from './component-contracts';
 import { drillActions } from './drill-actions';
@@ -914,6 +994,7 @@ const App = () => (
         <span>{spec.project.designEntryPoint}</span>
         <span>{designWorkflow.designPlane}</span>
         <span>{designWorkflow.status}</span>
+        <span>{designHandoff.sourceMode}</span>
         <span>{routeDefinitions.length} route(s)</span>
         <span>{dataContract.fields.length} field(s)</span>
         <span>{drillActions.length} drill action(s)</span>
@@ -1028,6 +1109,7 @@ It includes:
 - typed component prop contracts
 - drill action definitions for routes/detail panels
 - a machine-readable design workflow contract
+- a component-level design handoff contract for Figma imports or Phantom defaults
 - a React/Vite shell
 - one placeholder card per Phantom component
 - data requirements visible in the UI
@@ -1039,8 +1121,9 @@ It includes:
 3. Implement routes from \`src/routes.ts\` and component props from \`src/component-contracts.ts\`.
 4. Implement drill actions from \`spec.interactions.drillActions\`.
 5. Review \`src/design-workflow.json\` before deciding whether to pull from Figma or continue with Phantom defaults.
-6. Confirm sign-off status is approved before treating the starter as an implementation contract.
-7. Apply any Figma/design-source references from \`spec.project.designSources\`.
+6. Review \`src/design-handoff.json\` to see which components map to Figma/design sources and which use Phantom defaults.
+7. Confirm sign-off status is approved before treating the starter as an implementation contract.
+8. Apply any Figma/design-source references from \`spec.project.designSources\`.
 
 ## Project Status
 
@@ -1076,6 +1159,12 @@ ${designSourcesMarkdown(spec.project?.designSources || [])}
 - Unmapped sources: ${designMapping.unmappedSources}
 - Linked views: ${designMapping.linkedViewIds.join(', ') || 'None'}
 - Linked components: ${designMapping.linkedComponentIds.join(', ') || 'None'}
+
+## Component Design Handoff
+
+- Source mode: ${designHandoff.sourceMode}
+- Can skip Figma: ${designHandoff.canSkipFigma ? 'Yes' : 'No'}
+- Missing component mappings: ${designHandoff.missingMappings.join(', ') || 'None'}
 
 ## Component Backlog
 
@@ -1230,6 +1319,7 @@ export default defineConfig({
   await writeFile(`${outDir}/src/phantom-spec.json`, `${JSON.stringify(spec, null, 2)}\n`);
   await writeFile(`${outDir}/src/phantom-data-contract.json`, `${JSON.stringify(dataContract, null, 2)}\n`);
   await writeFile(`${outDir}/src/design-workflow.json`, `${JSON.stringify(designWorkflow, null, 2)}\n`);
+  await writeFile(`${outDir}/src/design-handoff.json`, `${JSON.stringify(designHandoff, null, 2)}\n`);
   await writeFile(`${outDir}/src/data-adapter.ts`, dataAdapterTs);
   await writeFile(`${outDir}/src/drill-actions.ts`, drillActionsTs);
   await writeFile(`${outDir}/src/routes.ts`, routesTs);
@@ -1240,7 +1330,7 @@ export default defineConfig({
 
   return {
     outDir,
-    files: ['package.json', 'index.html', 'tsconfig.json', 'vite.config.ts', 'src/App.tsx', 'src/styles.css', 'src/phantom-spec.json', 'src/phantom-data-contract.json', 'src/design-workflow.json', 'src/data-adapter.ts', 'src/drill-actions.ts', 'src/routes.ts', 'src/component-contracts.ts', 'react-implementation-backlog.json', 'REACT_IMPLEMENTATION_BACKLOG.md', 'README.md'],
+    files: ['package.json', 'index.html', 'tsconfig.json', 'vite.config.ts', 'src/App.tsx', 'src/styles.css', 'src/phantom-spec.json', 'src/phantom-data-contract.json', 'src/design-workflow.json', 'src/design-handoff.json', 'src/data-adapter.ts', 'src/drill-actions.ts', 'src/routes.ts', 'src/component-contracts.ts', 'react-implementation-backlog.json', 'REACT_IMPLEMENTATION_BACKLOG.md', 'README.md'],
     components: components.length,
     fields: dataContract.fields.length,
     drillActions: dataContract.drillActions.length,
@@ -1788,6 +1878,7 @@ const writeHandoffPack = async (spec, outDir) => {
   const handoffRecommendation = getHandoffRecommendation(readiness.react.ready, readiness.powerBi.ready);
   const nextActions = getHandoffNextActions(readiness.react, readiness.powerBi);
   const handoffSummary = inspectSpec(spec, 'handoff-summary');
+  const designHandoff = createDesignHandoff(spec);
   const manifest = {
     manifestVersion: '0.1.0',
     sourceSpecVersion: spec.specVersion,
@@ -1804,6 +1895,7 @@ const writeHandoffPack = async (spec, outDir) => {
     implementationGate: handoffSummary.implementationGate,
     dataPath: handoffSummary.dataPath,
     designWorkflow: handoffSummary.designWorkflow,
+    designHandoff,
     designMapping: handoffSummary.designMapping,
     workshopIntent: handoffSummary.workshopIntent,
     workshopCompleteness: handoffSummary.workshopCompleteness,
@@ -1811,6 +1903,7 @@ const writeHandoffPack = async (spec, outDir) => {
     artifacts: {
       spec: 'phantom-spec.json',
       handoffSummary: 'handoff-summary.json',
+      designHandoff: 'design-handoff.json',
       dataContract: dataContract.files.map((file) => `data-contract/${file}`),
       powerBiGuide: powerBiGuide.files.map((file) => `power-bi/${file}`),
       reactStarter: reactStarter.files.map((file) => `react-starter/${file}`),
@@ -1885,6 +1978,12 @@ ${markdownList(handoffSummary.designWorkflow.requiredNextSteps)}
 - Linked views: ${handoffSummary.designMapping.linkedViewIds.join(', ') || 'None'}
 - Linked components: ${handoffSummary.designMapping.linkedComponentIds.join(', ') || 'None'}
 
+## Design Handoff
+
+- Source mode: ${designHandoff.sourceMode}
+- Can skip Figma: ${designHandoff.canSkipFigma ? 'Yes' : 'No'}
+- Missing component mappings: ${designHandoff.missingMappings.join(', ') || 'None'}
+
 ## Workshop Intent
 
 - Business questions: ${handoffSummary.workshopIntent.businessQuestions || 'Not specified'}
@@ -1906,6 +2005,7 @@ ${markdownList(handoffSummary.designWorkflow.requiredNextSteps)}
 - \`power-bi/\`: Power BI implementation guide with readiness, visual statuses, fields, drill-through notes, and blockers.
 - \`react-starter/\`: Vite/React starter app with the spec, data contract, and typed drill actions embedded.
 - \`handoff-summary.json\`: first-pass implementation gate, readiness, recommendation, counts, and next actions for agents.
+- \`design-handoff.json\`: component-level Figma/default provenance and missing design mappings for agents and engineers.
 - \`HANDOFF_MANIFEST.json\`: machine-readable index for agents and implementation pipelines.
 
 ## Readiness
@@ -1931,12 +2031,13 @@ ${markdownList(nextActions)}
 
   await writeFile(`${outDir}/phantom-spec.json`, `${JSON.stringify(spec, null, 2)}\n`);
   await writeFile(`${outDir}/handoff-summary.json`, `${JSON.stringify(handoffSummary, null, 2)}\n`);
+  await writeFile(`${outDir}/design-handoff.json`, `${JSON.stringify(designHandoff, null, 2)}\n`);
   await writeFile(`${outDir}/HANDOFF_MANIFEST.json`, `${JSON.stringify(manifest, null, 2)}\n`);
   await writeFile(`${outDir}/README.md`, readme);
 
   return {
     outDir,
-    files: ['phantom-spec.json', 'handoff-summary.json', 'HANDOFF_MANIFEST.json', 'README.md'],
+    files: ['phantom-spec.json', 'handoff-summary.json', 'design-handoff.json', 'HANDOFF_MANIFEST.json', 'README.md'],
     directories: ['data-contract', 'power-bi', 'react-starter'],
     readiness: {
       react: readiness.react.ready,

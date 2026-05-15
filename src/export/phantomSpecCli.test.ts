@@ -134,6 +134,7 @@ describe('phantom spec CLI', () => {
 
       expect(result.files).toContain('src/routes.ts');
       expect(result.files).toContain('src/component-contracts.ts');
+      expect(result.files).toContain('src/design-handoff.json');
       expect(result.components).toBe(2);
       expect(result.drillActions).toBe(1);
 
@@ -149,7 +150,19 @@ describe('phantom spec CLI', () => {
       expect(componentContracts).toContain('"designSources": [');
       expect(componentContracts).toContain('"figma-1"');
 
+      const designHandoff = JSON.parse(await readFile(join(outDir, 'src/design-handoff.json'), 'utf8'));
+      expect(designHandoff).toMatchObject({
+        subject: 'design-handoff',
+        entryPoint: 'figma-led',
+        designPlane: 'figma',
+        sourceMode: 'figma-imported',
+        missingMappings: [],
+      });
+      expect(designHandoff.components.map((component: { componentId: string }) => component.componentId))
+        .toEqual(['visual-1', 'visual-2']);
+
       const app = await readFile(join(outDir, 'src/App.tsx'), 'utf8');
+      expect(app).toContain("from './design-handoff.json'");
       expect(app).toContain("from './component-contracts'");
       expect(app).toContain("from './routes'");
     } finally {
@@ -173,6 +186,7 @@ describe('phantom spec CLI', () => {
       const result = JSON.parse(stdout);
 
       expect(result.files).toContain('handoff-summary.json');
+      expect(result.files).toContain('design-handoff.json');
       expect(result.files).toContain('HANDOFF_MANIFEST.json');
       expect(result.directories).toEqual(['data-contract', 'power-bi', 'react-starter']);
 
@@ -190,18 +204,29 @@ describe('phantom spec CLI', () => {
         unmappedComponents: [],
         unmappedFields: [],
       });
+      expect(manifest.designHandoff).toMatchObject({
+        subject: 'design-handoff',
+        sourceMode: 'figma-imported',
+        missingMappings: [],
+      });
+      expect(manifest.artifacts.designHandoff).toBe('design-handoff.json');
       expect(manifest.artifacts.reactStarter).toContain('react-starter/src/routes.ts');
       expect(manifest.artifacts.reactStarter).toContain('react-starter/src/component-contracts.ts');
 
       const handoffSummary = JSON.parse(await readFile(join(outDir, 'handoff-summary.json'), 'utf8'));
       expect(handoffSummary.implementationGate).toEqual(manifest.implementationGate);
       expect(handoffSummary.dataPath).toEqual(manifest.dataPath);
+      expect(handoffSummary.designHandoff).toEqual(manifest.designHandoff);
+
+      const designHandoff = JSON.parse(await readFile(join(outDir, 'design-handoff.json'), 'utf8'));
+      expect(designHandoff).toEqual(manifest.designHandoff);
 
       const readme = await readFile(join(outDir, 'README.md'), 'utf8');
       expect(readme).toContain('## Implementation Gate');
       expect(readme).toContain('Ready for implementation: Yes');
       expect(readme).toContain('Data path ready: Yes');
       expect(readme).toContain('## Data Path');
+      expect(readme).toContain('## Design Handoff');
     } finally {
       await rm(tempDir, { recursive: true, force: true });
     }
