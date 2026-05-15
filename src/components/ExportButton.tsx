@@ -244,6 +244,7 @@ export const ExportButton: React.FC = () => {
         project: {
           scenario: spec.project.scenario,
           mode: spec.mode,
+          signOffStatus: spec.project.specification.signOffStatus || 'draft',
           designEntryPoint: spec.project.designEntryPoint,
           designSources: spec.project.designSources,
         },
@@ -277,6 +278,7 @@ Generated from Phantom Spec ${spec.specVersion}.
 ## Project
 
 - Mode: ${spec.mode}
+- Sign-off: ${spec.project.specification.signOffStatus || 'draft'}
 - Entry point: ${spec.project.designEntryPoint}
 - Design sources: ${spec.project.designSources.length}
 

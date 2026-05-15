@@ -280,6 +280,7 @@ const inspectSpec = (spec, subject) => {
       project: {
         scenario: spec.project?.scenario,
         mode: spec.mode,
+        signOffStatus: spec.project?.specification?.signOffStatus || 'draft',
         designEntryPoint: spec.project?.designEntryPoint || 'phantom-led',
         designSources: spec.project?.designSources || [],
       },
@@ -1023,6 +1024,7 @@ const createDataContract = (spec) => {
     project: {
       scenario: spec.project?.scenario,
       mode: spec.mode,
+      signOffStatus: spec.project?.specification?.signOffStatus || 'draft',
       designEntryPoint: spec.project?.designEntryPoint,
       designSources: spec.project?.designSources || [],
     },
@@ -1206,6 +1208,7 @@ Generated from Phantom Spec ${contract.sourceSpecVersion}.
 ## Project
 
 - Mode: ${contract.project.mode}
+- Sign-off: ${contract.project.signOffStatus || 'draft'}
 - Entry point: ${contract.project.designEntryPoint}
 - Design sources: ${contract.project.designSources.length}
 
@@ -1473,6 +1476,7 @@ Generated from Phantom Spec ${spec.specVersion}.
 ## Project
 
 - Mode: ${spec.mode}
+- Sign-off: ${spec.project?.specification?.signOffStatus || 'draft'}
 - Entry point: ${spec.project?.designEntryPoint || 'phantom-led'}
 - Design sources: ${(spec.project?.designSources || []).length}
 

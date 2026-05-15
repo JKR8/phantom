@@ -263,6 +263,7 @@ describe('phantomSpec', () => {
     expect(createHandoffRecommendation(true, true).target).toBe('dual-track');
     expect(createHandoffRecommendation(true, false).target).toBe('react-product');
     expect(summary.handoffRecommendation.target).toBe('react-product');
+    expect(summary.project.signOffStatus).toBe('draft');
     expect(summary.designWorkflow.status).toBe('needs-mapping');
     expect(summary.designWorkflow.designPlane).toBe('figma');
     expect(summary.designWorkflow.requiredNextSteps).toContain(
@@ -716,6 +717,7 @@ describe('phantomSpec', () => {
     expect(contract.drillActions[0].targetId).toBe('region-detail');
     expect(markdown).toContain('| visual-1 | Revenue by Region | bar | figma-1 | Region, revenue |');
     expect(markdown).toContain('| drill-1 | Open region detail | visual-1 | detailPanel:region-detail | Region->region |');
+    expect(markdown).toContain('- Sign-off: draft');
     expect(markdown).toContain('## Design Sources');
     expect(markdown).toContain('- Executive concept (type: figmaFrame; components: visual-1)');
     expect(markdown).toContain('## Design Workflow');

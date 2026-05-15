@@ -124,6 +124,7 @@ export interface PhantomDataContract {
   project: {
     scenario: Scenario;
     mode: ExportMode;
+    signOffStatus: DashboardSpecification['signOffStatus'];
     designEntryPoint: 'figma-led' | 'phantom-led';
     designSources: DesignSource[];
   };
@@ -223,6 +224,7 @@ export interface PhantomHandoffSummary {
   project: {
     scenario: Scenario;
     mode: ExportMode;
+    signOffStatus: DashboardSpecification['signOffStatus'];
     designEntryPoint: 'figma-led' | 'phantom-led';
     designSources: DesignSource[];
   };
@@ -798,6 +800,7 @@ export const createPhantomDataContract = (
     project: {
       scenario: spec.project.scenario,
       mode: spec.mode,
+      signOffStatus: spec.project.specification.signOffStatus || 'draft',
       designEntryPoint: spec.project.designEntryPoint,
       designSources: spec.project.designSources,
     },
@@ -842,6 +845,7 @@ Generated from Phantom Spec ${contract.sourceSpecVersion}.
 ## Project
 
 - Mode: ${contract.project.mode}
+- Sign-off: ${contract.project.signOffStatus || 'draft'}
 - Entry point: ${contract.project.designEntryPoint}
 - Design sources: ${contract.project.designSources.length}
 
@@ -1041,6 +1045,7 @@ export const createPhantomHandoffSummary = (spec: PhantomSpec): PhantomHandoffSu
     project: {
       scenario: spec.project.scenario,
       mode: spec.mode,
+      signOffStatus: spec.project.specification.signOffStatus || 'draft',
       designEntryPoint: spec.project.designEntryPoint,
       designSources: spec.project.designSources,
     },
