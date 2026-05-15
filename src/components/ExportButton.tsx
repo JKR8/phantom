@@ -74,6 +74,31 @@ const useStyles = makeStyles({
   },
 });
 
+const getHandoffRecommendation = (reactReady: boolean, powerBiReady: boolean) => {
+  if (reactReady && powerBiReady) {
+    return {
+      target: 'dual-track',
+      guidance: 'Ready for both React Product Mode and Power BI Mode handoff.',
+    };
+  }
+  if (reactReady) {
+    return {
+      target: 'react-product',
+      guidance: 'Use React Product Mode for this handoff; resolve Power BI blockers before treating it as Power BI-ready.',
+    };
+  }
+  if (powerBiReady) {
+    return {
+      target: 'power-bi',
+      guidance: 'Use Power BI Mode for this handoff; resolve React blockers before generating React implementation work.',
+    };
+  }
+  return {
+    target: 'fix-before-handoff',
+    guidance: 'Resolve readiness blockers before using this spec for implementation handoff.',
+  };
+};
+
 export const ExportButton: React.FC = () => {
   const styles = useStyles();
   const [isExporting, setIsExporting] = useState(false);
@@ -235,6 +260,7 @@ export const ExportButton: React.FC = () => {
       const powerBiGuide = createPowerBiImplementationGuide(spec);
       const reactBacklog = createReactImplementationBacklog(spec);
       const reactReadiness = checkPhantomReadiness(spec, 'react');
+      const handoffRecommendation = getHandoffRecommendation(reactReadiness.ready, powerBiGuide.readiness.ready);
       const date = new Date().toISOString().split('T')[0];
       const zip = new JSZip();
       const manifest = {
@@ -251,6 +277,7 @@ export const ExportButton: React.FC = () => {
           react: reactReadiness,
           powerBi: powerBiGuide.readiness,
         },
+        handoffRecommendation,
         artifacts: {
           spec: 'phantom-spec.json',
           dataContract: ['data-contract/data-contract.json', 'data-contract/DATA_CONTRACT.md'],

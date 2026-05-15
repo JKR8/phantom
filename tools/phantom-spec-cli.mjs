@@ -250,6 +250,7 @@ const inspectSpec = (spec, subject) => {
     const reactBacklog = createReactBacklog(spec);
     const powerBiGuide = createPowerBiGuide(spec);
     const reactReadiness = checkReadiness(spec, 'react');
+    const handoffRecommendation = getHandoffRecommendation(reactReadiness.ready, powerBiGuide.readiness.ready);
     return {
       subject,
       project: {
@@ -262,6 +263,7 @@ const inspectSpec = (spec, subject) => {
         react: reactReadiness,
         powerBi: powerBiGuide.readiness,
       },
+      handoffRecommendation,
       counts: {
         views: spec.views?.length || 0,
         components: (spec.views || []).flatMap((view) => view.components || []).length,
@@ -368,6 +370,31 @@ const getTarget = (spec) => {
     throw new Error('Readiness target must be react or powerBi.');
   }
   return target;
+};
+
+const getHandoffRecommendation = (reactReady, powerBiReady) => {
+  if (reactReady && powerBiReady) {
+    return {
+      target: 'dual-track',
+      guidance: 'Ready for both React Product Mode and Power BI Mode handoff.',
+    };
+  }
+  if (reactReady) {
+    return {
+      target: 'react-product',
+      guidance: 'Use React Product Mode for this handoff; resolve Power BI blockers before treating it as Power BI-ready.',
+    };
+  }
+  if (powerBiReady) {
+    return {
+      target: 'power-bi',
+      guidance: 'Use Power BI Mode for this handoff; resolve React blockers before generating React implementation work.',
+    };
+  }
+  return {
+    target: 'fix-before-handoff',
+    guidance: 'Resolve readiness blockers before using this spec for implementation handoff.',
+  };
 };
 
 const checkReadiness = (spec, target = spec.mode) => {
@@ -1095,6 +1122,7 @@ const writeHandoffPack = async (spec, outDir) => {
     react: checkReadiness(spec, 'react'),
     powerBi: checkReadiness(spec, 'powerBi'),
   };
+  const handoffRecommendation = getHandoffRecommendation(readiness.react.ready, readiness.powerBi.ready);
   const manifest = {
     manifestVersion: '0.1.0',
     sourceSpecVersion: spec.specVersion,
@@ -1106,6 +1134,7 @@ const writeHandoffPack = async (spec, outDir) => {
       designSources: spec.project?.designSources || [],
     },
     readiness,
+    handoffRecommendation,
     artifacts: {
       spec: 'phantom-spec.json',
       dataContract: dataContract.files.map((file) => `data-contract/${file}`),
@@ -1149,6 +1178,8 @@ ${designSourcesMarkdown(spec.project?.designSources || [])}
 - Power BI ready: ${readiness.powerBi.ready ? 'Yes' : 'No'}
 - Power BI warnings: ${readiness.powerBi.warnings.length}
 - Power BI errors: ${readiness.powerBi.errors.length}
+- Recommended handoff: ${handoffRecommendation.target}
+- Guidance: ${handoffRecommendation.guidance}
 
 ## Suggested Flow
 

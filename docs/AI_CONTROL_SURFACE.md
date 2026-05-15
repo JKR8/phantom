@@ -86,7 +86,7 @@ npm run phantom:spec -- import-design-source path/to/spec.json figmaFrame "Clien
 
 `inspect powerbi-build-matrix` returns the same readiness summary, visual support statuses, field requirements, drill-through rows, and build checklist used by the Power BI implementation guide. Use it when an agent needs to assess Power BI Mode fit without generating guide files.
 
-`inspect handoff-summary` returns project metadata, React and Power BI readiness, field/component/task counts, Power BI visual support counts, and next actions in one JSON payload. Use it as the first agent check after a workshop.
+`inspect handoff-summary` returns project metadata, React and Power BI readiness, a recommended handoff target, field/component/task counts, Power BI visual support counts, and next actions in one JSON payload. Use it as the first agent check after a workshop.
 
 `import-design-source` adds or updates a Figma frame, Figma component, screenshot, Phantom default, or external reference in a Phantom Spec. Use the npm-friendly positional form `type name url frame-id notes out-spec`; direct `node tools/phantom-spec-cli.mjs ...` usage can also pass named flags such as `--type`, `--name`, `--url`, and `--out`. It writes a new spec to the positional output path or `--out`, marks non-Phantom sources as `figma-led`, and mirrors the source into `project.specification` so browser exports, CLI exports, readiness checks, and agents see the same design context.
 
