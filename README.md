@@ -112,6 +112,36 @@ See [SETUP.md](SETUP.md) for Supabase + Vercel deployment instructions.
 | `npm run preview` | Preview production build |
 | `npm test` | Run unit tests |
 | `npm run test:e2e` | Run Playwright E2E tests |
+| `npm run phantom:spec` | Run the Phantom Spec CLI for validation, inspection, and handoff exports |
+
+## Phantom Spec CLI
+
+Use the CLI when a workshop output needs to become an agent-readable or engineer-readable implementation contract.
+
+```bash
+npm run phantom:spec -- validate path/to/spec.json
+npm run phantom:spec -- inspect path/to/spec.json design-workflow
+npm run phantom:spec -- inspect path/to/spec.json handoff-summary
+npm run phantom:spec -- readiness path/to/spec.json react
+npm run phantom:spec -- readiness path/to/spec.json powerBi
+```
+
+For Figma-led work, add or update a linked design source:
+
+```bash
+npm run phantom:spec -- import-design-source path/to/spec.json figmaFrame "Client concept" https://www.figma.com/design/... "1:2" "Workshop-approved direction" path/to/spec.with-design.json
+```
+
+For implementation handoff:
+
+```bash
+npm run phantom:spec -- export-react path/to/spec.json ./generated-app
+npm run phantom:spec -- export-data-contract path/to/spec.json ./handoff
+npm run phantom:spec -- export-powerbi-guide path/to/spec.json ./handoff
+npm run phantom:spec -- export-handoff-pack path/to/spec.json ./handoff-pack
+```
+
+The handoff pack includes `handoff-summary.json`, `HANDOFF_MANIFEST.json`, `data-contract/`, `power-bi/`, and `react-starter/`. These artifacts carry workshop intent, design workflow, design-source mappings, data requirements, drill actions, readiness checks, and next actions.
 
 ## Project Structure
 

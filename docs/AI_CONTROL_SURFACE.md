@@ -60,6 +60,7 @@ npm run phantom:spec -- inspect path/to/spec.json drill-actions
 npm run phantom:spec -- inspect path/to/spec.json data-requirements
 npm run phantom:spec -- inspect path/to/spec.json design-sources
 npm run phantom:spec -- inspect path/to/spec.json design-mapping
+npm run phantom:spec -- inspect path/to/spec.json design-workflow
 npm run phantom:spec -- inspect path/to/spec.json workshop-intent
 npm run phantom:spec -- inspect path/to/spec.json react-backlog
 npm run phantom:spec -- inspect path/to/spec.json powerbi-build-matrix
