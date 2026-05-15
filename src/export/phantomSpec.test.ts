@@ -6,6 +6,7 @@ import {
   createDesignSourcesMarkdown,
   createHandoffNextActions,
   createHandoffRecommendation,
+  createPhantomApprovalStatus,
   createPhantomDesignMappingSummary,
   createPhantomDesignWorkflow,
   createPhantomHandoffSummary,
@@ -264,6 +265,11 @@ describe('phantomSpec', () => {
     expect(createHandoffRecommendation(true, false).target).toBe('react-product');
     expect(summary.handoffRecommendation.target).toBe('react-product');
     expect(summary.project.signOffStatus).toBe('draft');
+    expect(summary.approval).toMatchObject({
+      subject: 'approval',
+      signOffStatus: 'draft',
+      approvedForImplementation: false,
+    });
     expect(summary.designWorkflow.status).toBe('needs-mapping');
     expect(summary.designWorkflow.designPlane).toBe('figma');
     expect(summary.designWorkflow.requiredNextSteps).toContain(
@@ -337,6 +343,44 @@ describe('phantomSpec', () => {
       complete: true,
       present: ['business questions', 'audience', 'decisions/actions', 'acceptance criteria'],
       missing: [],
+    });
+  });
+
+  it('creates a focused approval payload for agents', () => {
+    const draftSpec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [item({})],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      specification: { signOffStatus: 'in-review' },
+    });
+    const approvedSpec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [item({})],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      specification: { signOffStatus: 'approved' },
+    });
+
+    expect(createPhantomApprovalStatus(draftSpec)).toEqual({
+      subject: 'approval',
+      signOffStatus: 'in-review',
+      approvedForImplementation: false,
+      guidance: 'Spec sign-off is in-review; confirm client approval before treating this as an implementation contract.',
+      requiredNextSteps: ['Move sign-off status to approved after client or delivery lead review.'],
+    });
+    expect(createPhantomApprovalStatus(approvedSpec)).toEqual({
+      subject: 'approval',
+      signOffStatus: 'approved',
+      approvedForImplementation: true,
+      guidance: 'Spec is approved for implementation handoff.',
+      requiredNextSteps: [],
     });
   });
 

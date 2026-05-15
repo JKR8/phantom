@@ -61,6 +61,7 @@ npm run phantom:spec -- inspect path/to/spec.json data-requirements
 npm run phantom:spec -- inspect path/to/spec.json design-sources
 npm run phantom:spec -- inspect path/to/spec.json design-mapping
 npm run phantom:spec -- inspect path/to/spec.json design-workflow
+npm run phantom:spec -- inspect path/to/spec.json approval
 npm run phantom:spec -- inspect path/to/spec.json workshop-intent
 npm run phantom:spec -- inspect path/to/spec.json react-backlog
 npm run phantom:spec -- inspect path/to/spec.json powerbi-build-matrix
@@ -82,13 +83,15 @@ node tools/phantom-spec-cli.mjs import-design-source path/to/spec.json --type fi
 
 `diff` returns project, mode, component, drill action, and data requirement changes between two Phantom specs. Use it after workshops or AI edits before regenerating implementation artifacts.
 
-`inspect` returns focused JSON for `components`, `drill-actions`, `data-requirements`, `design-sources`, `design-mapping`, `design-workflow`, `workshop-intent`, `react-backlog`, `powerbi-build-matrix`, or `handoff-summary`, so agents can query the spec before deciding what to generate or validate.
+`inspect` returns focused JSON for `components`, `drill-actions`, `data-requirements`, `design-sources`, `design-mapping`, `design-workflow`, `approval`, `workshop-intent`, `react-backlog`, `powerbi-build-matrix`, or `handoff-summary`, so agents can query the spec before deciding what to generate or validate.
 
 `inspect design-sources` returns the current design entry point and linked design sources, including any mapped Phantom view IDs or component IDs. Use it to decide whether the project is Figma-led or Phantom-led before generating implementation tasks.
 
 `inspect design-mapping` returns design-source mapping coverage: total sources, mapped/unmapped counts, linked view IDs, linked component IDs, and source IDs without mappings. Use it as a lightweight gate before implementation work when the project is Figma-led.
 
 `inspect design-workflow` returns the current design plane (`figma` or `phantom`), Phantom's role in that workflow, mapping status, required next steps, supported handoff modes, and suggested agent commands. Use it first when deciding whether to pull in Figma references or proceed with Phantom defaults.
+
+`inspect approval` returns sign-off status, whether the spec is approved for implementation, guidance, and required next steps. Use it before generating code or Power BI build notes.
 
 `inspect workshop-intent` returns the business questions, audience, decisions/actions, acceptance criteria, build notes, and a completeness object with present/missing workshop fields. Use it before generating React or Power BI implementation work so agents preserve the client workshop intent and can pause when the brief is too thin.
 
@@ -131,6 +134,7 @@ Future commands should include:
 - `phantom inspect design-sources <file>` implemented as `npm run phantom:spec -- inspect <file> design-sources`
 - `phantom inspect design-mapping <file>` implemented as `npm run phantom:spec -- inspect <file> design-mapping`
 - `phantom inspect design-workflow <file>` implemented as `npm run phantom:spec -- inspect <file> design-workflow`
+- `phantom inspect approval <file>` implemented as `npm run phantom:spec -- inspect <file> approval`
 - `phantom inspect workshop-intent <file>` implemented as `npm run phantom:spec -- inspect <file> workshop-intent`
 - `phantom inspect react-backlog <file>` implemented as `npm run phantom:spec -- inspect <file> react-backlog`
 - `phantom inspect powerbi-build-matrix <file>` implemented as `npm run phantom:spec -- inspect <file> powerbi-build-matrix`

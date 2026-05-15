@@ -250,6 +250,7 @@ export const ExportButton: React.FC = () => {
         },
         readiness: handoffSummary.readiness,
         handoffRecommendation: handoffSummary.handoffRecommendation,
+        approval: handoffSummary.approval,
         designWorkflow: handoffSummary.designWorkflow,
         designMapping: handoffSummary.designMapping,
         workshopIntent: handoffSummary.workshopIntent,

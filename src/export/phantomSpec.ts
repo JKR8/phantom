@@ -197,6 +197,14 @@ export interface PhantomHandoffRecommendation {
   guidance: string;
 }
 
+export interface PhantomApprovalStatus {
+  subject: 'approval';
+  signOffStatus: NonNullable<DashboardSpecification['signOffStatus']>;
+  approvedForImplementation: boolean;
+  guidance: string;
+  requiredNextSteps: string[];
+}
+
 export interface PhantomDesignMappingSummary {
   totalSources: number;
   mappedSources: number;
@@ -229,6 +237,7 @@ export interface PhantomHandoffSummary {
     designEntryPoint: 'figma-led' | 'phantom-led';
     designSources: DesignSource[];
   };
+  approval: PhantomApprovalStatus;
   designWorkflow: PhantomDesignWorkflow;
   designMapping: PhantomDesignMappingSummary;
   workshopIntent: PhantomWorkshopIntent;
@@ -575,6 +584,23 @@ export const createPhantomWorkshopIntent = (spec: PhantomSpec): PhantomWorkshopI
     subject: 'workshop-intent',
     ...intent,
     completeness: createWorkshopIntentCompleteness(intent),
+  };
+};
+
+export const createPhantomApprovalStatus = (spec: PhantomSpec): PhantomApprovalStatus => {
+  const signOffStatus = spec.project.specification.signOffStatus || 'draft';
+  const approvedForImplementation = signOffStatus === 'approved';
+
+  return {
+    subject: 'approval',
+    signOffStatus,
+    approvedForImplementation,
+    guidance: approvedForImplementation
+      ? 'Spec is approved for implementation handoff.'
+      : `Spec sign-off is ${signOffStatus}; confirm client approval before treating this as an implementation contract.`,
+    requiredNextSteps: approvedForImplementation
+      ? []
+      : ['Move sign-off status to approved after client or delivery lead review.'],
   };
 };
 
@@ -1052,6 +1078,7 @@ export const createPhantomHandoffSummary = (spec: PhantomSpec): PhantomHandoffSu
       designEntryPoint: spec.project.designEntryPoint,
       designSources: spec.project.designSources,
     },
+    approval: createPhantomApprovalStatus(spec),
     designWorkflow: createPhantomDesignWorkflow(spec),
     designMapping: createPhantomDesignMappingSummary(spec.project.designSources),
     workshopIntent,

@@ -95,6 +95,7 @@ Preferred first pass:
 npm run phantom:spec -- validate path/to/spec.json
 npm run phantom:spec -- inspect path/to/spec.json handoff-summary
 npm run phantom:spec -- inspect path/to/spec.json design-workflow
+npm run phantom:spec -- inspect path/to/spec.json approval
 npm run phantom:spec -- inspect path/to/spec.json workshop-intent
 npm run phantom:spec -- inspect path/to/spec.json design-sources
 npm run phantom:spec -- inspect path/to/spec.json data-requirements

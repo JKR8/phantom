@@ -121,6 +121,7 @@ Use the CLI when a workshop output needs to become an agent-readable or engineer
 ```bash
 npm run phantom:spec -- validate path/to/spec.json
 npm run phantom:spec -- inspect path/to/spec.json design-workflow
+npm run phantom:spec -- inspect path/to/spec.json approval
 npm run phantom:spec -- inspect path/to/spec.json handoff-summary
 npm run phantom:spec -- readiness path/to/spec.json react
 npm run phantom:spec -- readiness path/to/spec.json powerBi

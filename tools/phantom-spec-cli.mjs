@@ -16,7 +16,7 @@ Usage:
   npm run phantom:spec -- export-data-contract <spec.json> <dir>
   npm run phantom:spec -- export-powerbi-guide <spec.json> <dir>
   npm run phantom:spec -- export-handoff-pack <spec.json> <dir>
-  npm run phantom:spec -- inspect <spec.json> components|drill-actions|data-requirements|design-sources|design-mapping|design-workflow|workshop-intent|react-backlog|powerbi-build-matrix|handoff-summary
+  npm run phantom:spec -- inspect <spec.json> components|drill-actions|data-requirements|design-sources|design-mapping|design-workflow|approval|workshop-intent|react-backlog|powerbi-build-matrix|handoff-summary
   npm run phantom:spec -- import-design-source <spec.json> figmaFrame "Client frame" <url> <frame-id> "notes" <out-spec.json>
   node tools/phantom-spec-cli.mjs import-design-source <spec.json> --type figmaFrame --name "Client frame" --url <url> --frame-id <frame-id> --views main --components kpi-1,chart-1 --out <out-spec.json>
 
@@ -237,6 +237,10 @@ const inspectSpec = (spec, subject) => {
     return createDesignWorkflow(spec);
   }
 
+  if (subject === 'approval') {
+    return createApprovalStatus(spec);
+  }
+
   if (subject === 'workshop-intent') {
     const workshopIntent = createWorkshopIntent(spec.project?.specification);
     return {
@@ -284,6 +288,7 @@ const inspectSpec = (spec, subject) => {
         designEntryPoint: spec.project?.designEntryPoint || 'phantom-led',
         designSources: spec.project?.designSources || [],
       },
+      approval: createApprovalStatus(spec),
       designWorkflow: createDesignWorkflow(spec),
       designMapping: createDesignMappingSummary(spec.project?.designSources || []),
       workshopIntent,
@@ -309,7 +314,7 @@ const inspectSpec = (spec, subject) => {
     };
   }
 
-  throw new Error('Inspect subject must be components, drill-actions, data-requirements, design-sources, design-mapping, design-workflow, workshop-intent, react-backlog, powerbi-build-matrix, or handoff-summary.');
+  throw new Error('Inspect subject must be components, drill-actions, data-requirements, design-sources, design-mapping, design-workflow, approval, workshop-intent, react-backlog, powerbi-build-matrix, or handoff-summary.');
 };
 
 const optionValue = (name) => {
@@ -337,6 +342,23 @@ const csvOption = (...names) => {
 };
 
 const uniqueSorted = (values) => [...new Set(values.filter(Boolean))].sort();
+
+const createApprovalStatus = (spec) => {
+  const signOffStatus = spec.project?.specification?.signOffStatus || 'draft';
+  const approvedForImplementation = signOffStatus === 'approved';
+
+  return {
+    subject: 'approval',
+    signOffStatus,
+    approvedForImplementation,
+    guidance: approvedForImplementation
+      ? 'Spec is approved for implementation handoff.'
+      : `Spec sign-off is ${signOffStatus}; confirm client approval before treating this as an implementation contract.`,
+    requiredNextSteps: approvedForImplementation
+      ? []
+      : ['Move sign-off status to approved after client or delivery lead review.'],
+  };
+};
 
 const createDesignWorkflow = (spec) => {
   const entryPoint = spec.project?.designEntryPoint || 'phantom-led';
@@ -1456,6 +1478,7 @@ const writeHandoffPack = async (spec, outDir) => {
     },
     readiness,
     handoffRecommendation,
+    approval: handoffSummary.approval,
     designWorkflow: handoffSummary.designWorkflow,
     designMapping: handoffSummary.designMapping,
     workshopIntent: handoffSummary.workshopIntent,
