@@ -32,7 +32,7 @@ import {
 import html2canvas from 'html2canvas';
 import { useStore } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
-import { downloadPBIPPackage, generateAllMeasures, getSchemaForScenario } from '../export';
+import { createPhantomSpec, downloadPBIPPackage, generateAllMeasures, getSchemaForScenario } from '../export';
 
 const useStyles = makeStyles({
   dialogContent: {
@@ -142,19 +142,22 @@ export const ExportButton: React.FC = () => {
   };
 
   const handleJSONExport = () => {
-    // Export the current dashboard state as JSON
-    const exportData = {
+    const state = useStore.getState();
+    const exportData = createPhantomSpec({
       scenario,
       items,
-      exportedAt: new Date().toISOString(),
-      version: '1.0',
-    };
+      filters: state.filters,
+      layoutMode: state.layoutMode,
+      exportMode: state.exportMode,
+      themePalette: activePalette.name,
+      specification: state.specification,
+    });
 
     const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${scenario}_Dashboard_${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `${scenario}_Phantom_Spec_${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -184,7 +187,7 @@ export const ExportButton: React.FC = () => {
               Image (PNG)
             </MenuItem>
             <MenuItem icon={<CodeRegular />} onClick={handleJSONExport}>
-              Dashboard JSON
+              Phantom Spec JSON
             </MenuItem>
           </MenuList>
         </MenuPopover>

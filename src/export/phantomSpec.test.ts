@@ -1,0 +1,55 @@
+import { describe, expect, it } from 'vitest';
+import { createPhantomSpec, getComponentDataRequirements, getPowerBiExportStatus } from './phantomSpec';
+import type { DashboardItem } from '../types';
+
+const item = (overrides: Partial<DashboardItem>): DashboardItem => ({
+  id: 'visual-1',
+  type: 'bar',
+  title: 'Revenue by Region',
+  layout: { x: 0, y: 0, w: 12, h: 8 },
+  props: { dimension: 'Region', metric: 'revenue' },
+  ...overrides,
+});
+
+describe('phantomSpec', () => {
+  it('extracts metrics and dimensions from visual props', () => {
+    expect(getComponentDataRequirements(item({}))).toEqual({
+      metrics: ['revenue'],
+      dimensions: ['Region'],
+      fields: ['Region', 'revenue'],
+    });
+  });
+
+  it('marks design-only Power BI visuals as unsupported', () => {
+    expect(getPowerBiExportStatus('boxplot').status).toBe('unsupported');
+  });
+
+  it('marks approximate Power BI visuals separately', () => {
+    expect(getPowerBiExportStatus('lollipop').status).toBe('approximate');
+  });
+
+  it('creates a versioned build-ready spec', () => {
+    const spec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [
+        item({}),
+        item({ id: 'visual-2', type: 'boxplot', title: 'Distribution', props: { metric: 'profit' } }),
+      ],
+      filters: { Region: 'North' },
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      specification: { signOffStatus: 'draft', audience: 'Executives' },
+    });
+
+    expect(spec.specVersion).toBe('0.1.0');
+    expect(spec.mode).toBe('react');
+    expect(spec.project.scenario).toBe('Retail');
+    expect(spec.project.specification.audience).toBe('Executives');
+    expect(spec.views[0].components).toHaveLength(2);
+    expect(spec.dataContract.metrics).toEqual(['profit', 'revenue']);
+    expect(spec.dataContract.dimensions).toEqual(['Region']);
+    expect(spec.views[0].components[1].exportTargets.powerBi.status).toBe('unsupported');
+  });
+});

@@ -19,6 +19,8 @@ The product should make it dramatically easier to design superior dashboard and 
 
 Phantom is an analytics-native design plane, not a generic design tool and not a full BI platform.
 
+Phantom should not compete with Figma for generic product design. Figma is the right default for visual design systems, brand polish, and general UI handoff. Phantom only earns its place when the artifact is analytical: metrics, filters, drill-throughs, data contracts, report constraints, and build readiness matter as much as layout.
+
 It should understand the concepts that Figma does not natively model and that BI tools often make hard to design collaboratively:
 
 - Business questions
@@ -31,6 +33,8 @@ It should understand the concepts that Figma does not natively model and that BI
 - Export constraints
 - Build readiness
 - Client approval
+
+Phantom may complement Figma over time by exporting analytics specs, tokens, component references, or implementation packs that sit beside a Figma design system. It should not require teams to abandon Figma.
 
 The strongest product promise is:
 

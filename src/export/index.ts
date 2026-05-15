@@ -8,9 +8,11 @@ export * from './schemaGenerator';
 export * from './daxGenerator';
 export * from './layoutConverter';
 export * from './pbipWriter';
+export * from './phantomSpec';
 
 // Re-export commonly used functions for convenience
 export { createPBIPPackage, downloadPBIPPackage } from './pbipWriter';
 export { generateAllMeasures } from './daxGenerator';
 export { getSchemaForScenario, getFactTableForScenario } from './schemaGenerator';
 export { convertLayoutToPBI } from './layoutConverter';
+export { createPhantomSpec } from './phantomSpec';

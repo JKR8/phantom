@@ -21,6 +21,22 @@ The product should be built around five durable primitives:
 
 Everything else should hang off those primitives.
 
+## Figma Boundary
+
+Figma remains the default tool for generic UI design, brand systems, visual exploration, and broad product handoff. Phantom should not try to replace that.
+
+Phantom should win only where the design object is analytical and build readiness depends on more than pixels:
+
+- metrics and dimensions
+- filter state
+- drill-through journeys
+- data contracts
+- export target constraints
+- readiness checks
+- agent/API/CLI control
+
+Future Figma integration should be additive: link Phantom analytical specs to Figma design systems, export token/component references, or generate implementation packs that use the client design system.
+
 ## Phase 1: Mode System And Component Metadata
 
 Goal: make the current UI honest about target output.

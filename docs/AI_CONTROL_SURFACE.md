@@ -1,0 +1,99 @@
+# Phantom AI Control Surface
+
+## Goal
+
+Phantom must be easy for agents, scripts, and implementation pipelines to control without relying on browser clicks.
+
+The UI is for workshops. The API/CLI/spec layer is for agents and engineering automation.
+
+This is also the clearest distinction from Figma. Figma can own visual design and handoff; Phantom's control surface should own analytics-native structure that agents can reason about: metrics, dimensions, filters, drill-throughs, target constraints, and data contracts.
+
+## Principles
+
+- Every important UI action should eventually have a machine-readable equivalent.
+- Exports must be deterministic, versioned, and diff-friendly.
+- Agents should be able to inspect a project, validate readiness, and generate implementation artifacts from the command line.
+- The control surface should use boring formats: JSON in, JSON out, stable exit codes, explicit errors.
+- Phantom should not require a named BI backend. The contract should point to client APIs, warehouse/dbt models, or optional semantic APIs.
+
+## Core Artifact: Phantom Spec JSON
+
+The first agent-facing artifact is the Phantom Spec JSON.
+
+It captures:
+
+- spec version
+- export mode
+- scenario
+- views
+- components
+- layout
+- data requirements
+- filters
+- theme
+- React export status
+- Power BI compatibility status
+
+This is the contract agents should use before generating React code, Power BI build notes, data contracts, QA checks, or client-facing implementation packs.
+
+## Current CLI
+
+The current CLI starts with spec validation and summary:
+
+```bash
+npm run phantom:spec -- validate path/to/spec.json
+npm run phantom:spec -- summary path/to/spec.json
+```
+
+`validate` returns:
+
+```json
+{
+  "valid": true,
+  "errors": []
+}
+```
+
+`summary` returns a compact JSON payload with scenario, mode, component count, data requirements, and Power BI support counts.
+
+## Intended CLI Roadmap
+
+Future commands should include:
+
+- `phantom spec validate <file>`
+- `phantom spec summary <file>`
+- `phantom spec diff <before> <after>`
+- `phantom spec check-readiness <file> --target react|power-bi`
+- `phantom export react <file> --out <dir>`
+- `phantom export pbi-report <file> --out <dir>`
+- `phantom export data-contract <file> --out <dir>`
+- `phantom inspect components <file>`
+- `phantom inspect drill-actions <file>`
+- `phantom inspect data-requirements <file>`
+
+## Intended API Roadmap
+
+The public TypeScript API should expose:
+
+- `createPhantomSpec`
+- `validatePhantomSpec`
+- `summarizePhantomSpec`
+- `checkReactReadiness`
+- `checkPowerBiReadiness`
+- `generateReactStarter`
+- `generatePowerBiImplementationPack`
+- `generateDataContract`
+
+## Agent Workflow
+
+A strong agent workflow should look like:
+
+1. Export or receive a Phantom Spec JSON.
+2. Run CLI validation.
+3. Inspect missing data requirements and unsupported visuals.
+4. Generate an implementation plan.
+5. Generate React starter components or Power BI implementation notes.
+6. Run build/tests/readiness checks.
+7. Report exact blockers and next actions.
+
+This keeps Phantom useful in human workshops while making it controllable by AI agents and build automation.
