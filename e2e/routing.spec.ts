@@ -18,6 +18,29 @@ test.describe('Routing & Guest Mode', () => {
     await expect(page.getByTitle('New Screen')).toBeVisible();
   });
 
+  test('/spec-v2 shows the v0.2 workshop spec surface', async ({ page }) => {
+    await page.goto('/spec-v2');
+    await page.waitForLoadState('domcontentloaded');
+
+    await expect(page.getByText('Phantom v0.2 spec workspace')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('v0.2 spec valid')).toBeVisible();
+    await expect(page.getByText('React readiness')).toBeVisible();
+    await expect(page.getByText('Power BI readiness')).toBeVisible();
+    await expect(page.getByRole('region', { name: 'Spec canvas' })).toBeVisible();
+    await expect(page.getByText('Confirm pbi fallback behavior for elicitation_panel.')).toBeVisible();
+
+    await page.getByRole('button', { name: 'data', exact: true }).click();
+    await expect(page.getByText('Power BI fallback behavior', { exact: true })).toBeVisible();
+
+    await page.getByRole('button', { name: 'approval', exact: true }).click();
+    await expect(page.getByText('Current version')).toBeVisible();
+    await expect(page.getByText('0.2.0-draft', { exact: true })).toBeVisible();
+
+    await page.getByRole('button', { name: 'exports', exact: true }).click();
+    await expect(page.getByText('React Product Mode')).toBeVisible();
+    await expect(page.getByText('Power BI Mode')).toBeVisible();
+  });
+
   test('/dashboards redirects guest to /login', async ({ page }) => {
     await page.goto('/dashboards');
     await page.waitForURL('**/login');

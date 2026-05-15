@@ -8,6 +8,7 @@ import { MyDashboardsPage } from './pages/MyDashboardsPage';
 import { SharedDashboardPage } from './pages/SharedDashboardPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { VisualLabPage } from './pages/VisualLabPage';
+import { SpecV2Page } from './pages/SpecV2Page';
 
 const PBIRendererTest = import.meta.env.DEV
   ? lazy(() => import('./pages/PBIRendererTest').then((module) => ({ default: module.PBIRendererTest })))
@@ -32,6 +33,7 @@ function App() {
         <Route path="/share/:shareId" element={<SharedDashboardPage />} />
         {PBIRendererTest && <Route path="/pbi-renderer-test" element={<PBIRendererTest />} />}
         <Route path="/visual-lab" element={<VisualLabPage />} />
+        <Route path="/spec-v2" element={<SpecV2Page />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Suspense>
