@@ -369,6 +369,8 @@ export interface HighlightState {
   values: Set<string>;
 }
 
+export type ExportMode = 'react' | 'powerBi';
+
 export interface DashboardState {
   scenario: Scenario;
   stores: Store[];
@@ -387,9 +389,11 @@ export interface DashboardState {
   items: DashboardItem[];
   selectedItemId: string | null;
   layoutMode: LayoutMode;
+  exportMode: ExportMode;
   selectedArchetype: Archetype;
   setScenario: (scenario: Scenario) => void;
   setLayoutMode: (mode: LayoutMode) => void;
+  setExportMode: (mode: ExportMode) => void;
   setArchetype: (archetype: Archetype) => void;
   setFilter: (column: string, value: any) => void;
   setHighlight: (dimension: string, value: string, ctrlKey?: boolean) => void;

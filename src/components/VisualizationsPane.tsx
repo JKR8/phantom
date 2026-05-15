@@ -22,6 +22,28 @@ import {
   TextTRegular,
   RectangleLandscapeRegular,
 } from '@fluentui/react-icons';
+import type { ExportMode } from '../types';
+
+export type PBISupport = 'safe' | 'approximate' | 'design-only';
+
+export interface VisualDefinition {
+  id: string;
+  icon: any;
+  label: string;
+  tooltip: string;
+  pbiSupport: PBISupport;
+  reactReady: boolean;
+}
+
+export const getSupportLabel = (visual: VisualDefinition, exportMode: ExportMode) => {
+  if (exportMode === 'react') return visual.reactReady ? 'React' : 'Design';
+  if (visual.pbiSupport === 'safe') return 'PBI';
+  if (visual.pbiSupport === 'approximate') return 'PBI~';
+  return 'Design';
+};
+
+export const isVisualAvailableForMode = (visual: VisualDefinition, exportMode: ExportMode) =>
+  exportMode === 'react' ? visual.reactReady : visual.pbiSupport !== 'design-only';
 
 const useStyles = makeStyles({
   container: {
@@ -98,12 +120,12 @@ const useStyles = makeStyles({
  * Universal report-building controls used by the main Visuals pane.
  */
 export const universalVisuals = [
-  { id: 'table', icon: TableRegular, label: 'Table', tooltip: 'Sortable data table' },
-  { id: 'matrix', icon: GridRegular, label: 'Matrix', tooltip: 'Matrix / pivot table' },
-  { id: 'slicer', icon: TextBulletListSquareRegular, label: 'Filter', tooltip: 'Slicer / filter dropdown' },
-  { id: 'textBox', icon: TextTRegular, label: 'Text', tooltip: 'Text box for headers, descriptions, and notes' },
-  { id: 'banner', icon: RectangleLandscapeRegular, label: 'Title', tooltip: 'Banner / title box for report headers' },
-];
+  { id: 'table', icon: TableRegular, label: 'Table', tooltip: 'Sortable data table', pbiSupport: 'safe', reactReady: true },
+  { id: 'matrix', icon: GridRegular, label: 'Matrix', tooltip: 'Matrix / pivot table', pbiSupport: 'safe', reactReady: true },
+  { id: 'slicer', icon: TextBulletListSquareRegular, label: 'Filter', tooltip: 'Slicer / filter dropdown', pbiSupport: 'safe', reactReady: true },
+  { id: 'textBox', icon: TextTRegular, label: 'Text', tooltip: 'Text box for headers, descriptions, and notes', pbiSupport: 'safe', reactReady: true },
+  { id: 'banner', icon: RectangleLandscapeRegular, label: 'Title', tooltip: 'Banner / title box for report headers', pbiSupport: 'safe', reactReady: true },
+] satisfies VisualDefinition[];
 
 /**
  * Visuals pane - analytical chart types first.
@@ -111,7 +133,7 @@ export const universalVisuals = [
  * Universal objects such as tables, matrixes, slicers, text boxes, and banners
  * are rendered in the same main Visuals pane.
  */
-export const pbiUiKitVisuals = [
+const rawPbiUiKitVisuals = [
   // === SEABORN / OBSERVABLE CORE ===
   { id: 'bar', icon: DataBarHorizontalRegular, label: 'Ranked Bar', tooltip: 'Ranked bar chart with polished Plot defaults' },
   { id: 'column', icon: DataHistogramRegular, label: 'Column', tooltip: 'Column chart with compact labels' },
@@ -172,6 +194,19 @@ export const pbiUiKitVisuals = [
   { id: 'waterfall', icon: DataHistogramRegular, label: 'Waterfall', tooltip: '29. Waterfall Chart' },
 ];
 
+const PBI_DESIGN_ONLY_VISUALS = new Set(['histogram', 'boxplot', 'violin', 'regressionScatter', 'barbell', 'slope']);
+const PBI_APPROXIMATE_VISUALS = new Set(['lollipop', 'diverging', 'bullet', 'lineForecast']);
+
+export const pbiUiKitVisuals: VisualDefinition[] = rawPbiUiKitVisuals.map((visual) => ({
+  ...visual,
+  reactReady: true,
+  pbiSupport: PBI_DESIGN_ONLY_VISUALS.has(visual.id)
+    ? 'design-only'
+    : PBI_APPROXIMATE_VISUALS.has(visual.id)
+      ? 'approximate'
+      : 'safe',
+}));
+
 
 // Shared mutable drag state – one object so all modules read/write the same reference
 export const dragState = {
@@ -201,7 +236,7 @@ const scheduleClearDragState = () => {
 
 // Helper to render a visual button
 const VisualButton: React.FC<{
-  visual: { id: string; icon: any; label: string; tooltip: string };
+  visual: VisualDefinition;
   styles: any;
 }> = ({ visual, styles }) => (
   <Tooltip content={visual.tooltip} relationship="label">

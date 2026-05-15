@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { DashboardState, Scenario, DashboardItem, LayoutMode, Archetype, DbDashboard, DashboardSpecification, CanvasAnnotation } from '../types';
+import { DashboardState, Scenario, DashboardItem, LayoutMode, Archetype, DbDashboard, DashboardSpecification, CanvasAnnotation, ExportMode } from '../types';
 import { generateRetailData, generateSaaSData, generateHRData, generateLogisticsData, generatePortfolioData, generateSocialData, generateFinanceData } from '../engine/dataGenerator';
 import { useThemeStore, PALETTES, DEFAULT_PALETTE } from './useThemeStore';
 import { validateVisualProps } from '../validation/visual-props-validator';
@@ -39,6 +39,7 @@ export const useStore = create<DashboardState>((set, get) => ({
   items: initialItems,
   selectedItemId: null,
   layoutMode: 'Free',
+  exportMode: 'react' as ExportMode,
   selectedArchetype: 'Executive',
   // Persistence fields
   dashboardId: null,
@@ -111,6 +112,7 @@ export const useStore = create<DashboardState>((set, get) => ({
     }
   },
   setLayoutMode: (mode: LayoutMode) => set({ layoutMode: mode, isDirty: true }),
+  setExportMode: (mode: ExportMode) => set({ exportMode: mode, isDirty: true }),
   setArchetype: (archetype: Archetype) => set({ selectedArchetype: archetype, isDirty: true }),
   setFilter: (column, value) => {
     set((state) => {
@@ -264,6 +266,7 @@ export const useStore = create<DashboardState>((set, get) => ({
       items: db.items || [],
       filters: db.filters || {},
       layoutMode: (db.layout_mode || 'Free') as LayoutMode,
+      exportMode: (db.specification as any)?.exportMode || 'react',
       selectedItemId: null,
       dashboardId: db.id,
       dashboardName: db.name,
@@ -281,6 +284,7 @@ export const useStore = create<DashboardState>((set, get) => ({
       items: state.items,
       filters: state.filters,
       layoutMode: state.layoutMode,
+      exportMode: state.exportMode,
       themePalette: useThemeStore.getState().activePalette.name,
       specification: state.specification,
       annotations: state.annotations,
@@ -295,6 +299,7 @@ export const useStore = create<DashboardState>((set, get) => ({
       items: initialItems,
       selectedItemId: null,
       layoutMode: 'Free',
+      exportMode: 'react',
       selectedArchetype: 'Executive',
       dashboardId: null,
       dashboardName: 'Untitled Dashboard',
