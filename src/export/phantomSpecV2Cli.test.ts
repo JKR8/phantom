@@ -84,4 +84,70 @@ describe('phantom v0.2 spec CLI', () => {
       await rm(tempDir, { recursive: true, force: true });
     }
   });
+
+  it('appends approval events to Markdown frontmatter through the CLI', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'phantom-v2-approve-'));
+    const firstOut = join(tempDir, 'first.md');
+    const secondOut = join(tempDir, 'second.md');
+
+    try {
+      const first = await execFileAsync(
+        process.execPath,
+        [
+          'tools/phantom-spec-v2-cli.mjs',
+          'approve',
+          specPath,
+          '--role',
+          'approver',
+          '--approver',
+          'A. Approver',
+          '--date',
+          '2026-05-15',
+          '--out',
+          firstOut,
+        ],
+        { cwd: process.cwd() },
+      );
+      expect(JSON.parse(first.stdout).approval).toMatchObject({
+        state: 'pending',
+        approved: false,
+        missingApprovalRoles: ['analytics_owner'],
+      });
+
+      const second = await execFileAsync(
+        process.execPath,
+        [
+          'tools/phantom-spec-v2-cli.mjs',
+          'approve',
+          firstOut,
+          '--role',
+          'analytics_owner',
+          '--approver',
+          'Analytics Lead',
+          '--date',
+          '2026-05-15',
+          '--out',
+          secondOut,
+        ],
+        { cwd: process.cwd() },
+      );
+      expect(JSON.parse(second.stdout).approval).toMatchObject({
+        state: 'approved',
+        approved: true,
+        missingApprovalRoles: [],
+      });
+
+      const inspection = await execFileAsync(
+        process.execPath,
+        ['tools/phantom-spec-v2-cli.mjs', 'inspect', secondOut, 'approval'],
+        { cwd: process.cwd() },
+      );
+      expect(JSON.parse(inspection.stdout).history).toEqual(expect.arrayContaining([
+        expect.objectContaining({ role: 'approver', state: 'approved' }),
+        expect.objectContaining({ role: 'analytics_owner', state: 'approved' }),
+      ]));
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
 });

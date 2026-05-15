@@ -1,4 +1,4 @@
-import { parseDocument } from 'yaml';
+import { parseDocument, stringify } from 'yaml';
 
 export const PHANTOM_V2_SCHEMA_ID = 'phantom.spec.v0.2';
 
@@ -152,6 +152,14 @@ export interface PhantomSpecV2ElicitationPrompt {
   severity: 'info' | 'warning' | 'error';
   prompt: string;
   reason: string;
+}
+
+export interface PhantomSpecV2ApprovalInput {
+  approver: string;
+  role: string;
+  state?: 'approved' | 'rejected' | 'revoked' | 'pending';
+  notes?: string;
+  date?: string;
 }
 
 const requiredBlockIds = [
@@ -773,7 +781,7 @@ export const createPhantomSpecV2ApprovalStatus = (
   const currentVersion = hasText(approval.current_version) ? approval.current_version : undefined;
   const documentVersion = hasText(document.frontmatter.version) ? document.frontmatter.version : undefined;
   const history = asRecords(approval.history);
-  const currentVersionEvent = history.find((event) => event.version === currentVersion);
+  const currentVersionEvent = [...history].reverse().find((event) => event.version === currentVersion);
   const requiredApprovals = stringIds(approval.required_approvals);
   const approvedRoles = new Set(
     history
@@ -859,6 +867,83 @@ export const createPhantomSpecV2ApprovalPack = (
   interactions: asRecords(getBlock(document, 'interactions')?.body.interactions),
   exportTargets: asRecords(getBlock(document, 'export_targets')?.body.exports),
 });
+
+export const applyPhantomSpecV2Approval = (
+  document: PhantomSpecV2Document,
+  input: PhantomSpecV2ApprovalInput,
+) => {
+  if (!hasText(input.approver)) {
+    throw new Error('Approval approver is required.');
+  }
+  if (!hasText(input.role)) {
+    throw new Error('Approval role is required.');
+  }
+
+  const previousApproval = isRecord(document.frontmatter.approval)
+    ? document.frontmatter.approval
+    : {};
+  const currentVersion = hasText(previousApproval.current_version)
+    ? previousApproval.current_version
+    : hasText(document.frontmatter.version) ? document.frontmatter.version : 'unknown';
+  const state = input.state || 'approved';
+  const history = [
+    ...asRecords(previousApproval.history),
+    {
+      version: currentVersion,
+      date: input.date || new Date().toISOString().slice(0, 10),
+      approver: input.approver,
+      role: input.role,
+      state,
+      notes: input.notes || '',
+    },
+  ];
+  const requiredApprovals = stringIds(previousApproval.required_approvals);
+  const approvedRoles = new Set(
+    history
+      .filter((event) => event.version === currentVersion && event.state === 'approved')
+      .map((event) => event.role)
+      .filter((role): role is string => typeof role === 'string' && role.trim().length > 0),
+  );
+  const nextState = state === 'rejected' || state === 'revoked'
+    ? state
+    : requiredApprovals.every((role) => approvedRoles.has(role)) ? 'approved' : 'pending';
+  const frontmatter = {
+    ...document.frontmatter,
+    approval: {
+      ...previousApproval,
+      state: nextState,
+      current_version: currentVersion,
+      history,
+    },
+  };
+  const nextDocument = {
+    ...document,
+    frontmatter,
+  };
+
+  return {
+    frontmatter,
+    approval: createPhantomSpecV2ApprovalStatus(nextDocument),
+  };
+};
+
+export const replacePhantomSpecV2Frontmatter = (
+  markdown: string,
+  frontmatter: Record<string, unknown>,
+) => {
+  const normalized = markdown.replace(/^\uFEFF/, '');
+  const nextFrontmatter = `---\n${stringify(frontmatter).trimEnd()}\n---`;
+  if (!normalized.startsWith('---')) {
+    return `${nextFrontmatter}\n\n${normalized}`;
+  }
+  const closing = normalized.indexOf('\n---', 3);
+  if (closing < 0) {
+    throw new Error('Frontmatter opening marker found without a closing marker.');
+  }
+  const bodyStart = normalized.indexOf('\n', closing + 4);
+  const body = bodyStart >= 0 ? normalized.slice(bodyStart + 1) : '';
+  return `${nextFrontmatter}\n\n${body}`;
+};
 
 export const parseAndValidatePhantomSpecV2Markdown = (markdown: string) => {
   const document = parsePhantomSpecV2Markdown(markdown);

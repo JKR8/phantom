@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
-import { parseDocument } from 'yaml';
+import { parseDocument, stringify } from 'yaml';
 
 const [, , command, specPath, ...args] = process.argv;
 const requiredBlockIds = [
@@ -26,6 +26,7 @@ Usage:
   npm run phantom:spec:v2 -- readiness <spec.md> react|power_bi
   npm run phantom:spec:v2 -- inspect <spec.md> blocks|metrics|accepted-gaps|prompts|approval|exports|all
   npm run phantom:spec:v2 -- export-approval-pack <spec.md> <out.json>
+  npm run phantom:spec:v2 -- approve <spec.md> --role approver --approver "Name" --out <out.md>
 
 Commands operate on Markdown specs with YAML frontmatter and fenced phantom_block YAML sections.
 `);
@@ -288,7 +289,7 @@ const approvalStatus = (document) => {
   const currentVersion = hasText(approval.current_version) ? approval.current_version : undefined;
   const documentVersion = hasText(document.frontmatter.version) ? document.frontmatter.version : undefined;
   const history = asRecords(approval.history);
-  const currentVersionEvent = history.find((event) => event.version === currentVersion);
+  const currentVersionEvent = [...history].reverse().find((event) => event.version === currentVersion);
   const requiredApprovals = stringIds(approval.required_approvals);
   const approvedRoles = new Set(history
     .filter((event) => event.version === currentVersion && event.state === 'approved')
@@ -422,17 +423,79 @@ const approvalPack = (document) => ({
 
 const print = (value) => console.log(JSON.stringify(value, null, 2));
 const normalizeTarget = (value) => (value === 'powerBi' || value === 'power-bi' || value === 'pbi' ? 'power_bi' : value || 'react');
+const optionValue = (name) => {
+  const index = args.indexOf(name);
+  if (index >= 0) return args[index + 1];
+  const npmConfigName = `npm_config_${name.replace(/^--/, '').replace(/-/g, '_')}`;
+  const value = process.env[npmConfigName];
+  return value && value !== 'true' ? value : undefined;
+};
+
+const applyApproval = (document, input) => {
+  if (!hasText(input.approver)) throw new Error('Approval approver is required.');
+  if (!hasText(input.role)) throw new Error('Approval role is required.');
+  const previousApproval = isRecord(document.frontmatter.approval) ? document.frontmatter.approval : {};
+  const currentVersion = hasText(previousApproval.current_version)
+    ? previousApproval.current_version
+    : hasText(document.frontmatter.version) ? document.frontmatter.version : 'unknown';
+  const state = input.state || 'approved';
+  const history = [
+    ...asRecords(previousApproval.history),
+    {
+      version: currentVersion,
+      date: input.date || new Date().toISOString().slice(0, 10),
+      approver: input.approver,
+      role: input.role,
+      state,
+      notes: input.notes || '',
+    },
+  ];
+  const requiredApprovals = stringIds(previousApproval.required_approvals);
+  const approvedRoles = new Set(history
+    .filter((event) => event.version === currentVersion && event.state === 'approved')
+    .map((event) => event.role)
+    .filter((role) => typeof role === 'string' && role.trim().length > 0));
+  const nextState = state === 'rejected' || state === 'revoked'
+    ? state
+    : requiredApprovals.every((role) => approvedRoles.has(role)) ? 'approved' : 'pending';
+  const frontmatter = {
+    ...document.frontmatter,
+    approval: {
+      ...previousApproval,
+      state: nextState,
+      current_version: currentVersion,
+      history,
+    },
+  };
+  const nextDocument = { ...document, frontmatter };
+  return {
+    frontmatter,
+    approval: approvalStatus(nextDocument),
+  };
+};
+
+const replaceFrontmatter = (markdown, frontmatter) => {
+  const normalized = markdown.replace(/^\uFEFF/, '');
+  const nextFrontmatter = `---\n${stringify(frontmatter).trimEnd()}\n---`;
+  if (!normalized.startsWith('---')) return `${nextFrontmatter}\n\n${normalized}`;
+  const closing = normalized.indexOf('\n---', 3);
+  if (closing < 0) throw new Error('Frontmatter opening marker found without a closing marker.');
+  const bodyStart = normalized.indexOf('\n', closing + 4);
+  const body = bodyStart >= 0 ? normalized.slice(bodyStart + 1) : '';
+  return `${nextFrontmatter}\n\n${body}`;
+};
 
 try {
   if (!command || ['help', '--help', '-h'].includes(command)) {
     usage();
     process.exit(0);
   }
-  const validCommands = ['validate', 'summary', 'readiness', 'inspect', 'export-approval-pack'];
+  const validCommands = ['validate', 'summary', 'readiness', 'inspect', 'export-approval-pack', 'approve'];
   if (!validCommands.includes(command)) throw new Error(`Unknown command: ${command}`);
   if (!specPath) throw new Error('Missing spec Markdown path.');
 
-  const document = parseMarkdownSpec(await readFile(resolve(specPath), 'utf8'));
+  const rawMarkdown = await readFile(resolve(specPath), 'utf8');
+  const document = parseMarkdownSpec(rawMarkdown);
   const validation = validate(document);
 
   if (command === 'validate') {
@@ -478,6 +541,25 @@ try {
       approved: pack.approval.approved,
       reactBuildReady: pack.readiness.react.buildReady,
       powerBiBuildReady: pack.readiness.powerBi.buildReady,
+    });
+  }
+  if (command === 'approve') {
+    const role = optionValue('--role') || args[0] || '';
+    const approver = optionValue('--approver') || args[1] || '';
+    const date = optionValue('--date') || args[2];
+    const outPath = optionValue('--out') || args[3];
+    if (!outPath) throw new Error('Missing --out path for approve.');
+    const result = applyApproval(document, {
+      approver,
+      role,
+      state: optionValue('--state') || 'approved',
+      notes: optionValue('--notes') || '',
+      date,
+    });
+    await writeFile(resolve(outPath), replaceFrontmatter(rawMarkdown, result.frontmatter));
+    print({
+      outPath,
+      approval: result.approval,
     });
   }
 } catch (error) {

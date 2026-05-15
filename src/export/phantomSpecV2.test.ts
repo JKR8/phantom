@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  applyPhantomSpecV2Approval,
   createPhantomSpecV2AcceptedGaps,
   createPhantomSpecV2ApprovalPack,
   createPhantomSpecV2ApprovalStatus,
@@ -11,6 +12,7 @@ import {
   PHANTOM_V2_SCHEMA_ID,
   parseAndValidatePhantomSpecV2Markdown,
   parsePhantomSpecV2Markdown,
+  replacePhantomSpecV2Frontmatter,
   scorePhantomSpecV2Readiness,
   validatePhantomSpecV2Document,
 } from './phantomSpecV2';
@@ -248,5 +250,51 @@ describe('phantomSpecV2', () => {
         blockId: 'metrics',
       }),
     ]));
+  });
+
+  it('applies role-aware approval events and serializes updated frontmatter', async () => {
+    const markdown = await readV2Spec();
+    const document = parsePhantomSpecV2Markdown(markdown);
+    const firstApproval = applyPhantomSpecV2Approval(document, {
+      approver: 'A. Approver',
+      role: 'approver',
+      date: '2026-05-15',
+      notes: 'Business owner approved the workshop output.',
+    });
+
+    expect(firstApproval.approval).toMatchObject({
+      state: 'pending',
+      approved: false,
+      missingApprovalRoles: ['analytics_owner'],
+    });
+
+    const withFirstApproval = {
+      ...document,
+      frontmatter: firstApproval.frontmatter,
+    };
+    const secondApproval = applyPhantomSpecV2Approval(withFirstApproval, {
+      approver: 'Analytics Lead',
+      role: 'analytics_owner',
+      date: '2026-05-15',
+      notes: 'Metric definitions accepted for this draft.',
+    });
+
+    expect(secondApproval.approval).toMatchObject({
+      state: 'approved',
+      approved: true,
+      missingApprovalRoles: [],
+    });
+    expect(secondApproval.approval.history).toEqual(expect.arrayContaining([
+      expect.objectContaining({ role: 'approver', state: 'approved' }),
+      expect.objectContaining({ role: 'analytics_owner', state: 'approved' }),
+    ]));
+
+    const updatedMarkdown = replacePhantomSpecV2Frontmatter(markdown, secondApproval.frontmatter);
+    const updatedDocument = parsePhantomSpecV2Markdown(updatedMarkdown);
+    expect(createPhantomSpecV2ApprovalStatus(updatedDocument)).toMatchObject({
+      state: 'approved',
+      approved: true,
+      missingApprovalRoles: [],
+    });
   });
 });
