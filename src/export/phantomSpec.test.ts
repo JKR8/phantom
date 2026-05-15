@@ -52,13 +52,20 @@ describe('phantomSpec', () => {
         },
       ],
       generatedAt: '2026-05-15T00:00:00.000Z',
-      specification: { signOffStatus: 'draft', audience: 'Executives' },
+      specification: {
+        signOffStatus: 'draft',
+        audience: 'Executives',
+        designEntryPoint: 'figma-led',
+        designSources: [{ id: 'figma-1', type: 'figmaFrame', name: 'Executive concept', url: 'https://figma.com/file/example' }],
+      },
     });
 
     expect(spec.specVersion).toBe('0.1.0');
     expect(spec.mode).toBe('react');
     expect(spec.project.scenario).toBe('Retail');
     expect(spec.project.specification.audience).toBe('Executives');
+    expect(spec.project.designEntryPoint).toBe('figma-led');
+    expect(spec.project.designSources[0].type).toBe('figmaFrame');
     expect(spec.views[0].components).toHaveLength(2);
     expect(spec.dataContract.metrics).toEqual(['profit', 'revenue']);
     expect(spec.dataContract.dimensions).toEqual(['Region']);

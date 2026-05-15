@@ -21,6 +21,11 @@ Phantom is an analytics-native design plane, not a generic design tool and not a
 
 Phantom should not compete with Figma for generic product design. Figma is the right default for visual design systems, brand polish, and general UI handoff. Phantom only earns its place when the artifact is analytical: metrics, filters, drill-throughs, data contracts, report constraints, and build readiness matter as much as layout.
 
+The ideal workflow supports two entry points:
+
+- **Figma-led**: design the visual language in Figma, import or link it into Phantom, then use Phantom to add analytical workflow, data contracts, drill-throughs, export target checks, and engineering handoff.
+- **Phantom-led**: skip Figma when speed matters and use Phantom's sensible analytical defaults, templates, and component library to get directly to a build-ready reporting/product spec.
+
 It should understand the concepts that Figma does not natively model and that BI tools often make hard to design collaboratively:
 
 - Business questions
@@ -34,7 +39,7 @@ It should understand the concepts that Figma does not natively model and that BI
 - Build readiness
 - Client approval
 
-Phantom may complement Figma over time by exporting analytics specs, tokens, component references, or implementation packs that sit beside a Figma design system. It should not require teams to abandon Figma.
+Phantom may complement Figma over time by importing design frames, tokens, component references, or screenshots, then attaching analytics-native metadata and implementation contracts. It should not require teams to abandon Figma.
 
 The strongest product promise is:
 

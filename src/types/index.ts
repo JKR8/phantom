@@ -334,6 +334,18 @@ export interface DrillAction {
   notes?: string;
 }
 
+export type DesignSourceType = 'phantomDefault' | 'figmaFrame' | 'figmaComponent' | 'screenshot' | 'externalReference';
+
+export interface DesignSource {
+  id: string;
+  type: DesignSourceType;
+  name: string;
+  url?: string;
+  frameId?: string;
+  componentId?: string;
+  notes?: string;
+}
+
 /**
  * Dashboard specification - captures requirements and context
  */
@@ -354,6 +366,10 @@ export interface DashboardSpecification {
   signOffStatus?: 'draft' | 'in-review' | 'approved';
   /** Build notes for developers */
   buildNotes?: string;
+  /** Whether the project starts from Figma/design references or Phantom defaults */
+  designEntryPoint?: 'figma-led' | 'phantom-led';
+  /** Imported or linked design references */
+  designSources?: DesignSource[];
 }
 
 export interface DashboardSnapshot {

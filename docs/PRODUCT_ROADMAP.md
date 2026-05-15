@@ -35,7 +35,31 @@ Phantom should win only where the design object is analytical and build readines
 - readiness checks
 - agent/API/CLI control
 
+Phantom should support two entry points:
+
+- Figma-led: import or link Figma design frames, screenshots, tokens, and component references, then layer on analytical workflow, data contracts, drill-throughs, readiness checks, and engineering handoff.
+- Phantom-led: skip Figma and use Phantom's sensible analytical defaults, templates, and component library to produce a build-ready spec quickly.
+
 Future Figma integration should be additive: link Phantom analytical specs to Figma design systems, export token/component references, or generate implementation packs that use the client design system.
+
+## Phase 0: Figma Import And Phantom Defaults
+
+Goal: make the product useful whether a client starts in Figma or directly in Phantom.
+
+Required changes:
+
+- Add a Figma import/link concept to the project model.
+- Support imported design references as frames, screenshots, or component/token links.
+- Let imported design references attach to Phantom views and components.
+- Keep Phantom's own default templates and visual system strong enough for teams that skip Figma.
+- Ensure exported specs distinguish visual design references from analytical/data/interaction contracts.
+
+Acceptance criteria:
+
+- A project can record whether it is Figma-led or Phantom-led.
+- A Phantom view can reference a Figma frame/screenshot/design source.
+- Analytics metadata remains editable in Phantom regardless of where the visual design started.
+- React/PBI handoff can include both the design reference and the Phantom analytical spec.
 
 ## Phase 1: Mode System And Component Metadata
 

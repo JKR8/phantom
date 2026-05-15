@@ -1,4 +1,4 @@
-import type { DashboardItem, DashboardSpecification, DrillAction, ExportMode, LayoutMode, Scenario } from '../types';
+import type { DashboardItem, DashboardSpecification, DesignSource, DrillAction, ExportMode, LayoutMode, Scenario } from '../types';
 
 export const PHANTOM_SPEC_VERSION = '0.1.0';
 
@@ -34,6 +34,8 @@ export interface PhantomSpec {
     scenario: Scenario;
     themePalette: string;
     specification: DashboardSpecification;
+    designEntryPoint: 'figma-led' | 'phantom-led';
+    designSources: DesignSource[];
   };
   views: Array<{
     id: string;
@@ -154,6 +156,8 @@ export const createPhantomSpec = (input: {
       scenario: input.scenario,
       themePalette: input.themePalette,
       specification: input.specification || { signOffStatus: 'draft' },
+      designEntryPoint: input.specification?.designEntryPoint || 'phantom-led',
+      designSources: input.specification?.designSources || [],
     },
     views: [
       {

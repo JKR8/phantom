@@ -8,6 +8,11 @@ The UI is for workshops. The API/CLI/spec layer is for agents and engineering au
 
 This is also the clearest distinction from Figma. Figma can own visual design and handoff; Phantom's control surface should own analytics-native structure that agents can reason about: metrics, dimensions, filters, drill-throughs, target constraints, and data contracts.
 
+Agents should be able to operate in either path:
+
+- Figma-led: read Phantom specs that reference Figma frames/tokens/components and generate implementation tasks that combine design references with analytical contracts.
+- Phantom-led: use Phantom's default component metadata, layouts, data contracts, and drill actions without any Figma dependency.
+
 ## Principles
 
 - Every important UI action should eventually have a machine-readable equivalent.

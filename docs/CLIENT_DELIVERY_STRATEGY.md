@@ -30,6 +30,11 @@ The best client-facing offer is a packaged service:
 6. Connect the app to the client's existing data platform through a thin, explicit API/data contract.
 7. Keep commodity/self-service reporting outside Phantom when a client already has a tool for it.
 
+There are two valid workshop entry points:
+
+- Figma-led delivery when the client already has design language, UX designers, or high-brand expectations. Use Figma for visual design, then Phantom for analytics workflow, data contracts, drill-throughs, and build readiness.
+- Phantom-led delivery when speed, clarity, and sensible analytical defaults matter more than bespoke visual design. Use Phantom directly for workshop mockups and implementation handoff.
+
 ## Recommended Architecture
 
 ### Phantom
@@ -38,6 +43,7 @@ Phantom is the design-to-implementation layer.
 
 It should produce:
 
+- Links to any imported Figma frames, screenshots, tokens, or design references.
 - Approved analytical mockups.
 - View/page specs.
 - Component specs.
