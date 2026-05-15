@@ -36,10 +36,12 @@ import { useThemeStore } from '../store/useThemeStore';
 import {
   createPhantomDataContract,
   createPhantomDataContractMarkdown,
+  createPhantomDataContractPack,
   createDesignSourcesMarkdown,
   createPhantomDesignHandoff,
   createPhantomHandoffSummary,
   createPhantomSpec,
+  createPowerBiBuildGuidePack,
   createPowerBiImplementationGuide,
   createPowerBiImplementationGuideMarkdown,
   createReactImplementationBacklog,
@@ -206,12 +208,13 @@ export const ExportButton: React.FC = () => {
     setIsExporting(true);
     try {
       const spec = createCurrentSpec();
-      const contract = createPhantomDataContract(spec);
       const date = new Date().toISOString().split('T')[0];
       const zip = new JSZip();
+      const dataContractPack = createPhantomDataContractPack(spec);
 
-      zip.file('data-contract.json', JSON.stringify(contract, null, 2));
-      zip.file('DATA_CONTRACT.md', createPhantomDataContractMarkdown(contract));
+      Object.entries(dataContractPack.files).forEach(([filename, contents]) => {
+        zip.file(filename, typeof contents === 'string' ? contents : JSON.stringify(contents, null, 2));
+      });
 
       const blob = await zip.generateAsync({ type: 'blob' });
       downloadBlob(blob, `${scenario}_Data_Contract_${date}.zip`);
@@ -227,12 +230,13 @@ export const ExportButton: React.FC = () => {
     setIsExporting(true);
     try {
       const spec = createCurrentSpec();
-      const guide = createPowerBiImplementationGuide(spec);
       const date = new Date().toISOString().split('T')[0];
       const zip = new JSZip();
+      const powerBiPack = createPowerBiBuildGuidePack(spec);
 
-      zip.file('power-bi-implementation-guide.json', JSON.stringify(guide, null, 2));
-      zip.file('POWER_BI_IMPLEMENTATION_GUIDE.md', createPowerBiImplementationGuideMarkdown(guide));
+      Object.entries(powerBiPack.files).forEach(([filename, contents]) => {
+        zip.file(filename, typeof contents === 'string' ? contents : JSON.stringify(contents, null, 2));
+      });
 
       const blob = await zip.generateAsync({ type: 'blob' });
       downloadBlob(blob, `${scenario}_Power_BI_Build_Guide_${date}.zip`);

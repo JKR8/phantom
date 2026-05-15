@@ -210,8 +210,10 @@ The public TypeScript API exports the core spec, readiness, design workflow, and
 - `createPhantomWorkshopIntent`
 - `createPhantomWorkshopIntentCompleteness`
 - `createPhantomDataContract`
+- `createPhantomDataContractPack`
 - `createReactImplementationBacklog`
 - `createReactProductBuildPack`
+- `createPowerBiBuildGuidePack`
 - `createPowerBiImplementationGuide`
 - `createPhantomHandoffSummary`
 

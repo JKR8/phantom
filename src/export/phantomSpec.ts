@@ -161,6 +161,13 @@ export interface PhantomDataContract {
   implementationNotes: string[];
 }
 
+export interface PhantomDataContractPack {
+  files: {
+    'data-contract.json': PhantomDataContract;
+    'DATA_CONTRACT.md': string;
+  };
+}
+
 export interface PhantomPowerBiImplementationGuide {
   guideVersion: '0.1.0';
   sourceSpecVersion: typeof PHANTOM_SPEC_VERSION;
@@ -197,6 +204,13 @@ export interface PhantomPowerBiImplementationGuide {
   }>;
   drillActions: DrillAction[];
   buildChecklist: string[];
+}
+
+export interface PhantomPowerBiBuildGuidePack {
+  files: {
+    'power-bi-implementation-guide.json': PhantomPowerBiImplementationGuide;
+    'POWER_BI_IMPLEMENTATION_GUIDE.md': string;
+  };
 }
 
 export interface PhantomReactImplementationTask {
@@ -1385,6 +1399,20 @@ ${markdownList(contract.implementationNotes)}
 `;
 };
 
+export const createPhantomDataContractPack = (
+  spec: PhantomSpec,
+  generatedAt = new Date().toISOString(),
+): PhantomDataContractPack => {
+  const contract = createPhantomDataContract(spec, generatedAt);
+
+  return {
+    files: {
+      'data-contract.json': contract,
+      'DATA_CONTRACT.md': createPhantomDataContractMarkdown(contract),
+    },
+  };
+};
+
 export const createPowerBiImplementationGuide = (
   spec: PhantomSpec,
   generatedAt = new Date().toISOString(),
@@ -1528,6 +1556,20 @@ ${drillRows || '| None | None | None | None | None | No |'}
 
 ${markdownList(guide.buildChecklist)}
 `;
+};
+
+export const createPowerBiBuildGuidePack = (
+  spec: PhantomSpec,
+  generatedAt = new Date().toISOString(),
+): PhantomPowerBiBuildGuidePack => {
+  const guide = createPowerBiImplementationGuide(spec, generatedAt);
+
+  return {
+    files: {
+      'power-bi-implementation-guide.json': guide,
+      'POWER_BI_IMPLEMENTATION_GUIDE.md': createPowerBiImplementationGuideMarkdown(guide),
+    },
+  };
 };
 
 export const createPhantomHandoffSummary = (spec: PhantomSpec): PhantomHandoffSummary => {

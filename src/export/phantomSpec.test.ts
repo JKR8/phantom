@@ -3,6 +3,7 @@ import {
   checkPhantomReadiness,
   createPhantomDataContract,
   createPhantomDataContractMarkdown,
+  createPhantomDataContractPack,
   createDesignSourcesMarkdown,
   createHandoffNextActions,
   createHandoffRecommendation,
@@ -16,6 +17,7 @@ import {
   createPhantomSpec,
   createPhantomWorkshopIntent,
   createPhantomWorkshopIntentCompleteness,
+  createPowerBiBuildGuidePack,
   createPowerBiImplementationGuide,
   createPowerBiImplementationGuideMarkdown,
   createReactImplementationBacklog,
@@ -1158,6 +1160,34 @@ describe('phantomSpec', () => {
     expect(markdown).toContain('- Sales mart (type: dbt; model: mart_sales; components: visual-1; fields: Region, revenue)');
   });
 
+  it('creates paired data contract pack artifacts for API consumers', () => {
+    const spec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [item({})],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      specification: {
+        businessQuestions: 'Which regions need intervention?',
+      },
+    });
+
+    const pack = createPhantomDataContractPack(spec, '2026-05-15T00:00:00.000Z');
+
+    expect(Object.keys(pack.files)).toEqual(['data-contract.json', 'DATA_CONTRACT.md']);
+    expect(pack.files['data-contract.json']).toMatchObject({
+      contractVersion: '0.1.0',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      workshopIntent: {
+        businessQuestions: 'Which regions need intervention?',
+      },
+    });
+    expect(pack.files['DATA_CONTRACT.md']).toContain('# Retail Data Contract');
+    expect(pack.files['DATA_CONTRACT.md']).toContain('| Region | dimension | visual-1 |');
+  });
+
   it('creates a Power BI implementation guide with readiness and visual statuses', () => {
     const spec = createPhantomSpec({
       scenario: 'Retail',
@@ -1244,5 +1274,45 @@ describe('phantomSpec', () => {
     expect(markdown).toContain('## Workshop Intent');
     expect(markdown).toContain('- Business questions: Which regional variances need action?');
     expect(markdown).toContain('- Acceptance criteria: All unsupported visuals have documented alternatives.');
+  });
+
+  it('creates paired Power BI build guide pack artifacts for API consumers', () => {
+    const spec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [item({ id: 'visual-1', type: 'bar', title: 'Revenue by Region' })],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'powerBi',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      specification: {
+        signOffStatus: 'approved',
+        businessQuestions: 'Which regions are growing?',
+        audience: 'Power BI builders',
+        decisions: 'Prioritise region follow-up.',
+        acceptanceCriteria: 'Report builders can implement the approved view.',
+        grain: 'daily',
+        refreshCadence: 'daily',
+        sourceSystems: 'Snowflake mart',
+      },
+    });
+
+    const pack = createPowerBiBuildGuidePack(spec, '2026-05-15T00:00:00.000Z');
+
+    expect(Object.keys(pack.files)).toEqual(['power-bi-implementation-guide.json', 'POWER_BI_IMPLEMENTATION_GUIDE.md']);
+    expect(pack.files['power-bi-implementation-guide.json']).toMatchObject({
+      guideVersion: '0.1.0',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+      readiness: {
+        target: 'powerBi',
+        ready: true,
+      },
+      summary: {
+        components: 1,
+        readyVisuals: 1,
+      },
+    });
+    expect(pack.files['POWER_BI_IMPLEMENTATION_GUIDE.md']).toContain('# Retail Power BI Implementation Guide');
+    expect(pack.files['POWER_BI_IMPLEMENTATION_GUIDE.md']).toContain('- Ready for Power BI handoff: Yes');
   });
 });
