@@ -59,6 +59,7 @@ npm run phantom:spec -- set-mode path/to/spec.json powerBi path/to/spec.powerbi.
 node tools/phantom-spec-cli.mjs set-mode path/to/spec.json --mode react-product --out path/to/spec.react.json
 node tools/phantom-spec-cli.mjs set-approval path/to/spec.json --status approved --out path/to/spec.approved.json
 node tools/phantom-spec-cli.mjs set-workshop-intent path/to/spec.json --business-questions "Which customers need attention?" --audience "Sales leadership" --decisions "Prioritise account follow-up" --acceptance-criteria "Leaders can identify and drill into priority accounts" --out path/to/spec.with-intent.json
+node tools/phantom-spec-cli.mjs add-drill-action path/to/spec.json --source visual-1 --target-type view --target detail --label "Open detail" --context Region:Region --out path/to/spec.with-drill.json
 npm run phantom:spec -- inspect path/to/spec.json components
 npm run phantom:spec -- inspect path/to/spec.json drill-actions
 npm run phantom:spec -- inspect path/to/spec.json data-requirements
@@ -96,6 +97,8 @@ node tools/phantom-spec-cli.mjs import-data-source path/to/spec.json --type dbt 
 `set-approval` writes a new spec with sign-off status set to `draft`, `in-review`, or `approved`. Use it after client or delivery-lead review to clear the approval portion of the implementation gate in a controlled, diffable spec update.
 
 `set-workshop-intent` writes a new spec with updated workshop intent fields: business questions, audience, decisions/actions, acceptance criteria, and optional build notes. Use it to repair `inspect workshop-intent` or `inspect implementation-gate` blockers from meeting notes before generating React or Power BI handoff artifacts.
+
+`add-drill-action` adds or updates an analytical journey action with a source component, trigger, target type, target id, context mapping, and preserve-filters flag. Use it to turn a workshop statement like "click this KPI/bar/row to open that detail view" into a spec-level interaction that React exports and Power BI build guides can carry forward.
 
 `inspect` returns focused JSON for `components`, `drill-actions`, `data-requirements`, `data-path`, `design-sources`, `design-mapping`, `design-workflow`, `design-handoff`, `approval`, `implementation-gate`, `workshop-intent`, `react-backlog`, `powerbi-build-matrix`, or `handoff-summary`, so agents can query the spec before deciding what to generate or validate.
 
@@ -148,6 +151,7 @@ Future commands should include:
 - `phantom spec set-approval <file> draft|in-review|approved --out <file>` implemented as `npm run phantom:spec -- set-approval <file> approved <out>`
 - `phantom spec set-workshop-intent <file> --business-questions <text> --audience <text> --decisions <text> --acceptance-criteria <text> --out <file>` implemented as `npm run phantom:spec -- set-workshop-intent <file> ...`
 - `phantom spec readiness <file> react|powerBi`
+- `phantom spec add-drill-action <file> --source <component-id> --target-type view --target <view-id> --context <source:target> --out <file>` implemented as `npm run phantom:spec -- add-drill-action <file> ...`
 - `phantom export pbi-report <file> --out <dir>`
 - `phantom export powerbi-guide <file> --out <dir>`
 - `phantom export handoff-pack <file> --out <dir>`

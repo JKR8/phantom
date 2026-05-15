@@ -535,6 +535,69 @@ describe('phantom spec CLI', () => {
     }
   }, 30000);
 
+  it('adds drill actions through the CLI for analytical journeys', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'phantom-add-drill-action-'));
+    const specPath = join(tempDir, 'spec.json');
+    const outPath = join(tempDir, 'spec.with-drill.json');
+    const spec = JSON.parse(JSON.stringify(createReadySpec()));
+    spec.interactions.drillActions = [];
+
+    try {
+      await writeFile(specPath, `${JSON.stringify(spec, null, 2)}\n`);
+      const { stdout } = await execFileAsync(
+        process.execPath,
+        [
+          'tools/phantom-spec-cli.mjs',
+          'add-drill-action',
+          specPath,
+          '--id',
+          'drill-region-detail',
+          '--source',
+          'visual-1',
+          '--trigger',
+          'click',
+          '--target-type',
+          'view',
+          '--target',
+          'detail',
+          '--label',
+          'Open region detail',
+          '--context',
+          'Region:Region,Account:Account',
+          '--out',
+          outPath,
+        ],
+        { cwd: process.cwd() },
+      );
+      const result = JSON.parse(stdout);
+      const nextSpec = JSON.parse(await readFile(outPath, 'utf8'));
+
+      expect(result).toMatchObject({
+        outPath,
+        drillAction: {
+          id: 'drill-region-detail',
+          sourceComponentId: 'visual-1',
+          trigger: 'click',
+          targetType: 'view',
+          targetId: 'detail',
+          label: 'Open region detail',
+          context: [
+            { source: 'Region', target: 'Region' },
+            { source: 'Account', target: 'Account' },
+          ],
+          preserveFilters: true,
+        },
+        readiness: {
+          react: true,
+          powerBi: true,
+        },
+      });
+      expect(nextSpec.interactions.drillActions).toEqual([result.drillAction]);
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  }, 30000);
+
   it('exports Power BI guides with implementation gate context', async () => {
     const tempDir = await mkdtemp(join(tmpdir(), 'phantom-powerbi-guide-'));
     const specPath = join(tempDir, 'spec.json');

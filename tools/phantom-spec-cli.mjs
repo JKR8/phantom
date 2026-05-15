@@ -20,11 +20,13 @@ Usage:
   npm run phantom:spec -- set-mode <spec.json> react|powerBi <out-spec.json>
   npm run phantom:spec -- set-approval <spec.json> approved <out-spec.json>
   npm run phantom:spec -- set-workshop-intent <spec.json> --business-questions "..." --audience "..." --decisions "..." --acceptance-criteria "..." --out <out-spec.json>
+  npm run phantom:spec -- add-drill-action <spec.json> --source visual-1 --target-type view --target detail --context Region:Region --out <out-spec.json>
   npm run phantom:spec -- import-design-source <spec.json> figmaFrame "Client frame" <url> <frame-id> "notes" <out-spec.json>
   npm run phantom:spec -- import-data-source <spec.json> dbt "Orders mart" mart_orders Region,revenue visual-1 <out-spec.json>
   node tools/phantom-spec-cli.mjs set-mode <spec.json> --mode powerBi --out <out-spec.json>
   node tools/phantom-spec-cli.mjs set-approval <spec.json> --status approved --out <out-spec.json>
   node tools/phantom-spec-cli.mjs set-workshop-intent <spec.json> --business-questions "..." --audience "..." --decisions "..." --acceptance-criteria "..." --build-notes "..." --out <out-spec.json>
+  node tools/phantom-spec-cli.mjs add-drill-action <spec.json> --id drill-1 --source visual-1 --trigger click --target-type view --target detail --label "Open detail" --context Region:Region --out <out-spec.json>
   node tools/phantom-spec-cli.mjs import-design-source <spec.json> --type figmaFrame --name "Client frame" --url <url> --frame-id <frame-id> --views main --components kpi-1,chart-1 --out <out-spec.json>
   node tools/phantom-spec-cli.mjs import-data-source <spec.json> --type dbt --name "Orders mart" --model mart_orders --fields Region,revenue --components visual-1 --out <out-spec.json>
 
@@ -41,6 +43,7 @@ Commands:
   set-mode             Write a spec copy switched to React Product or Power BI Mode.
   set-approval         Write a spec copy with updated sign-off status.
   set-workshop-intent  Write a spec copy with updated client workshop intent fields.
+  add-drill-action     Add or update an analytical drill-through/navigation action.
   import-design-source Add or update a Figma/screenshot/reference design source in a spec.
   import-data-source   Add or update an API/warehouse/dbt/semantic/file data source in a spec.
 `);
@@ -382,6 +385,22 @@ const normalizeSignOffStatus = (value) => {
   if (value === 'in-review' || value === 'inReview' || value === 'review') return 'in-review';
   return undefined;
 };
+
+const normalizeDrillTrigger = (value) =>
+  ['click', 'rowClick', 'pointClick', 'markClick'].includes(value) ? value : undefined;
+
+const normalizeDrillTargetType = (value) =>
+  ['view', 'detailPanel', 'modal', 'entityProfile', 'externalUrl'].includes(value) ? value : undefined;
+
+const parseDrillContext = (value) => (value || '')
+  .split(',')
+  .map((item) => item.trim())
+  .filter(Boolean)
+  .map((item) => {
+    const [source, target] = item.split(':').map((part) => part?.trim()).filter(Boolean);
+    return source ? { source, target: target || source } : null;
+  })
+  .filter(Boolean);
 
 const createApprovalStatus = (spec) => {
   const signOffStatus = spec.project?.specification?.signOffStatus || 'draft';
@@ -763,6 +782,83 @@ const setWorkshopIntent = (spec) => {
     outPath: resolve(outPath),
     workshopIntent,
     completeness: createWorkshopIntentCompleteness(workshopIntent),
+    implementationGate: createImplementationGate(nextSpec),
+  };
+};
+
+const addDrillAction = (spec) => {
+  const positional = positionalOptions();
+  const sourceComponentId = optionValue('--source') || optionValue('--source-component') || optionValue('--source-component-id') || positional[0];
+  const targetType = normalizeDrillTargetType(optionValue('--target-type') || positional[1] || 'view');
+  const targetId = optionValue('--target') || optionValue('--target-id') || positional[2];
+  const trigger = normalizeDrillTrigger(optionValue('--trigger') || 'click');
+  const label = optionValue('--label') || `Open ${targetId || 'detail'}`;
+  const context = parseDrillContext(optionValue('--context') || optionValue('--contexts'));
+  const notes = optionValue('--notes');
+  const preserveFilters = args.includes('--no-preserve-filters') || optionValue('--preserve-filters') === 'false'
+    ? false
+    : true;
+  const outPath = optionValue('--out') || positional[positional.length - 1];
+  const id = optionValue('--id') || `drill-${slug(sourceComponentId)}-to-${slug(targetId)}`;
+
+  if (!sourceComponentId) {
+    throw new Error('Missing --source component id for add-drill-action.');
+  }
+  if (!targetType) {
+    throw new Error('Target type must be view, detailPanel, modal, entityProfile, or externalUrl.');
+  }
+  if (!targetId) {
+    throw new Error('Missing --target id for add-drill-action.');
+  }
+  if (!trigger) {
+    throw new Error('Trigger must be click, rowClick, pointClick, or markClick.');
+  }
+  if (!outPath) {
+    throw new Error('Missing --out path for add-drill-action.');
+  }
+
+  const componentIds = new Set((spec.views || []).flatMap((view) => (view.components || []).map((component) => component.id)));
+  if (!componentIds.has(sourceComponentId)) {
+    throw new Error(`Source component does not exist in spec: ${sourceComponentId}.`);
+  }
+  if (targetType === 'view') {
+    const viewIds = new Set((spec.views || []).map((view) => view.id));
+    if (!viewIds.has(targetId)) {
+      throw new Error(`Target view does not exist in spec: ${targetId}.`);
+    }
+  }
+
+  const drillAction = {
+    id,
+    sourceComponentId,
+    trigger,
+    targetType,
+    targetId,
+    label,
+    context,
+    preserveFilters,
+    ...(notes ? { notes } : {}),
+  };
+  const existingActions = spec.interactions?.drillActions || [];
+  const nextSpec = {
+    ...spec,
+    interactions: {
+      ...(spec.interactions || {}),
+      drillActions: [
+        ...existingActions.filter((action) => action.id !== id),
+        drillAction,
+      ],
+    },
+  };
+
+  return {
+    nextSpec,
+    outPath: resolve(outPath),
+    drillAction,
+    readiness: {
+      react: checkReadiness(nextSpec, 'react'),
+      powerBi: checkReadiness(nextSpec, 'powerBi'),
+    },
     implementationGate: createImplementationGate(nextSpec),
   };
 };
@@ -2230,7 +2326,7 @@ try {
     process.exit(0);
   }
 
-  if (!['validate', 'summary', 'diff', 'readiness', 'export-react', 'export-data-contract', 'export-powerbi-guide', 'export-handoff-pack', 'inspect', 'set-mode', 'set-approval', 'set-workshop-intent', 'import-design-source', 'import-data-source'].includes(command)) {
+  if (!['validate', 'summary', 'diff', 'readiness', 'export-react', 'export-data-contract', 'export-powerbi-guide', 'export-handoff-pack', 'inspect', 'set-mode', 'set-approval', 'set-workshop-intent', 'add-drill-action', 'import-design-source', 'import-data-source'].includes(command)) {
     throw new Error(`Unknown command: ${command}`);
   }
 
@@ -2332,6 +2428,24 @@ try {
       outPath,
       workshopIntent,
       completeness,
+      implementationGate,
+    }, null, 2));
+  }
+
+  if (command === 'add-drill-action') {
+    if (errors.length > 0) {
+      console.error(JSON.stringify({ valid: false, errors }, null, 2));
+      process.exit(1);
+    }
+    const { nextSpec, outPath, drillAction, readiness, implementationGate } = addDrillAction(spec);
+    await writeFile(outPath, `${JSON.stringify(nextSpec, null, 2)}\n`);
+    console.log(JSON.stringify({
+      outPath,
+      drillAction,
+      readiness: {
+        react: readiness.react.ready,
+        powerBi: readiness.powerBi.ready,
+      },
       implementationGate,
     }, null, 2));
   }
