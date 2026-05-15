@@ -12,9 +12,11 @@ import {
   Divider,
   Checkbox,
   Textarea,
+  Badge,
 } from '@fluentui/react-components';
 import { AddRegular, DeleteRegular, WarningRegular, ErrorCircleRegular } from '@fluentui/react-icons';
 import { useStore } from '../store/useStore';
+import { getPowerBiExportStatus } from '../export';
 import {
   formatFieldLabel,
   isKnownDimension,
@@ -146,6 +148,30 @@ const useStyles = makeStyles({
     gap: '8px',
     flexWrap: 'wrap',
   },
+  compatibilityGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '8px',
+  },
+  compatibilityCard: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+    ...shorthands.padding('8px'),
+    ...shorthands.border('1px', 'solid', '#E1DFDD'),
+    ...shorthands.borderRadius('6px'),
+    backgroundColor: '#FAFAF9',
+  },
+  compatibilityLabel: {
+    fontSize: '11px',
+    color: '#605E5C',
+    fontWeight: 600,
+  },
+  compatibilityNote: {
+    fontSize: '11px',
+    color: '#605E5C',
+    lineHeight: '1.35',
+  },
 });
 
 // OPERATION_OPTIONS imported from property-inputs
@@ -244,6 +270,7 @@ export const PropertiesPanel: React.FC = () => {
   const updateDrillAction = useStore((s) => s.updateDrillAction);
   const removeDrillAction = useStore((s) => s.removeDrillAction);
   const scenario = useStore((s) => s.scenario) as ScenarioType;
+  const exportMode = useStore((s) => s.exportMode);
 
   const item = items.find((i) => i.id === selectedItemId);
 
@@ -282,6 +309,7 @@ export const PropertiesPanel: React.FC = () => {
   // Use Record<string, any> since this component accesses props dynamically by key
   const props = (item.props || {}) as Record<string, any>;
   const type = item.type;
+  const powerBiSupport = getPowerBiExportStatus(type);
   const validation = item._validation;
   const manualData: Array<{ label: string; value: number }> = (props.manualData as Array<{ label: string; value: number }>) || [];
   const dataSource = props.manualData ? 'manual' : 'auto';
@@ -414,6 +442,12 @@ export const PropertiesPanel: React.FC = () => {
     (opt) => opt.toLowerCase() === props.lineMetric?.toLowerCase()
   );
   const isOrphanedGeoDimension = props.geoDimension && !isKnownDimension(scenario, props.geoDimension);
+  const getSupportColor = (status: string): 'success' | 'warning' | 'danger' | 'informative' => {
+    if (status === 'ready') return 'success';
+    if (status === 'approximate') return 'warning';
+    if (status === 'unsupported') return 'danger';
+    return 'informative';
+  };
 
   return (
     <div className={styles.panel}>
@@ -453,6 +487,32 @@ export const PropertiesPanel: React.FC = () => {
           </Text>
         </div>
       )}
+
+      <Divider />
+
+      {/* Export Compatibility */}
+      <div className={styles.section}>
+        <Text className={styles.sectionHeader}>Export Compatibility</Text>
+        <div className={styles.compatibilityGrid}>
+          <div className={styles.compatibilityCard}>
+            <Text className={styles.compatibilityLabel}>React Product</Text>
+            <Badge appearance="filled" color="success">Ready</Badge>
+            <Text className={styles.compatibilityNote}>Uses production React components or generated stubs.</Text>
+          </div>
+          <div className={styles.compatibilityCard}>
+            <Text className={styles.compatibilityLabel}>Power BI</Text>
+            <Badge appearance="filled" color={getSupportColor(powerBiSupport.status)}>
+              {powerBiSupport.status}
+            </Badge>
+            <Text className={styles.compatibilityNote}>
+              {powerBiSupport.notes[0] || 'Power BI-safe visual/control.'}
+            </Text>
+          </div>
+        </div>
+        <Text className={styles.notesHint}>
+          Current mode: {exportMode === 'react' ? 'React Product' : 'Power BI'}
+        </Text>
+      </div>
 
       <Divider />
 
