@@ -34,10 +34,10 @@ import JSZip from 'jszip';
 import { useStore } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
 import {
-  checkPhantomReadiness,
   createPhantomDataContract,
   createPhantomDataContractMarkdown,
   createDesignSourcesMarkdown,
+  createPhantomHandoffSummary,
   createPhantomSpec,
   createPowerBiImplementationGuide,
   createPowerBiImplementationGuideMarkdown,
@@ -73,40 +73,6 @@ const useStyles = makeStyles({
     }
   },
 });
-
-const getHandoffRecommendation = (reactReady: boolean, powerBiReady: boolean) => {
-  if (reactReady && powerBiReady) {
-    return {
-      target: 'dual-track',
-      guidance: 'Ready for both React Product Mode and Power BI Mode handoff.',
-    };
-  }
-  if (reactReady) {
-    return {
-      target: 'react-product',
-      guidance: 'Use React Product Mode for this handoff; resolve Power BI blockers before treating it as Power BI-ready.',
-    };
-  }
-  if (powerBiReady) {
-    return {
-      target: 'power-bi',
-      guidance: 'Use Power BI Mode for this handoff; resolve React blockers before generating React implementation work.',
-    };
-  }
-  return {
-    target: 'fix-before-handoff',
-    guidance: 'Resolve readiness blockers before using this spec for implementation handoff.',
-  };
-};
-
-const getHandoffNextActions = (
-  reactReadiness: ReturnType<typeof checkPhantomReadiness>,
-  powerBiReadiness: ReturnType<typeof checkPhantomReadiness>,
-) => [
-  ...reactReadiness.errors.map((issue) => `React blocker: ${issue.message}`),
-  ...powerBiReadiness.errors.map((issue) => `Power BI blocker: ${issue.message}`),
-  ...powerBiReadiness.warnings.map((issue) => `Power BI warning: ${issue.message}`),
-];
 
 export const ExportButton: React.FC = () => {
   const styles = useStyles();
@@ -268,9 +234,7 @@ export const ExportButton: React.FC = () => {
       const contract = createPhantomDataContract(spec);
       const powerBiGuide = createPowerBiImplementationGuide(spec);
       const reactBacklog = createReactImplementationBacklog(spec);
-      const reactReadiness = checkPhantomReadiness(spec, 'react');
-      const handoffRecommendation = getHandoffRecommendation(reactReadiness.ready, powerBiGuide.readiness.ready);
-      const nextActions = getHandoffNextActions(reactReadiness, powerBiGuide.readiness);
+      const handoffSummary = createPhantomHandoffSummary(spec);
       const date = new Date().toISOString().split('T')[0];
       const zip = new JSZip();
       const manifest = {
@@ -283,12 +247,9 @@ export const ExportButton: React.FC = () => {
           designEntryPoint: spec.project.designEntryPoint,
           designSources: spec.project.designSources,
         },
-        readiness: {
-          react: reactReadiness,
-          powerBi: powerBiGuide.readiness,
-        },
-        handoffRecommendation,
-        nextActions,
+        readiness: handoffSummary.readiness,
+        handoffRecommendation: handoffSummary.handoffRecommendation,
+        nextActions: handoffSummary.nextActions,
         artifacts: {
           spec: 'phantom-spec.json',
           dataContract: ['data-contract/data-contract.json', 'data-contract/DATA_CONTRACT.md'],

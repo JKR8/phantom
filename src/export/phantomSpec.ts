@@ -181,6 +181,41 @@ export interface PhantomReactImplementationTask {
   workItems: string[];
 }
 
+export type PhantomHandoffTarget = 'dual-track' | 'react-product' | 'power-bi' | 'fix-before-handoff';
+
+export interface PhantomHandoffRecommendation {
+  target: PhantomHandoffTarget;
+  guidance: string;
+}
+
+export interface PhantomHandoffSummary {
+  subject: 'handoff-summary';
+  project: {
+    scenario: Scenario;
+    mode: ExportMode;
+    designEntryPoint: 'figma-led' | 'phantom-led';
+    designSources: DesignSource[];
+  };
+  readiness: {
+    react: PhantomReadinessReport;
+    powerBi: PhantomReadinessReport;
+  };
+  handoffRecommendation: PhantomHandoffRecommendation;
+  counts: {
+    views: number;
+    components: number;
+    fields: number;
+    metrics: number;
+    dimensions: number;
+    drillActions: number;
+    reactImplementationTasks: number;
+    powerBiReadyVisuals: number;
+    powerBiApproximateVisuals: number;
+    powerBiUnsupportedVisuals: number;
+  };
+  nextActions: string[];
+}
+
 export interface PhantomDesignSourceInput {
   id?: string;
   type: DesignSource['type'];
@@ -509,6 +544,43 @@ ${task.workItems.map((item) => `- [ ] ${item}`).join('\n')}`)
     .join('\n\n');
 };
 
+export const createHandoffRecommendation = (
+  reactReady: boolean,
+  powerBiReady: boolean,
+): PhantomHandoffRecommendation => {
+  if (reactReady && powerBiReady) {
+    return {
+      target: 'dual-track',
+      guidance: 'Ready for both React Product Mode and Power BI Mode handoff.',
+    };
+  }
+  if (reactReady) {
+    return {
+      target: 'react-product',
+      guidance: 'Use React Product Mode for this handoff; resolve Power BI blockers before treating it as Power BI-ready.',
+    };
+  }
+  if (powerBiReady) {
+    return {
+      target: 'power-bi',
+      guidance: 'Use Power BI Mode for this handoff; resolve React blockers before generating React implementation work.',
+    };
+  }
+  return {
+    target: 'fix-before-handoff',
+    guidance: 'Resolve readiness blockers before using this spec for implementation handoff.',
+  };
+};
+
+export const createHandoffNextActions = (
+  reactReadiness: PhantomReadinessReport,
+  powerBiReadiness: PhantomReadinessReport,
+) => [
+  ...reactReadiness.errors.map((issue) => `React blocker: ${issue.message}`),
+  ...powerBiReadiness.errors.map((issue) => `Power BI blocker: ${issue.message}`),
+  ...powerBiReadiness.warnings.map((issue) => `Power BI warning: ${issue.message}`),
+];
+
 export const createPhantomDataContract = (
   spec: PhantomSpec,
   generatedAt = new Date().toISOString(),
@@ -723,6 +795,42 @@ ${drillRows || '| None | None | None | None | None | No |'}
 
 ${markdownList(guide.buildChecklist)}
 `;
+};
+
+export const createPhantomHandoffSummary = (spec: PhantomSpec): PhantomHandoffSummary => {
+  const contract = createPhantomDataContract(spec);
+  const reactBacklog = createReactImplementationBacklog(spec);
+  const powerBiGuide = createPowerBiImplementationGuide(spec);
+  const reactReadiness = checkPhantomReadiness(spec, 'react');
+  const handoffRecommendation = createHandoffRecommendation(reactReadiness.ready, powerBiGuide.readiness.ready);
+
+  return {
+    subject: 'handoff-summary',
+    project: {
+      scenario: spec.project.scenario,
+      mode: spec.mode,
+      designEntryPoint: spec.project.designEntryPoint,
+      designSources: spec.project.designSources,
+    },
+    readiness: {
+      react: reactReadiness,
+      powerBi: powerBiGuide.readiness,
+    },
+    handoffRecommendation,
+    counts: {
+      views: spec.views.length,
+      components: getSpecComponents(spec).length,
+      fields: contract.fields.length,
+      metrics: contract.metrics.length,
+      dimensions: contract.dimensions.length,
+      drillActions: spec.interactions.drillActions.length,
+      reactImplementationTasks: reactBacklog.length,
+      powerBiReadyVisuals: powerBiGuide.summary.readyVisuals,
+      powerBiApproximateVisuals: powerBiGuide.summary.approximateVisuals,
+      powerBiUnsupportedVisuals: powerBiGuide.summary.unsupportedVisuals,
+    },
+    nextActions: createHandoffNextActions(reactReadiness, powerBiGuide.readiness),
+  };
 };
 
 export const checkPhantomReadiness = (spec: PhantomSpec, target: ExportMode = spec.mode): PhantomReadinessReport => {

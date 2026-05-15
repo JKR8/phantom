@@ -4,6 +4,9 @@ import {
   createPhantomDataContract,
   createPhantomDataContractMarkdown,
   createDesignSourcesMarkdown,
+  createHandoffNextActions,
+  createHandoffRecommendation,
+  createPhantomHandoffSummary,
   createPhantomSpec,
   createPowerBiImplementationGuide,
   createPowerBiImplementationGuideMarkdown,
@@ -201,6 +204,39 @@ describe('phantomSpec', () => {
     expect(markdown).toContain('### Profit Distribution');
     expect(markdown).toContain('- [ ] Apply linked design-source guidance for visual fidelity.');
     expect(markdown).toContain('- Power BI compatibility: unsupported');
+  });
+
+  it('creates a handoff summary with recommendation and next actions', () => {
+    const spec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [
+        item({}),
+        item({ id: 'visual-2', type: 'boxplot', title: 'Profit Distribution', props: { metric: 'profit' } }),
+      ],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'react',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+    });
+
+    const summary = createPhantomHandoffSummary(spec);
+
+    expect(createHandoffRecommendation(true, true).target).toBe('dual-track');
+    expect(createHandoffRecommendation(true, false).target).toBe('react-product');
+    expect(summary.handoffRecommendation.target).toBe('react-product');
+    expect(summary.readiness.react.ready).toBe(true);
+    expect(summary.readiness.powerBi.ready).toBe(false);
+    expect(summary.counts).toMatchObject({
+      components: 2,
+      fields: 3,
+      reactImplementationTasks: 2,
+      powerBiUnsupportedVisuals: 1,
+    });
+    expect(summary.nextActions).toContain(
+      'Power BI blocker: Profit Distribution is design-only and cannot be treated as Power BI-ready.',
+    );
+    expect(createHandoffNextActions(summary.readiness.react, summary.readiness.powerBi)).toEqual(summary.nextActions);
   });
 
   it('replaces design sources by id instead of duplicating them', () => {
