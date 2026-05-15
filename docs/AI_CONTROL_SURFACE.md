@@ -111,8 +111,9 @@ The public TypeScript API should expose:
 - `createPhantomSpec`
 - `validatePhantomSpec`
 - `summarizePhantomSpec`
-- `checkReactReadiness`
-- `checkPowerBiReadiness`
+- `checkPhantomReadiness`
+- `createPhantomDataContract`
+- `createPowerBiImplementationGuide`
 - `generateReactStarter`
 - `generatePowerBiImplementationPack`
 - `generateDataContract`

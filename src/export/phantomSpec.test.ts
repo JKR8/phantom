@@ -8,6 +8,8 @@ import {
   createPowerBiImplementationGuideMarkdown,
   getComponentDataRequirements,
   getPowerBiExportStatus,
+  summarizePhantomSpec,
+  validatePhantomSpec,
 } from './phantomSpec';
 import type { DashboardItem } from '../types';
 
@@ -80,6 +82,52 @@ describe('phantomSpec', () => {
     expect(spec.dataContract.dimensions).toEqual(['Region']);
     expect(spec.views[0].components[1].exportTargets.powerBi.status).toBe('unsupported');
     expect(spec.interactions.drillActions[0].targetId).toBe('region-detail');
+  });
+
+  it('validates and summarizes Phantom specs for API consumers', () => {
+    const spec = createPhantomSpec({
+      scenario: 'Retail',
+      items: [
+        item({}),
+        item({ id: 'visual-2', type: 'lollipop', title: 'Ranking', props: { dimension: 'Region', metric: 'profit' } }),
+      ],
+      filters: {},
+      layoutMode: 'Free',
+      exportMode: 'powerBi',
+      themePalette: 'Default',
+      generatedAt: '2026-05-15T00:00:00.000Z',
+    });
+
+    expect(validatePhantomSpec(spec)).toEqual({ valid: true, errors: [] });
+    expect(summarizePhantomSpec(spec)).toEqual({
+      specVersion: '0.1.0',
+      mode: 'powerBi',
+      scenario: 'Retail',
+      views: 1,
+      components: 2,
+      metrics: ['profit', 'revenue'],
+      dimensions: ['Region'],
+      powerBi: {
+        ready: 1,
+        approximate: 1,
+      },
+    });
+  });
+
+  it('reports validation errors for malformed Phantom specs', () => {
+    const result = validatePhantomSpec({
+      specVersion: '0.1.0',
+      mode: 'unknown',
+      project: {},
+      views: [{ id: 'main', components: [{ id: 'visual-1' }] }],
+      dataContract: { metrics: [] },
+    });
+
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('mode must be react or powerBi.');
+    expect(result.errors).toContain('project.scenario is required.');
+    expect(result.errors).toContain('views[0].components[0].type is required.');
+    expect(result.errors).toContain('dataContract.dimensions must be an array.');
   });
 
   it('reports Power BI readiness blockers and warnings', () => {

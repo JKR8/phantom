@@ -80,6 +80,22 @@ export interface PhantomReadinessReport {
   warnings: PhantomReadinessIssue[];
 }
 
+export interface PhantomSpecValidationResult {
+  valid: boolean;
+  errors: string[];
+}
+
+export interface PhantomSpecSummary {
+  specVersion?: string;
+  mode?: string;
+  scenario?: string;
+  views: number;
+  components: number;
+  metrics: string[];
+  dimensions: string[];
+  powerBi: Record<string, number>;
+}
+
 export interface PhantomDataContractField {
   name: string;
   kind: 'metric' | 'dimension' | 'field';
@@ -279,6 +295,68 @@ export const createPhantomSpec = (input: {
 };
 
 const getSpecComponents = (spec: PhantomSpec) => spec.views.flatMap((view) => view.components);
+
+const pushValidationError = (condition: boolean, message: string, errors: string[]) => {
+  if (!condition) errors.push(message);
+};
+
+export const validatePhantomSpec = (spec: unknown): PhantomSpecValidationResult => {
+  const errors: string[] = [];
+  const candidate = spec as Partial<PhantomSpec> | null;
+
+  pushValidationError(!!candidate && typeof candidate === 'object', 'Spec must be a JSON object.', errors);
+  if (!candidate || typeof candidate !== 'object') {
+    return { valid: false, errors };
+  }
+
+  pushValidationError(typeof candidate.specVersion === 'string', 'specVersion is required.', errors);
+  pushValidationError(candidate.mode === 'react' || candidate.mode === 'powerBi', 'mode must be react or powerBi.', errors);
+  pushValidationError(!!candidate.project && typeof candidate.project === 'object', 'project is required.', errors);
+  pushValidationError(typeof candidate.project?.scenario === 'string', 'project.scenario is required.', errors);
+  pushValidationError(Array.isArray(candidate.views), 'views must be an array.', errors);
+  pushValidationError((candidate.views?.length || 0) > 0, 'At least one view is required.', errors);
+
+  for (const [viewIndex, view] of (candidate.views || []).entries()) {
+    pushValidationError(typeof view.id === 'string', `views[${viewIndex}].id is required.`, errors);
+    pushValidationError(Array.isArray(view.components), `views[${viewIndex}].components must be an array.`, errors);
+    for (const [componentIndex, component] of (view.components || []).entries()) {
+      const prefix = `views[${viewIndex}].components[${componentIndex}]`;
+      pushValidationError(typeof component.id === 'string', `${prefix}.id is required.`, errors);
+      pushValidationError(typeof component.type === 'string', `${prefix}.type is required.`, errors);
+      pushValidationError(!!component.layout && typeof component.layout === 'object', `${prefix}.layout is required.`, errors);
+      pushValidationError(!!component.dataRequirements && typeof component.dataRequirements === 'object', `${prefix}.dataRequirements is required.`, errors);
+      pushValidationError(!!component.exportTargets?.react?.status, `${prefix}.exportTargets.react.status is required.`, errors);
+      pushValidationError(!!component.exportTargets?.powerBi?.status, `${prefix}.exportTargets.powerBi.status is required.`, errors);
+    }
+  }
+
+  pushValidationError(!!candidate.dataContract && typeof candidate.dataContract === 'object', 'dataContract is required.', errors);
+  pushValidationError(Array.isArray(candidate.dataContract?.metrics), 'dataContract.metrics must be an array.', errors);
+  pushValidationError(Array.isArray(candidate.dataContract?.dimensions), 'dataContract.dimensions must be an array.', errors);
+  pushValidationError(Array.isArray(candidate.dataContract?.fields), 'dataContract.fields must be an array.', errors);
+
+  return { valid: errors.length === 0, errors };
+};
+
+export const summarizePhantomSpec = (spec: PhantomSpec): PhantomSpecSummary => {
+  const components = getSpecComponents(spec);
+  const powerBi = components.reduce<Record<string, number>>((acc, component) => {
+    const status = component.exportTargets.powerBi.status || 'unknown';
+    acc[status] = (acc[status] || 0) + 1;
+    return acc;
+  }, {});
+
+  return {
+    specVersion: spec.specVersion,
+    mode: spec.mode,
+    scenario: spec.project.scenario,
+    views: spec.views.length,
+    components: components.length,
+    metrics: spec.dataContract.metrics,
+    dimensions: spec.dataContract.dimensions,
+    powerBi,
+  };
+};
 
 const getDataContractFieldKind = (spec: PhantomSpec, field: string): PhantomDataContractField['kind'] => {
   if (spec.dataContract.metrics.includes(field)) return 'metric';
