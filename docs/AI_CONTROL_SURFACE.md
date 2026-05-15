@@ -154,7 +154,7 @@ The browser export menu also provides workshop-friendly implementation exports:
 
 - `Handoff Pack (.zip)` bundles the canonical spec, handoff summary, implementation gate, design handoff, data contract, Power BI guide, React implementation notes, and a machine-readable manifest.
 - `React Product Build Pack` creates a React-focused zip with `phantom-spec.json`, `phantom-data-contract.json`, `design-handoff.json`, `implementation-gate.json`, `react-implementation-backlog.json`, `REACT_IMPLEMENTATION_BACKLOG.md`, `REACT_IMPLEMENTATION_NOTES.md`, and `REACT_BUILD_MANIFEST.json`. The CLI equivalent is `export-react-build-pack`.
-- `Power BI Build Guide` creates the Power BI implementation guide artifacts for constrained Power BI Mode delivery.
+- `Power BI Build Guide` creates a zip with `power-bi-implementation-guide.json` and `POWER_BI_IMPLEMENTATION_GUIDE.md` for constrained Power BI Mode delivery.
 
 Use the CLI `export-handoff-pack` when a runnable React starter folder is required.
 

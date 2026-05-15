@@ -219,14 +219,25 @@ export const ExportButton: React.FC = () => {
     );
   };
 
-  const handlePowerBiGuideExport = () => {
-    const spec = createCurrentSpec();
-    const guide = createPowerBiImplementationGuide(spec);
-    downloadTextFile(
-      createPowerBiImplementationGuideMarkdown(guide),
-      `${scenario}_Power_BI_Implementation_Guide_${new Date().toISOString().split('T')[0]}.md`,
-      'text/markdown',
-    );
+  const handlePowerBiGuideExport = async () => {
+    setIsExporting(true);
+    try {
+      const spec = createCurrentSpec();
+      const guide = createPowerBiImplementationGuide(spec);
+      const date = new Date().toISOString().split('T')[0];
+      const zip = new JSZip();
+
+      zip.file('power-bi-implementation-guide.json', JSON.stringify(guide, null, 2));
+      zip.file('POWER_BI_IMPLEMENTATION_GUIDE.md', createPowerBiImplementationGuideMarkdown(guide));
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      downloadBlob(blob, `${scenario}_Power_BI_Build_Guide_${date}.zip`);
+    } catch (error) {
+      console.error('Power BI build guide export failed:', error);
+      alert('Power BI build guide export failed. Please try again.');
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleReactBuildPackExport = async () => {
