@@ -314,7 +314,7 @@ export const PropertiesPanel: React.FC = () => {
   const manualData: Array<{ label: string; value: number }> = (props.manualData as Array<{ label: string; value: number }>) || [];
   const dataSource = props.manualData ? 'manual' : 'auto';
   const drillAction = drillActions.find((action) => action.sourceComponentId === item.id);
-  const drillContext = drillAction?.context[0];
+  const drillContexts = drillAction?.context || [];
 
   const setDataSource = (source: string) => {
     if (source === 'manual') {
@@ -363,14 +363,33 @@ export const PropertiesPanel: React.FC = () => {
     if (drillAction) updateDrillAction(drillAction.id, updates);
   };
 
-  const updateDrillContext = (field: 'source' | 'target', value: string) => {
-    const currentContext = drillContext || { source: defaultContextField, target: defaultContextField };
+  const updateDrillContext = (index: number, field: 'source' | 'target', value: string) => {
+    const nextContexts = drillContexts.length
+      ? [...drillContexts]
+      : [{ source: defaultContextField, target: defaultContextField }];
+    const currentContext = nextContexts[index] || { source: '', target: '' };
     const nextContext = {
       ...currentContext,
       [field]: value,
     };
+    nextContexts[index] = nextContext;
     updateSelectedDrillAction({
-      context: nextContext.source || nextContext.target ? [nextContext] : [],
+      context: nextContexts.filter((context) => context.source || context.target),
+    });
+  };
+
+  const addDrillContext = () => {
+    updateSelectedDrillAction({
+      context: [
+        ...drillContexts,
+        { source: defaultContextField, target: defaultContextField },
+      ],
+    });
+  };
+
+  const removeDrillContext = (index: number) => {
+    updateSelectedDrillAction({
+      context: drillContexts.filter((_, contextIndex) => contextIndex !== index),
     });
   };
 
@@ -1316,25 +1335,50 @@ export const PropertiesPanel: React.FC = () => {
               />
             </div>
 
-            <div className={styles.dataRow}>
-              <div className={`${styles.fieldRow} ${styles.dataInput}`}>
-                <Label className={styles.fieldLabel}>Context Field</Label>
-                <Input
-                  size="small"
-                  placeholder="Region"
-                  value={drillContext?.source || ''}
-                  onChange={(_, d) => updateDrillContext('source', d.value)}
-                />
-              </div>
-              <div className={`${styles.fieldRow} ${styles.dataInput}`}>
-                <Label className={styles.fieldLabel}>Target Param</Label>
-                <Input
-                  size="small"
-                  placeholder="region"
-                  value={drillContext?.target || ''}
-                  onChange={(_, d) => updateDrillContext('target', d.value)}
-                />
-              </div>
+            <div className={styles.fieldRow}>
+              <Label className={styles.fieldLabel}>Context Mapping</Label>
+              {(drillContexts.length ? drillContexts : [{ source: '', target: '' }]).map((context, index) => (
+                <div className={styles.dataRow} key={`drill-context-${index}`}>
+                  <div className={`${styles.fieldRow} ${styles.dataInput}`}>
+                    <Input
+                      size="small"
+                      aria-label={`Context source ${index + 1}`}
+                      placeholder="Region"
+                      value={context.source || ''}
+                      onChange={(_, d) => updateDrillContext(index, 'source', d.value)}
+                    />
+                  </div>
+                  <div className={`${styles.fieldRow} ${styles.dataInput}`}>
+                    <Input
+                      size="small"
+                      aria-label={`Context target ${index + 1}`}
+                      placeholder="region"
+                      value={context.target || ''}
+                      onChange={(_, d) => updateDrillContext(index, 'target', d.value)}
+                    />
+                  </div>
+                  <Button
+                    appearance="subtle"
+                    icon={<DeleteRegular />}
+                    size="small"
+                    disabled={drillContexts.length === 0}
+                    onClick={() => removeDrillContext(index)}
+                    aria-label={`Remove context mapping ${index + 1}`}
+                  />
+                </div>
+              ))}
+              <Button
+                appearance="secondary"
+                icon={<AddRegular />}
+                size="small"
+                className={styles.addButton}
+                onClick={addDrillContext}
+              >
+                Add Context Mapping
+              </Button>
+              <Text className={styles.notesHint}>
+                Pass multiple values such as region, account, date, or active entity into the target view.
+              </Text>
             </div>
 
             <Checkbox
