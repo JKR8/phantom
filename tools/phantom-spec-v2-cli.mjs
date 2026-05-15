@@ -26,6 +26,8 @@ Usage:
   npm run phantom:spec:v2 -- readiness <spec.md> react|power_bi
   npm run phantom:spec:v2 -- inspect <spec.md> blocks|metrics|accepted-gaps|prompts|approval|exports|all
   npm run phantom:spec:v2 -- export-approval-pack <spec.md> <out.json>
+  npm run phantom:spec:v2 -- export-react-pack <spec.md> <out.json>
+  npm run phantom:spec:v2 -- export-powerbi-pack <spec.md> <out.json>
   npm run phantom:spec:v2 -- approve <spec.md> --role approver --approver "Name" --out <out.md>
 
 Commands operate on Markdown specs with YAML frontmatter and fenced phantom_block YAML sections.
@@ -421,6 +423,105 @@ const approvalPack = (document) => ({
   exportTargets: asRecords(getBlock(document, 'export_targets')?.body.exports),
 });
 
+const slugPath = (value) => `/${String(value || 'page')
+  .toLowerCase()
+  .replace(/[^a-z0-9]+/g, '-')
+  .replace(/^-+|-+$/g, '') || 'page'}`;
+
+const stringList = (value) => (Array.isArray(value) ? value.filter((item) => typeof item === 'string') : []);
+
+const componentContracts = (document) => {
+  const prompts = elicitationPrompts(document);
+  return asRecords(getBlock(document, 'component_instances')?.body.components)
+    .map((component) => {
+      const id = hasText(component.id) ? component.id : 'unknown_component';
+      return {
+        id,
+        pageId: hasText(component.page_id) ? component.page_id : undefined,
+        type: hasText(component.type) ? component.type : undefined,
+        title: hasText(component.title) ? component.title : undefined,
+        bindings: isRecord(component.bindings) ? component.bindings : {},
+        renderTargets: isRecord(component.render_targets) ? component.render_targets : {},
+        acceptance: stringList(component.acceptance),
+        unresolvedPrompts: prompts.filter((prompt) => prompt.objectType === 'component' && prompt.objectId === id),
+      };
+    });
+};
+
+const dataContractExport = (document, generatedAt = new Date().toISOString()) => {
+  const dataContract = getBlock(document, 'data_contract_preview')?.body.data_contract;
+  return {
+    generatedAt,
+    derivation: isRecord(dataContract) && hasText(dataContract.derivation) ? dataContract.derivation : undefined,
+    fields: dataFields(document),
+    metrics: metricRegistry(document),
+    acceptedGaps: acceptedGaps(document),
+    unresolvedPrompts: elicitationPrompts(document),
+  };
+};
+
+const reactPack = (document, generatedAt = new Date().toISOString()) => {
+  const pages = asRecords(getBlock(document, 'pages')?.body.pages);
+  const ready = readiness(document, 'react');
+  return {
+    generatedAt,
+    target: 'react',
+    buildReady: ready.buildReady,
+    readiness: ready,
+    summary: summary(document, 'react'),
+    pages,
+    components: componentContracts(document),
+    dataContract: dataContractExport(document, generatedAt),
+    routeManifest: pages.map((page, index) => {
+      const id = hasText(page.id) ? page.id : `page_${index + 1}`;
+      return {
+        id,
+        title: hasText(page.title) ? page.title : undefined,
+        path: index === 0 ? '/' : slugPath(page.title || id),
+        componentIds: stringList(page.components),
+      };
+    }),
+    implementationNotes: [
+      'Use this pack as a React Product Mode implementation contract, not a generated finished application.',
+      'Do not treat buildReady as true until all readiness gates pass.',
+      'Resolve unresolvedPrompts before asking stakeholders to approve a final build version.',
+    ],
+  };
+};
+
+const powerBiPack = (document, generatedAt = new Date().toISOString()) => {
+  const ready = readiness(document, 'power_bi');
+  return {
+    generatedAt,
+    target: 'power_bi',
+    buildReady: ready.buildReady,
+    readiness: ready,
+    summary: summary(document, 'power_bi'),
+    visualBuildMatrix: componentContracts(document).map((component) => {
+      const status = component.renderTargets.power_bi;
+      const fallbackRequired = status === 'design_only' || status === 'pbi_approximate';
+      return {
+        componentId: component.id,
+        title: component.title,
+        type: component.type,
+        powerBiStatus: status,
+        guidance: status === 'pbi_safe'
+          ? 'Build with native Power BI visual behavior.'
+          : status === 'pbi_approximate'
+            ? 'Build with native Power BI approximation and document the fallback behavior.'
+            : 'Keep as design guidance or custom implementation outside native Power BI.',
+        fallbackRequired,
+      };
+    }),
+    acceptedGaps: acceptedGaps(document),
+    constraints: [
+      'Power BI Mode is a constrained implementation guide, not a promise of visual parity.',
+      'Components marked design_only require explicit accepted gap or fallback notes.',
+      'Drill, filter, and approval semantics must remain traceable to the v0.2 spec.',
+    ],
+  };
+};
+
 const print = (value) => console.log(JSON.stringify(value, null, 2));
 const normalizeTarget = (value) => (value === 'powerBi' || value === 'power-bi' || value === 'pbi' ? 'power_bi' : value || 'react');
 const optionValue = (name) => {
@@ -490,7 +591,16 @@ try {
     usage();
     process.exit(0);
   }
-  const validCommands = ['validate', 'summary', 'readiness', 'inspect', 'export-approval-pack', 'approve'];
+  const validCommands = [
+    'validate',
+    'summary',
+    'readiness',
+    'inspect',
+    'export-approval-pack',
+    'export-react-pack',
+    'export-powerbi-pack',
+    'approve',
+  ];
   if (!validCommands.includes(command)) throw new Error(`Unknown command: ${command}`);
   if (!specPath) throw new Error('Missing spec Markdown path.');
 
@@ -541,6 +651,33 @@ try {
       approved: pack.approval.approved,
       reactBuildReady: pack.readiness.react.buildReady,
       powerBiBuildReady: pack.readiness.powerBi.buildReady,
+    });
+  }
+  if (command === 'export-react-pack') {
+    const outPath = args[0];
+    if (!outPath) throw new Error('Missing output path for export-react-pack.');
+    const pack = reactPack(document);
+    await writeFile(resolve(outPath), `${JSON.stringify(pack, null, 2)}\n`);
+    print({
+      outPath,
+      target: pack.target,
+      buildReady: pack.buildReady,
+      pages: pack.pages.length,
+      components: pack.components.length,
+      unresolvedPrompts: pack.dataContract.unresolvedPrompts.length,
+    });
+  }
+  if (command === 'export-powerbi-pack') {
+    const outPath = args[0];
+    if (!outPath) throw new Error('Missing output path for export-powerbi-pack.');
+    const pack = powerBiPack(document);
+    await writeFile(resolve(outPath), `${JSON.stringify(pack, null, 2)}\n`);
+    print({
+      outPath,
+      target: pack.target,
+      buildReady: pack.buildReady,
+      visuals: pack.visualBuildMatrix.length,
+      fallbackRequired: pack.visualBuildMatrix.filter((visual) => visual.fallbackRequired).length,
     });
   }
   if (command === 'approve') {

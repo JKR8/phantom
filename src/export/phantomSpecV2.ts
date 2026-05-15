@@ -141,6 +141,62 @@ export interface PhantomSpecV2ApprovalPack {
   exportTargets: Record<string, unknown>[];
 }
 
+export interface PhantomSpecV2ComponentContract {
+  id: string;
+  pageId?: string;
+  type?: string;
+  title?: string;
+  bindings: Record<string, unknown>;
+  renderTargets: Record<string, unknown>;
+  acceptance: string[];
+  unresolvedPrompts: PhantomSpecV2ElicitationPrompt[];
+}
+
+export interface PhantomSpecV2DataContractExport {
+  generatedAt: string;
+  derivation?: string;
+  fields: Record<string, unknown>[];
+  metrics: PhantomSpecV2MetricRegistryEntry[];
+  acceptedGaps: PhantomSpecV2AcceptedGap[];
+  unresolvedPrompts: PhantomSpecV2ElicitationPrompt[];
+}
+
+export interface PhantomSpecV2ReactProductExport {
+  generatedAt: string;
+  target: 'react';
+  buildReady: boolean;
+  readiness: PhantomSpecV2ReadinessScore;
+  summary: PhantomSpecV2Summary;
+  pages: Record<string, unknown>[];
+  components: PhantomSpecV2ComponentContract[];
+  dataContract: PhantomSpecV2DataContractExport;
+  routeManifest: Array<{
+    id: string;
+    title?: string;
+    path: string;
+    componentIds: string[];
+  }>;
+  implementationNotes: string[];
+}
+
+export interface PhantomSpecV2PowerBiExport {
+  generatedAt: string;
+  target: 'power_bi';
+  buildReady: boolean;
+  readiness: PhantomSpecV2ReadinessScore;
+  summary: PhantomSpecV2Summary;
+  visualBuildMatrix: Array<{
+    componentId: string;
+    title?: string;
+    type?: string;
+    powerBiStatus?: unknown;
+    guidance: string;
+    fallbackRequired: boolean;
+  }>;
+  acceptedGaps: PhantomSpecV2AcceptedGap[];
+  constraints: string[];
+}
+
 export interface PhantomSpecV2ElicitationPrompt {
   id: string;
   ruleId?: string;
@@ -491,7 +547,7 @@ const approvalGate = (document: PhantomSpecV2Document): PhantomSpecV2ReadinessGa
   const state = approval.state;
   const currentVersion = approval.current_version;
   const history = asRecords(approval.history);
-  const currentApproval = history.find((event) => event.version === currentVersion);
+  const currentApproval = [...history].reverse().find((event) => event.version === currentVersion);
   const passed = state === 'approved'
     && currentApproval?.state === 'approved'
     && hasText(currentApproval.approver);
@@ -867,6 +923,124 @@ export const createPhantomSpecV2ApprovalPack = (
   interactions: asRecords(getBlock(document, 'interactions')?.body.interactions),
   exportTargets: asRecords(getBlock(document, 'export_targets')?.body.exports),
 });
+
+const slugPath = (value: unknown) =>
+  `/${String(value || 'page')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '') || 'page'}`;
+
+const stringList = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : [];
+
+const createComponentContracts = (
+  document: PhantomSpecV2Document,
+): PhantomSpecV2ComponentContract[] => {
+  const prompts = createPhantomSpecV2ElicitationPrompts(document);
+  return asRecords(getBlock(document, 'component_instances')?.body.components)
+    .map((component) => {
+      const id = hasText(component.id) ? component.id : 'unknown_component';
+      return {
+        id,
+        pageId: hasText(component.page_id) ? component.page_id : undefined,
+        type: hasText(component.type) ? component.type : undefined,
+        title: hasText(component.title) ? component.title : undefined,
+        bindings: isRecord(component.bindings) ? component.bindings : {},
+        renderTargets: isRecord(component.render_targets) ? component.render_targets : {},
+        acceptance: stringList(component.acceptance),
+        unresolvedPrompts: prompts.filter((prompt) =>
+          prompt.objectType === 'component' && prompt.objectId === id,
+        ),
+      };
+    });
+};
+
+export const createPhantomSpecV2DataContractExport = (
+  document: PhantomSpecV2Document,
+  generatedAt = new Date().toISOString(),
+): PhantomSpecV2DataContractExport => {
+  const dataContract = getBlock(document, 'data_contract_preview')?.body.data_contract;
+  return {
+    generatedAt,
+    derivation: isRecord(dataContract) && hasText(dataContract.derivation)
+      ? dataContract.derivation
+      : undefined,
+    fields: asRecords(isRecord(dataContract) ? dataContract.fields : undefined),
+    metrics: createPhantomSpecV2MetricRegistry(document),
+    acceptedGaps: createPhantomSpecV2AcceptedGaps(document),
+    unresolvedPrompts: createPhantomSpecV2ElicitationPrompts(document),
+  };
+};
+
+export const createPhantomSpecV2ReactProductExport = (
+  document: PhantomSpecV2Document,
+  generatedAt = new Date().toISOString(),
+): PhantomSpecV2ReactProductExport => {
+  const pages = asRecords(getBlock(document, 'pages')?.body.pages);
+  const components = createComponentContracts(document);
+  const readiness = scorePhantomSpecV2Readiness(document, 'react');
+  return {
+    generatedAt,
+    target: 'react',
+    buildReady: readiness.buildReady,
+    readiness,
+    summary: createPhantomSpecV2Summary(document, 'react'),
+    pages,
+    components,
+    dataContract: createPhantomSpecV2DataContractExport(document, generatedAt),
+    routeManifest: pages.map((page, index) => {
+      const id = hasText(page.id) ? page.id : `page_${index + 1}`;
+      return {
+        id,
+        title: hasText(page.title) ? page.title : undefined,
+        path: index === 0 ? '/' : slugPath(page.title || id),
+        componentIds: stringList(page.components),
+      };
+    }),
+    implementationNotes: [
+      'Use this pack as a React Product Mode implementation contract, not a generated finished application.',
+      'Do not treat buildReady as true until all readiness gates pass.',
+      'Resolve unresolvedPrompts before asking stakeholders to approve a final build version.',
+    ],
+  };
+};
+
+export const createPhantomSpecV2PowerBiExport = (
+  document: PhantomSpecV2Document,
+  generatedAt = new Date().toISOString(),
+): PhantomSpecV2PowerBiExport => {
+  const components = createComponentContracts(document);
+  const readiness = scorePhantomSpecV2Readiness(document, 'power_bi');
+  return {
+    generatedAt,
+    target: 'power_bi',
+    buildReady: readiness.buildReady,
+    readiness,
+    summary: createPhantomSpecV2Summary(document, 'power_bi'),
+    visualBuildMatrix: components.map((component) => {
+      const status = component.renderTargets.power_bi;
+      const fallbackRequired = status === 'design_only' || status === 'pbi_approximate';
+      return {
+        componentId: component.id,
+        title: component.title,
+        type: component.type,
+        powerBiStatus: status,
+        guidance: status === 'pbi_safe'
+          ? 'Build with native Power BI visual behavior.'
+          : status === 'pbi_approximate'
+            ? 'Build with native Power BI approximation and document the fallback behavior.'
+            : 'Keep as design guidance or custom implementation outside native Power BI.',
+        fallbackRequired,
+      };
+    }),
+    acceptedGaps: createPhantomSpecV2AcceptedGaps(document),
+    constraints: [
+      'Power BI Mode is a constrained implementation guide, not a promise of visual parity.',
+      'Components marked design_only require explicit accepted gap or fallback notes.',
+      'Drill, filter, and approval semantics must remain traceable to the v0.2 spec.',
+    ],
+  };
+};
 
 export const applyPhantomSpecV2Approval = (
   document: PhantomSpecV2Document,

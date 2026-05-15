@@ -150,4 +150,56 @@ describe('phantom v0.2 spec CLI', () => {
       await rm(tempDir, { recursive: true, force: true });
     }
   });
+
+  it('exports React Product and Power BI packs from Markdown specs', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'phantom-v2-export-packs-'));
+    const reactOut = join(tempDir, 'react-pack.json');
+    const powerBiOut = join(tempDir, 'powerbi-pack.json');
+
+    try {
+      const react = await execFileAsync(
+        process.execPath,
+        ['tools/phantom-spec-v2-cli.mjs', 'export-react-pack', specPath, reactOut],
+        { cwd: process.cwd() },
+      );
+      expect(JSON.parse(react.stdout)).toMatchObject({
+        outPath: reactOut,
+        target: 'react',
+        buildReady: false,
+        pages: 7,
+        components: 3,
+        unresolvedPrompts: 1,
+      });
+
+      const reactPack = JSON.parse(await readFile(reactOut, 'utf8'));
+      expect(reactPack.routeManifest).toEqual(expect.arrayContaining([
+        expect.objectContaining({ id: 'project_dashboard', path: '/' }),
+        expect.objectContaining({ id: 'spec_canvas', path: '/spec-canvas' }),
+      ]));
+
+      const powerBi = await execFileAsync(
+        process.execPath,
+        ['tools/phantom-spec-v2-cli.mjs', 'export-powerbi-pack', specPath, powerBiOut],
+        { cwd: process.cwd() },
+      );
+      expect(JSON.parse(powerBi.stdout)).toMatchObject({
+        outPath: powerBiOut,
+        target: 'power_bi',
+        buildReady: false,
+        visuals: 3,
+        fallbackRequired: 1,
+      });
+
+      const powerBiPack = JSON.parse(await readFile(powerBiOut, 'utf8'));
+      expect(powerBiPack.visualBuildMatrix).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          componentId: 'elicitation_panel',
+          powerBiStatus: 'design_only',
+          fallbackRequired: true,
+        }),
+      ]));
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
 });

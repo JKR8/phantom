@@ -6,8 +6,11 @@ import {
   createPhantomSpecV2AcceptedGaps,
   createPhantomSpecV2ApprovalPack,
   createPhantomSpecV2ApprovalStatus,
+  createPhantomSpecV2DataContractExport,
   createPhantomSpecV2ElicitationPrompts,
   createPhantomSpecV2MetricRegistry,
+  createPhantomSpecV2PowerBiExport,
+  createPhantomSpecV2ReactProductExport,
   createPhantomSpecV2Summary,
   PHANTOM_V2_SCHEMA_ID,
   parseAndValidatePhantomSpecV2Markdown,
@@ -296,5 +299,69 @@ describe('phantomSpecV2', () => {
       approved: true,
       missingApprovalRoles: [],
     });
+  });
+
+  it('generates v0.2 React Product and Power BI handoff exports', async () => {
+    const markdown = await readV2Spec();
+    const document = parsePhantomSpecV2Markdown(markdown);
+    const generatedAt = '2026-05-15T00:00:00.000Z';
+
+    const dataContract = createPhantomSpecV2DataContractExport(document, generatedAt);
+    expect(dataContract).toMatchObject({
+      generatedAt,
+      derivation: 'derived_from_metrics_components_interactions_and_exports',
+    });
+    expect(dataContract.fields).toHaveLength(4);
+    expect(dataContract.metrics).toHaveLength(3);
+    expect(dataContract.unresolvedPrompts).toHaveLength(1);
+
+    const reactExport = createPhantomSpecV2ReactProductExport(document, generatedAt);
+    expect(reactExport).toMatchObject({
+      generatedAt,
+      target: 'react',
+      buildReady: false,
+    });
+    expect(reactExport.routeManifest).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: 'project_dashboard',
+        path: '/',
+        componentIds: ['project_header', 'readiness_score_panel', 'page_list_table', 'activity_feed'],
+      }),
+      expect.objectContaining({
+        id: 'spec_canvas',
+        path: '/spec-canvas',
+      }),
+    ]));
+    expect(reactExport.components).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: 'elicitation_panel',
+        renderTargets: expect.objectContaining({ power_bi: 'design_only' }),
+        unresolvedPrompts: [
+          expect.objectContaining({ fieldPath: 'pbi_fallback_behavior' }),
+        ],
+      }),
+    ]));
+
+    const powerBiExport = createPhantomSpecV2PowerBiExport(document, generatedAt);
+    expect(powerBiExport).toMatchObject({
+      generatedAt,
+      target: 'power_bi',
+      buildReady: false,
+    });
+    expect(powerBiExport.visualBuildMatrix).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        componentId: 'elicitation_panel',
+        powerBiStatus: 'design_only',
+        fallbackRequired: true,
+      }),
+      expect.objectContaining({
+        componentId: 'readiness_score_panel',
+        powerBiStatus: 'pbi_safe',
+        fallbackRequired: false,
+      }),
+    ]));
+    expect(powerBiExport.constraints).toEqual(expect.arrayContaining([
+      'Power BI Mode is a constrained implementation guide, not a promise of visual parity.',
+    ]));
   });
 });
