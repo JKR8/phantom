@@ -120,6 +120,7 @@ export interface PhantomSpecV2Summary {
     fields: number;
     interactions: number;
     acceptedGaps: number;
+    unresolvedPrompts: number;
   };
   readiness: PhantomSpecV2ReadinessScore;
   approval: PhantomSpecV2ApprovalStatus;
@@ -135,8 +136,22 @@ export interface PhantomSpecV2ApprovalPack {
   };
   metrics: PhantomSpecV2MetricRegistryEntry[];
   acceptedGaps: PhantomSpecV2AcceptedGap[];
+  elicitationPrompts: PhantomSpecV2ElicitationPrompt[];
   interactions: Record<string, unknown>[];
   exportTargets: Record<string, unknown>[];
+}
+
+export interface PhantomSpecV2ElicitationPrompt {
+  id: string;
+  ruleId?: string;
+  objectType: 'component' | 'metric' | 'interaction' | 'data_field';
+  objectId: string;
+  fieldPath: string;
+  state: 'unanswered' | 'accepted_gap';
+  ownerRole?: string;
+  severity: 'info' | 'warning' | 'error';
+  prompt: string;
+  reason: string;
 }
 
 const requiredBlockIds = [
@@ -623,6 +638,134 @@ export const createPhantomSpecV2AcceptedGaps = (
     });
 };
 
+const findElicitationRule = (
+  document: PhantomSpecV2Document,
+  fieldPath: string,
+  fallbackRuleId?: string,
+) => {
+  const rules = asRecords(getBlock(document, 'elicitation_rules')?.body.rules);
+  return rules.find((rule) =>
+    rule.id === fallbackRuleId
+    || (Array.isArray(rule.require) && rule.require.includes(fieldPath)),
+  );
+};
+
+const promptLabel = (fieldPath: string) =>
+  (fieldPath.split('.').pop() || fieldPath).replace(/_/g, ' ');
+
+const createPrompt = (
+  document: PhantomSpecV2Document,
+  objectType: PhantomSpecV2ElicitationPrompt['objectType'],
+  objectId: string,
+  fieldPath: string,
+  reason: string,
+  ownerRole?: string,
+  fallbackRuleId?: string,
+  state: PhantomSpecV2ElicitationPrompt['state'] = 'unanswered',
+): PhantomSpecV2ElicitationPrompt => {
+  const rule = findElicitationRule(document, fieldPath, fallbackRuleId);
+  return {
+    id: `${objectType}:${objectId}:${fieldPath}`,
+    ruleId: hasText(rule?.id) ? rule.id : fallbackRuleId,
+    objectType,
+    objectId,
+    fieldPath,
+    state,
+    ownerRole,
+    severity: state === 'accepted_gap' ? 'warning' : 'error',
+    prompt: `Confirm ${promptLabel(fieldPath)} for ${objectId}.`,
+    reason,
+  };
+};
+
+export const createPhantomSpecV2ElicitationPrompts = (
+  document: PhantomSpecV2Document,
+): PhantomSpecV2ElicitationPrompt[] => {
+  const prompts: PhantomSpecV2ElicitationPrompt[] = [];
+  const components = asRecords(getBlock(document, 'component_instances')?.body.components);
+  const fields = (() => {
+    const dataContract = getBlock(document, 'data_contract_preview')?.body.data_contract;
+    return asRecords(isRecord(dataContract) ? dataContract.fields : undefined);
+  })();
+  const interactions = asRecords(getBlock(document, 'interactions')?.body.interactions);
+
+  for (const component of components) {
+    const id = hasText(component.id) ? component.id : 'unknown_component';
+    const type = hasText(component.type) ? component.type : 'component';
+    const elicitation = isRecord(component.elicitation) ? component.elicitation : {};
+    const ownerRole = type.includes('kpi') ? 'analytics_owner' : 'dashboard_builder';
+    for (const fieldPath of stringIds(elicitation.missing_fields)) {
+      prompts.push(createPrompt(
+        document,
+        'component',
+        id,
+        fieldPath,
+        `${type} has unresolved scaffolding declared in component elicitation metadata.`,
+        ownerRole,
+        fieldPath === 'pbi_fallback_behavior' ? 'require_pbi_fallback_for_approximate_or_design_only' : undefined,
+      ));
+    }
+  }
+
+  for (const metric of createPhantomSpecV2MetricRegistry(document)) {
+    for (const fieldPath of metric.missingFields) {
+      prompts.push(createPrompt(
+        document,
+        'metric',
+        metric.id,
+        `metric.${fieldPath}`,
+        'Metric registry entries must include grain, null behavior, owner, and source binding before approval.',
+        metric.ownerRole || 'analytics_owner',
+        'require_metric_scaffolding_for_kpi',
+      ));
+    }
+  }
+
+  for (const interaction of interactions) {
+    const id = hasText(interaction.id) ? interaction.id : 'unknown_interaction';
+    const type = String(interaction.type || '');
+    if (!type.startsWith('drill_')) continue;
+    const target = isRecord(interaction.target) ? interaction.target : {};
+    const missingPaths = [
+      ...(!hasText(target.type) ? ['interaction.target.type'] : []),
+      ...(!hasText(target.id) ? ['interaction.target.id'] : []),
+      ...(!hasValue(interaction.filter_context) ? ['interaction.filter_context.carry'] : []),
+      ...(!hasText(interaction.back_behavior) ? ['interaction.back_behavior'] : []),
+    ];
+    for (const fieldPath of missingPaths) {
+      prompts.push(createPrompt(
+        document,
+        'interaction',
+        id,
+        fieldPath,
+        'Drill-through interactions need explicit target, filter context, and back behavior.',
+        'facilitator',
+        'require_drill_target',
+      ));
+    }
+  }
+
+  for (const field of fields) {
+    if (field.status !== 'accepted_gap') continue;
+    const acceptedGap = isRecord(field.accepted_gap) ? field.accepted_gap : {};
+    const missingFields = missingKeys(acceptedGap, ['owner_role', 'reason', 'resolution_target']);
+    for (const fieldPath of missingFields) {
+      prompts.push(createPrompt(
+        document,
+        'data_field',
+        hasText(field.id) ? field.id : 'unknown_field',
+        `accepted_gap.${fieldPath}`,
+        'Accepted gaps are allowed only when ownership, reason, and resolution target are explicit.',
+        hasText(acceptedGap.owner_role) ? acceptedGap.owner_role : 'data_engineer',
+        'require_accepted_gap_metadata',
+        'accepted_gap',
+      ));
+    }
+  }
+
+  return prompts;
+};
+
 export const createPhantomSpecV2ApprovalStatus = (
   document: PhantomSpecV2Document,
 ): PhantomSpecV2ApprovalStatus => {
@@ -671,6 +814,7 @@ export const createPhantomSpecV2Summary = (
   const fields = asRecords(isRecord(dataContract) ? dataContract.fields : undefined);
   const interactions = asRecords(getBlock(document, 'interactions')?.body.interactions);
   const acceptedGaps = createPhantomSpecV2AcceptedGaps(document);
+  const prompts = createPhantomSpecV2ElicitationPrompts(document);
 
   return {
     schemaId: document.frontmatter.schema_id,
@@ -691,6 +835,7 @@ export const createPhantomSpecV2Summary = (
       fields: fields.length,
       interactions: interactions.length,
       acceptedGaps: acceptedGaps.length,
+      unresolvedPrompts: prompts.filter((prompt) => prompt.state === 'unanswered').length,
     },
     readiness: scorePhantomSpecV2Readiness(document, target),
     approval: createPhantomSpecV2ApprovalStatus(document),
@@ -710,6 +855,7 @@ export const createPhantomSpecV2ApprovalPack = (
   },
   metrics: createPhantomSpecV2MetricRegistry(document),
   acceptedGaps: createPhantomSpecV2AcceptedGaps(document),
+  elicitationPrompts: createPhantomSpecV2ElicitationPrompts(document),
   interactions: asRecords(getBlock(document, 'interactions')?.body.interactions),
   exportTargets: asRecords(getBlock(document, 'export_targets')?.body.exports),
 });

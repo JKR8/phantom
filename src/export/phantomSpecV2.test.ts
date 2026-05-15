@@ -5,6 +5,7 @@ import {
   createPhantomSpecV2AcceptedGaps,
   createPhantomSpecV2ApprovalPack,
   createPhantomSpecV2ApprovalStatus,
+  createPhantomSpecV2ElicitationPrompts,
   createPhantomSpecV2MetricRegistry,
   createPhantomSpecV2Summary,
   PHANTOM_V2_SCHEMA_ID,
@@ -191,6 +192,19 @@ describe('phantomSpecV2', () => {
       missingApprovalRoles: ['approver', 'analytics_owner'],
     });
 
+    const prompts = createPhantomSpecV2ElicitationPrompts(document);
+    expect(prompts).toEqual([
+      expect.objectContaining({
+        id: 'component:elicitation_panel:pbi_fallback_behavior',
+        ruleId: 'require_pbi_fallback_for_approximate_or_design_only',
+        objectType: 'component',
+        objectId: 'elicitation_panel',
+        fieldPath: 'pbi_fallback_behavior',
+        state: 'unanswered',
+        ownerRole: 'dashboard_builder',
+      }),
+    ]);
+
     const summary = createPhantomSpecV2Summary(document);
     expect(summary.counts).toEqual({
       pages: 7,
@@ -199,6 +213,7 @@ describe('phantomSpecV2', () => {
       fields: 4,
       interactions: 4,
       acceptedGaps: 1,
+      unresolvedPrompts: 1,
     });
     expect(summary.blocks.map((block) => block.id)).toContain('export_targets');
 
@@ -206,6 +221,7 @@ describe('phantomSpecV2', () => {
     expect(approvalPack.generatedAt).toBe('2026-05-15T00:00:00.000Z');
     expect(approvalPack.readiness.react.score).toBeCloseTo(0.8667, 4);
     expect(approvalPack.readiness.powerBi.score).toBeCloseTo(0.8167, 4);
+    expect(approvalPack.elicitationPrompts).toHaveLength(1);
     expect(approvalPack.exportTargets).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: 'react_app' }),
       expect.objectContaining({ id: 'approval_pack' }),

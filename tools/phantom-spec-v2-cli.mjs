@@ -24,7 +24,7 @@ Usage:
   npm run phantom:spec:v2 -- validate <spec.md>
   npm run phantom:spec:v2 -- summary <spec.md>
   npm run phantom:spec:v2 -- readiness <spec.md> react|power_bi
-  npm run phantom:spec:v2 -- inspect <spec.md> blocks|metrics|accepted-gaps|approval|exports|all
+  npm run phantom:spec:v2 -- inspect <spec.md> blocks|metrics|accepted-gaps|prompts|approval|exports|all
   npm run phantom:spec:v2 -- export-approval-pack <spec.md> <out.json>
 
 Commands operate on Markdown specs with YAML frontmatter and fenced phantom_block YAML sections.
@@ -179,6 +179,110 @@ const acceptedGaps = (document) =>
       };
     });
 
+const findElicitationRule = (document, fieldPath, fallbackRuleId) => {
+  const rules = asRecords(getBlock(document, 'elicitation_rules')?.body.rules);
+  return rules.find((rule) => rule.id === fallbackRuleId || (Array.isArray(rule.require) && rule.require.includes(fieldPath)));
+};
+
+const promptLabel = (fieldPath) => (fieldPath.split('.').pop() || fieldPath).replace(/_/g, ' ');
+
+const createPrompt = (document, objectType, objectId, fieldPath, reason, ownerRole, fallbackRuleId, state = 'unanswered') => {
+  const rule = findElicitationRule(document, fieldPath, fallbackRuleId);
+  return {
+    id: `${objectType}:${objectId}:${fieldPath}`,
+    ruleId: hasText(rule?.id) ? rule.id : fallbackRuleId,
+    objectType,
+    objectId,
+    fieldPath,
+    state,
+    ownerRole,
+    severity: state === 'accepted_gap' ? 'warning' : 'error',
+    prompt: `Confirm ${promptLabel(fieldPath)} for ${objectId}.`,
+    reason,
+  };
+};
+
+const elicitationPrompts = (document) => {
+  const prompts = [];
+  const components = asRecords(getBlock(document, 'component_instances')?.body.components);
+  const interactions = asRecords(getBlock(document, 'interactions')?.body.interactions);
+
+  for (const component of components) {
+    const id = hasText(component.id) ? component.id : 'unknown_component';
+    const type = hasText(component.type) ? component.type : 'component';
+    const elicitation = isRecord(component.elicitation) ? component.elicitation : {};
+    const ownerRole = type.includes('kpi') ? 'analytics_owner' : 'dashboard_builder';
+    for (const fieldPath of stringIds(elicitation.missing_fields)) {
+      prompts.push(createPrompt(
+        document,
+        'component',
+        id,
+        fieldPath,
+        `${type} has unresolved scaffolding declared in component elicitation metadata.`,
+        ownerRole,
+        fieldPath === 'pbi_fallback_behavior' ? 'require_pbi_fallback_for_approximate_or_design_only' : undefined,
+      ));
+    }
+  }
+
+  for (const metric of metricRegistry(document)) {
+    for (const fieldPath of metric.missingFields) {
+      prompts.push(createPrompt(
+        document,
+        'metric',
+        metric.id,
+        `metric.${fieldPath}`,
+        'Metric registry entries must include grain, null behavior, owner, and source binding before approval.',
+        metric.ownerRole || 'analytics_owner',
+        'require_metric_scaffolding_for_kpi',
+      ));
+    }
+  }
+
+  for (const interaction of interactions) {
+    const id = hasText(interaction.id) ? interaction.id : 'unknown_interaction';
+    const type = String(interaction.type || '');
+    if (!type.startsWith('drill_')) continue;
+    const target = isRecord(interaction.target) ? interaction.target : {};
+    const missingPaths = [
+      ...(!hasText(target.type) ? ['interaction.target.type'] : []),
+      ...(!hasText(target.id) ? ['interaction.target.id'] : []),
+      ...(!hasValue(interaction.filter_context) ? ['interaction.filter_context.carry'] : []),
+      ...(!hasText(interaction.back_behavior) ? ['interaction.back_behavior'] : []),
+    ];
+    for (const fieldPath of missingPaths) {
+      prompts.push(createPrompt(
+        document,
+        'interaction',
+        id,
+        fieldPath,
+        'Drill-through interactions need explicit target, filter context, and back behavior.',
+        'facilitator',
+        'require_drill_target',
+      ));
+    }
+  }
+
+  for (const field of dataFields(document)) {
+    if (field.status !== 'accepted_gap') continue;
+    const acceptedGap = isRecord(field.accepted_gap) ? field.accepted_gap : {};
+    for (const fieldPath of missingKeys(acceptedGap, ['owner_role', 'reason', 'resolution_target'])) {
+      prompts.push(createPrompt(
+        document,
+        'data_field',
+        hasText(field.id) ? field.id : 'unknown_field',
+        `accepted_gap.${fieldPath}`,
+        'Accepted gaps are allowed only when ownership, reason, and resolution target are explicit.',
+        hasText(acceptedGap.owner_role) ? acceptedGap.owner_role : 'data_engineer',
+        'require_accepted_gap_metadata',
+        'accepted_gap',
+      ));
+    }
+  }
+
+  return prompts;
+};
+
 const approvalStatus = (document) => {
   const approval = isRecord(document.frontmatter.approval) ? document.frontmatter.approval : {};
   const currentVersion = hasText(approval.current_version) ? approval.current_version : undefined;
@@ -277,6 +381,7 @@ const summary = (document, target = 'react') => {
   const components = asRecords(getBlock(document, 'component_instances')?.body.components);
   const fields = dataFields(document);
   const interactions = asRecords(getBlock(document, 'interactions')?.body.interactions);
+  const prompts = elicitationPrompts(document);
   return {
     schemaId: document.frontmatter.schema_id,
     id: document.frontmatter.id,
@@ -293,6 +398,7 @@ const summary = (document, target = 'react') => {
       fields: fields.length,
       interactions: interactions.length,
       acceptedGaps: acceptedGaps(document).length,
+      unresolvedPrompts: prompts.filter((prompt) => prompt.state === 'unanswered').length,
     },
     readiness: readiness(document, target),
     approval: approvalStatus(document),
@@ -309,6 +415,7 @@ const approvalPack = (document) => ({
   },
   metrics: metricRegistry(document),
   acceptedGaps: acceptedGaps(document),
+  elicitationPrompts: elicitationPrompts(document),
   interactions: asRecords(getBlock(document, 'interactions')?.body.interactions),
   exportTargets: asRecords(getBlock(document, 'export_targets')?.body.exports),
 });
@@ -353,10 +460,11 @@ try {
       blocks: summary(document).blocks,
       metrics: metricRegistry(document),
       'accepted-gaps': acceptedGaps(document),
+      prompts: elicitationPrompts(document),
       approval: approvalStatus(document),
       exports: asRecords(getBlock(document, 'export_targets')?.body.exports),
     };
-    if (!(subject in subjects)) throw new Error('Inspect subject must be blocks, metrics, accepted-gaps, approval, exports, or all.');
+    if (!(subject in subjects)) throw new Error('Inspect subject must be blocks, metrics, accepted-gaps, prompts, approval, exports, or all.');
     print(subjects[subject]);
   }
   if (command === 'export-approval-pack') {

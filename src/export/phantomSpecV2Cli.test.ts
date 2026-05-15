@@ -35,6 +35,7 @@ describe('phantom v0.2 spec CLI', () => {
         fields: 4,
         interactions: 4,
         acceptedGaps: 1,
+        unresolvedPrompts: 1,
       },
       readiness: {
         target: 'react',
@@ -62,6 +63,12 @@ describe('phantom v0.2 spec CLI', () => {
 
       const pack = JSON.parse(await readFile(outPath, 'utf8'));
       expect(pack.metrics).toHaveLength(3);
+      expect(pack.elicitationPrompts).toEqual([
+        expect.objectContaining({
+          id: 'component:elicitation_panel:pbi_fallback_behavior',
+          ruleId: 'require_pbi_fallback_for_approximate_or_design_only',
+        }),
+      ]);
       expect(pack.acceptedGaps).toEqual([
         expect.objectContaining({
           fieldId: 'pbi_fallback_behavior',
