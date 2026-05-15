@@ -11,7 +11,12 @@ import {
 } from '@fluentui/react-components';
 import { useStore } from '../store/useStore';
 import { useThemeStore } from '../store/useThemeStore';
-import { checkPhantomReadiness, createPhantomDesignMappingSummary, createPhantomSpec } from '../export';
+import {
+  checkPhantomReadiness,
+  createPhantomDesignMappingSummary,
+  createPhantomSpec,
+  createPhantomWorkshopIntentCompleteness,
+} from '../export';
 import type { DashboardSpecification, DesignSource, DesignSourceType } from '../types';
 
 const parseIdList = (value: string) =>
@@ -162,6 +167,10 @@ export const SpecificationPanel: React.FC = () => {
     () => createPhantomDesignMappingSummary(currentSpec.project.designSources),
     [currentSpec],
   );
+  const workshopCompleteness = React.useMemo(
+    () => createPhantomWorkshopIntentCompleteness(currentSpec),
+    [currentSpec],
+  );
   const visibleIssues = [...powerBiReadiness.errors, ...powerBiReadiness.warnings].slice(0, 3);
 
   const handleChange = (field: keyof DashboardSpecification, value: string) => {
@@ -260,6 +269,32 @@ export const SpecificationPanel: React.FC = () => {
       {/* Business Context */}
       <div className={styles.section}>
         <Text className={styles.sectionHeader}>Business Context</Text>
+
+        <div className={styles.metricGrid}>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Intent</Text>
+            <Badge appearance="filled" color={workshopCompleteness.complete ? 'success' : 'warning'}>
+              {workshopCompleteness.complete ? 'Complete' : 'Incomplete'}
+            </Badge>
+          </div>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Present</Text>
+            <Text className={styles.metricValue}>{workshopCompleteness.present.length}</Text>
+          </div>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Missing</Text>
+            <Text className={styles.metricValue}>{workshopCompleteness.missing.length}</Text>
+          </div>
+          <div className={styles.readinessCard}>
+            <Text className={styles.readinessLabel}>Required</Text>
+            <Text className={styles.metricValue}>
+              {workshopCompleteness.present.length + workshopCompleteness.missing.length}
+            </Text>
+          </div>
+        </div>
+        <Text className={styles.hint}>
+          Missing: {workshopCompleteness.missing.join(', ') || 'none'}
+        </Text>
 
         <div className={styles.fieldRow}>
           <Label className={styles.fieldLabel}>Business Questions</Label>
