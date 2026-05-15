@@ -290,6 +290,12 @@ ${createDesignSourcesMarkdown(spec.project.designSources)}
 - Acceptance criteria: ${contract.workshopIntent.acceptanceCriteria || 'Not specified'}
 - Build notes: ${contract.workshopIntent.buildNotes || 'Not specified'}
 
+## Workshop Completeness
+
+- Complete: ${handoffSummary.workshopCompleteness.complete ? 'Yes' : 'No'}
+- Present: ${handoffSummary.workshopCompleteness.present.join(', ') || 'None'}
+- Missing: ${handoffSummary.workshopCompleteness.missing.join(', ') || 'None'}
+
 ## Contents
 
 - \`phantom-spec.json\`: canonical workshop/spec artifact.
