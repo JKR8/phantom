@@ -264,4 +264,134 @@ describe('phantom v0.2 spec CLI', () => {
       await rm(tempDir, { recursive: true, force: true });
     }
   });
+
+  it('drives the v0.2 spec from draft to build-ready handoff artifacts through CLI workflow', async () => {
+    const tempDir = await mkdtemp(join(tmpdir(), 'phantom-v2-build-ready-flow-'));
+    const resolved = join(tempDir, 'resolved.md');
+    const approvedOne = join(tempDir, 'approved-one.md');
+    const approvedTwo = join(tempDir, 'approved-two.md');
+    const reactOut = join(tempDir, 'react-pack.json');
+    const powerBiOut = join(tempDir, 'powerbi-pack.json');
+    const approvalOut = join(tempDir, 'approval-pack.json');
+
+    try {
+      await execFileAsync(
+        process.execPath,
+        [
+          'tools/phantom-spec-v2-cli.mjs',
+          'resolve-prompt',
+          specPath,
+          '--component',
+          'elicitation_panel',
+          '--field',
+          'pbi_fallback_behavior',
+          '--value',
+          'Document Power BI as an implementation note and use React for exact workshop behavior.',
+          '--owner-role',
+          'dashboard_builder',
+          '--date',
+          '2026-05-15',
+          '--out',
+          resolved,
+        ],
+        { cwd: process.cwd() },
+      );
+      await execFileAsync(
+        process.execPath,
+        [
+          'tools/phantom-spec-v2-cli.mjs',
+          'approve',
+          resolved,
+          '--role',
+          'approver',
+          '--approver',
+          'A. Approver',
+          '--date',
+          '2026-05-15',
+          '--out',
+          approvedOne,
+        ],
+        { cwd: process.cwd() },
+      );
+      await execFileAsync(
+        process.execPath,
+        [
+          'tools/phantom-spec-v2-cli.mjs',
+          'approve',
+          approvedOne,
+          '--role',
+          'analytics_owner',
+          '--approver',
+          'Analytics Lead',
+          '--date',
+          '2026-05-15',
+          '--out',
+          approvedTwo,
+        ],
+        { cwd: process.cwd() },
+      );
+
+      const reactReadiness = await execFileAsync(
+        process.execPath,
+        ['tools/phantom-spec-v2-cli.mjs', 'readiness', approvedTwo, 'react'],
+        { cwd: process.cwd() },
+      );
+      expect(JSON.parse(reactReadiness.stdout)).toMatchObject({
+        target: 'react',
+        buildReady: true,
+        blockingIssues: [],
+      });
+
+      const powerBiReadiness = await execFileAsync(
+        process.execPath,
+        ['tools/phantom-spec-v2-cli.mjs', 'readiness', approvedTwo, 'power_bi'],
+        { cwd: process.cwd() },
+      );
+      expect(JSON.parse(powerBiReadiness.stdout)).toMatchObject({
+        target: 'power_bi',
+        buildReady: true,
+        blockingIssues: [],
+      });
+
+      await execFileAsync(
+        process.execPath,
+        ['tools/phantom-spec-v2-cli.mjs', 'export-react-pack', approvedTwo, reactOut],
+        { cwd: process.cwd() },
+      );
+      await execFileAsync(
+        process.execPath,
+        ['tools/phantom-spec-v2-cli.mjs', 'export-powerbi-pack', approvedTwo, powerBiOut],
+        { cwd: process.cwd() },
+      );
+      await execFileAsync(
+        process.execPath,
+        ['tools/phantom-spec-v2-cli.mjs', 'export-approval-pack', approvedTwo, approvalOut],
+        { cwd: process.cwd() },
+      );
+
+      expect(JSON.parse(await readFile(reactOut, 'utf8'))).toMatchObject({
+        target: 'react',
+        buildReady: true,
+        dataContract: {
+          unresolvedPrompts: [],
+        },
+      });
+      expect(JSON.parse(await readFile(powerBiOut, 'utf8'))).toMatchObject({
+        target: 'power_bi',
+        buildReady: true,
+      });
+      expect(JSON.parse(await readFile(approvalOut, 'utf8'))).toMatchObject({
+        approval: {
+          approved: true,
+          missingApprovalRoles: [],
+        },
+        readiness: {
+          react: { buildReady: true },
+          powerBi: { buildReady: true },
+        },
+      });
+    } finally {
+      await rm(tempDir, { recursive: true, force: true });
+    }
+  });
 });
